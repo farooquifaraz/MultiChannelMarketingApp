@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MarketingApp.API/MarketingApp.API.csproj" />
+  <Project Path="MarketingApp.Application/MarketingApp.Application.csproj" />
+  <Project Path="MarketingApp.Domain/MarketingApp.Domain.csproj" />
+  <Project Path="MarketingApp.Infrastructure/MarketingApp.Infrastructure.csproj" />
+  <Project Path="MarketingApp.Tests/MarketingApp.Tests.csproj" />
+</Solution>

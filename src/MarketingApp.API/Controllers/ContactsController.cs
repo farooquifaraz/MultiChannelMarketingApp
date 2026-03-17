@@ -1,0 +1,120 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MarketingApp.Application.DTOs;
+using MarketingApp.Application.Interfaces;
+using System.Security.Claims;
+
+namespace MarketingApp.API.Controllers;
+
+[ApiController]
+[Route("api/v1/contacts")]
+[Authorize]
+public class ContactsController : ControllerBase
+{
+    private readonly IContactService _contactService;
+    private Guid CurrentUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    public ContactsController(IContactService contactService)
+    {
+        _contactService = contactService;
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedResponse<ContactDto>), 200)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? groupId = null,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+    {
+        if (pageSize > 100) pageSize = 100;
+        var result = await _contactService.GetAllAsync(CurrentUserId, pageNumber, pageSize, groupId, search, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ContactDto>), 200)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    {
+        var result = await _contactService.GetByIdAsync(id, CurrentUserId, ct);
+        return Ok(ApiResponse<ContactDto>.Ok(result));
+    }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<ContactDto>), 201)]
+    public async Task<IActionResult> Create([FromBody] CreateContactDto dto, CancellationToken ct)
+    {
+        var result = await _contactService.CreateAsync(CurrentUserId, dto, ct);
+        return StatusCode(201, ApiResponse<ContactDto>.Ok(result, "Contact created"));
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ContactDto>), 200)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateContactDto dto, CancellationToken ct)
+    {
+        var result = await _contactService.UpdateAsync(id, CurrentUserId, dto, ct);
+        return Ok(ApiResponse<ContactDto>.Ok(result));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _contactService.DeleteAsync(id, CurrentUserId, ct);
+        return NoContent();
+    }
+
+    [HttpPost("import")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    [ProducesResponseType(typeof(ApiResponse<ImportResultDto>), 200)]
+    public async Task<IActionResult> Import(IFormFile file, [FromQuery] Guid? groupId, CancellationToken ct)
+    {
+        if (file.Length == 0) return BadRequest(ApiResponse.Fail("File is empty"));
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (ext != ".csv" && ext != ".xlsx")
+            return BadRequest(ApiResponse.Fail("Only CSV and XLSX files are allowed"));
+
+        using var stream = file.OpenReadStream();
+        var result = await _contactService.ImportContactsAsync(CurrentUserId, stream, file.FileName, groupId, ct);
+        return Ok(ApiResponse<ImportResultDto>.Ok(result));
+    }
+
+    [HttpGet("groups")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ContactGroupDto>>), 200)]
+    public async Task<IActionResult> GetGroups(CancellationToken ct)
+    {
+        var result = await _contactService.GetGroupsAsync(CurrentUserId, ct);
+        return Ok(ApiResponse<IEnumerable<ContactGroupDto>>.Ok(result));
+    }
+
+    [HttpPost("groups")]
+    [ProducesResponseType(typeof(ApiResponse<ContactGroupDto>), 201)]
+    public async Task<IActionResult> CreateGroup([FromBody] CreateContactGroupDto dto, CancellationToken ct)
+    {
+        var result = await _contactService.CreateGroupAsync(CurrentUserId, dto, ct);
+        return StatusCode(201, ApiResponse<ContactGroupDto>.Ok(result, "Group created"));
+    }
+
+    [HttpDelete("groups/{id:guid}")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> DeleteGroup(Guid id, CancellationToken ct)
+    {
+        await _contactService.DeleteGroupAsync(id, CurrentUserId, ct);
+        return NoContent();
+    }
+
+    [HttpPost("assign-group")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> AssignToGroup([FromBody] AssignToGroupRequest request, CancellationToken ct)
+    {
+        var count = await _contactService.AssignToGroupAsync(CurrentUserId, request.ContactIds, request.GroupId, ct);
+        return Ok(ApiResponse<object>.Ok(new { assignedCount = count }, $"{count} contacts assigned to group"));
+    }
+}
+
+public class AssignToGroupRequest
+{
+    public List<Guid> ContactIds { get; set; } = new();
+    public Guid? GroupId { get; set; }
+}

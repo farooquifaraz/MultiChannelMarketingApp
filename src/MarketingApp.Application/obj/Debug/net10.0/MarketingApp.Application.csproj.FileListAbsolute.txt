@@ -1,0 +1,15 @@
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.csproj.AssemblyReference.cache
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.AssemblyInfoInputs.cache
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.AssemblyInfo.cs
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.csproj.CoreCompileInputs.cache
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\bin\Debug\net10.0\MarketingApp.Application.deps.json
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\bin\Debug\net10.0\MarketingApp.Application.dll
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\bin\Debug\net10.0\MarketingApp.Application.pdb
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\bin\Debug\net10.0\MarketingApp.Domain.dll
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\bin\Debug\net10.0\MarketingApp.Domain.pdb
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\Marketin.E102025C.Up2Date
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.dll
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\refint\MarketingApp.Application.dll
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\MarketingApp.Application.pdb
+D:\MultiChannelMarkettingApp\src\MarketingApp.Application\obj\Debug\net10.0\ref\MarketingApp.Application.dll

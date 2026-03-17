@@ -1,0 +1,54 @@
+=== WhatsApp Welcome Template ===
+Channel: WhatsApp
+
+Hi {{name}}! 👋
+
+Welcome to MarketPro! 🚀
+
+We're thrilled to have you on board. Here's what you can do:
+
+✅ Send bulk email campaigns
+✅ Reach contacts via WhatsApp
+✅ Send SMS notifications
+✅ Track everything in real-time
+
+Need help getting started? Just reply to this message!
+
+Best regards,
+MarketPro Team
+
+
+=== WhatsApp Promotional Template ===
+Channel: WhatsApp
+
+🎉 Hey {{name}}!
+
+Exciting news! We're running a special promotion just for you:
+
+🏷️ *50% OFF* on all premium plans!
+📅 Offer valid until end of month
+🔑 Use code: *MARKET50*
+
+Don't miss out — upgrade your marketing game today!
+
+Tap here to learn more 👉 [Link]
+
+— MarketPro Team
+
+
+=== SMS Welcome Template ===
+Channel: SMS
+
+Hi {{name}}! Welcome to MarketPro. Start sending campaigns at marketpro.com. Reply HELP for support.
+
+
+=== SMS Promotional Template ===
+Channel: SMS
+
+{{name}}, FLASH SALE! 50% OFF premium plans with code MARKET50. Valid this month only. Visit marketpro.com
+
+
+=== SMS Reminder Template ===
+Channel: SMS
+
+Hi {{name}}, your campaign "{{campaign_name}}" is scheduled for tomorrow. Log in to review: marketpro.com

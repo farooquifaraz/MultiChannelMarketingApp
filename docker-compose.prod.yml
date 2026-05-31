@@ -27,8 +27,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks: [marketingapp]
-    # NOTE: no `ports:` mapping = postgres is reachable ONLY by other containers
-    # on the marketingapp network. NOT exposed to the public internet. ✅
+    # Bind to the VPS's loopback (127.0.0.1) ONLY — NOT 0.0.0.0. This means:
+    #   • Other containers reach it via the docker network (unchanged) ✅
+    #   • DBeaver/psql via SSH tunnel reach 127.0.0.1:5432 on the VPS ✅
+    #   • Public internet (195.35.23.193:5432) CANNOT reach it — bind-address rejects ❌
+    # This is the standard "expose for SSH-tunnel only" pattern.
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s

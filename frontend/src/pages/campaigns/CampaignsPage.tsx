@@ -1,19 +1,27 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Send, Trash2, Eye, Mail, MessageCircle, Smartphone } from 'lucide-react';
+import { Plus, Send, Trash2, Eye, Mail, MessageCircle, Smartphone, Globe2, User as UserIcon, Download } from 'lucide-react';
 import { campaignApi } from '../../api/campaignApi';
+import { downloadFile } from '../../utils/download';
 import { contactApi } from '../../api/contactApi';
 import { templateApi } from '../../api/templateApi';
 import { formatDate, formatNumber, getStatusColor, getChannelColor } from '../../utils/formatters';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
 
 export default function CampaignsPage() {
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [channelFilter, setChannelFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  // Admin can toggle between "my campaigns" and "all org campaigns"
+  const [viewAll, setViewAll] = useState<boolean>(isAdmin);
+  const [filterOwner, setFilterOwner] = useState<string>('');
+  const [filterSmtpGroup, setFilterSmtpGroup] = useState<string>('');
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -22,9 +30,37 @@ export default function CampaignsPage() {
   const [formGroupId, setFormGroupId] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['campaigns', page, statusFilter, channelFilter],
-    queryFn: () => campaignApi.getAll({ pageNumber: page, pageSize: 20, status: statusFilter || undefined, channel: channelFilter || undefined }),
+    queryKey: ['campaigns', page, statusFilter, channelFilter, viewAll],
+    queryFn: () => campaignApi.getAll({
+      pageNumber: page,
+      pageSize: 20,
+      status: statusFilter || undefined,
+      channel: channelFilter || undefined,
+      viewAll: isAdmin ? viewAll : undefined,
+    }),
   });
+
+  // Client-side filtering for owner / SMTP group when admin browses all
+  const filteredCampaigns = useMemo(() => {
+    const raw = (data?.data || []) as any[];
+    return raw.filter((c) => {
+      if (filterOwner && (c.ownerEmail || '').toLowerCase() !== filterOwner.toLowerCase()) return false;
+      if (filterSmtpGroup && (c.smtpGroupName || '') !== filterSmtpGroup) return false;
+      return true;
+    });
+  }, [data, filterOwner, filterSmtpGroup]);
+
+  // Unique owner/group lists for the filter dropdowns (admin only)
+  const uniqueOwners = useMemo(() => {
+    const set = new Set<string>();
+    (data?.data || []).forEach((c: any) => c.ownerEmail && set.add(c.ownerEmail));
+    return Array.from(set).sort();
+  }, [data]);
+  const uniqueGroups = useMemo(() => {
+    const set = new Set<string>();
+    (data?.data || []).forEach((c: any) => c.smtpGroupName && set.add(c.smtpGroupName));
+    return Array.from(set).sort();
+  }, [data]);
 
   const { data: templates } = useQuery({
     queryKey: ['templates'],
@@ -69,23 +105,109 @@ export default function CampaignsPage() {
     createMutation.mutate({ name: formName, channel: formChannel, templateId: formTemplateId, groupId: formGroupId });
   };
 
-  const campaigns = data?.data || [];
+  const campaigns = (filteredCampaigns.length > 0 || filterOwner || filterSmtpGroup ? filteredCampaigns : (data?.data || [])) as any[];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-          <p className="text-gray-500 mt-1">Manage your marketing campaigns</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Campaigns
+            {isAdmin && viewAll && (
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-semibold rounded-full uppercase tracking-wide">All Org</span>
+            )}
+          </h1>
+          <p className="text-gray-500 mt-1">{isAdmin && viewAll ? 'Viewing every user\'s campaigns across all SMTP groups' : 'Manage your marketing campaigns'}</p>
         </div>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-medium hover:from-primary-700 hover:to-primary-800 shadow-lg shadow-primary-200 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          New Campaign
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                await downloadFile(
+                  campaignApi.exportCsvUrl({
+                    status: statusFilter || undefined,
+                    channel: channelFilter || undefined,
+                    viewAll: isAdmin ? viewAll : undefined,
+                  }),
+                  `campaigns_${new Date().toISOString().slice(0, 10)}.csv`,
+                );
+              } catch (e: any) {
+                toast.error(e?.message || 'Export failed');
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50"
+            title="Download current view as CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowCreate(!showCreate)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-medium hover:from-primary-700 hover:to-primary-800 shadow-lg shadow-primary-200 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            New Campaign
+          </button>
+        </div>
       </div>
+
+      {/* Admin scope toggle + filters */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex bg-white rounded-lg p-0.5 border border-red-200">
+              <button
+                onClick={() => { setViewAll(false); setPage(1); setFilterOwner(''); setFilterSmtpGroup(''); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  !viewAll ? 'bg-red-600 text-white shadow-sm' : 'text-gray-600'
+                }`}
+              >
+                <UserIcon className="w-3.5 h-3.5" /> My campaigns
+              </button>
+              <button
+                onClick={() => { setViewAll(true); setPage(1); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  viewAll ? 'bg-red-600 text-white shadow-sm' : 'text-gray-600'
+                }`}
+              >
+                <Globe2 className="w-3.5 h-3.5" /> All campaigns (org-wide)
+              </button>
+            </div>
+
+            {viewAll && (
+              <>
+                <select
+                  value={filterOwner}
+                  onChange={e => setFilterOwner(e.target.value)}
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
+                >
+                  <option value="">All senders</option>
+                  {uniqueOwners.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <select
+                  value={filterSmtpGroup}
+                  onChange={e => setFilterSmtpGroup(e.target.value)}
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
+                >
+                  <option value="">All SMTP groups</option>
+                  {uniqueGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                {(filterOwner || filterSmtpGroup) && (
+                  <button
+                    onClick={() => { setFilterOwner(''); setFilterSmtpGroup(''); }}
+                    className="text-xs text-red-700 hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+                <span className="text-xs text-gray-500 ml-auto">
+                  Showing {campaigns.length} of {data?.totalCount ?? 0} campaigns
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Create Form */}
       {showCreate && (
@@ -189,6 +311,12 @@ export default function CampaignsPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Campaign</th>
+                {isAdmin && viewAll && (
+                  <>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sender</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">SMTP Group</th>
+                  </>
+                )}
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Channel</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Progress</th>
@@ -203,6 +331,21 @@ export default function CampaignsPage() {
                     <Link to={`/campaigns/${c.id}`} className="font-medium text-gray-900 hover:text-primary-600">{c.name}</Link>
                     {c.groupName && <p className="text-xs text-gray-500 mt-0.5">{c.groupName}</p>}
                   </td>
+                  {isAdmin && viewAll && (
+                    <>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{c.ownerName || '—'}</p>
+                        <p className="text-[11px] text-gray-500">{c.ownerEmail || ''}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        {c.smtpGroupName ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-indigo-50 text-indigo-700 rounded">
+                            {c.smtpGroupName}
+                          </span>
+                        ) : <span className="text-xs text-gray-400">—</span>}
+                      </td>
+                    </>
+                  )}
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${getChannelColor(c.channel)}`}>
                       {c.channel === 'email' ? <Mail className="w-3.5 h-3.5" /> : c.channel === 'whatsapp' ? <MessageCircle className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}

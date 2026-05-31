@@ -9,10 +9,39 @@ public class MessageTemplate
     public string? Subject { get; set; } // email only
     public string Body { get; set; } = string.Empty; // supports {{name}}, {{offer}} etc.
     public bool IsActive { get; set; } = true;
+    // Master switch — when false, only the owner can see this template (private).
+    public bool IsShared { get; set; } = false;
+    /// <summary>
+    /// When IsShared = true, defines who can see this template:
+    ///   "global" → all users (the original behavior)
+    ///   "groups" → only users assigned to one of the linked SmtpGroups (see SharedWithGroups)
+    ///   "users"  → only the specifically listed users (see SharedWithUsers)
+    /// </summary>
+    public string ShareScope { get; set; } = "global";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
     public User User { get; set; } = null!;
     public ICollection<Campaign> Campaigns { get; set; } = new List<Campaign>();
+    public ICollection<TemplateSharedGroup> SharedWithGroups { get; set; } = new List<TemplateSharedGroup>();
+    public ICollection<TemplateSharedUser> SharedWithUsers { get; set; } = new List<TemplateSharedUser>();
+}
+
+/// <summary>Junction — template visible to users assigned to this SmtpGroup.</summary>
+public class TemplateSharedGroup
+{
+    public Guid TemplateId { get; set; }
+    public MessageTemplate Template { get; set; } = null!;
+    public Guid SmtpGroupId { get; set; }
+    public SmtpGroup SmtpGroup { get; set; } = null!;
+}
+
+/// <summary>Junction — template explicitly shared with this individual user.</summary>
+public class TemplateSharedUser
+{
+    public Guid TemplateId { get; set; }
+    public MessageTemplate Template { get; set; } = null!;
+    public Guid UserId { get; set; }
+    public User User { get; set; } = null!;
 }

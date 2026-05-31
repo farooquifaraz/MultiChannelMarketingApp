@@ -17,6 +17,17 @@ public class AppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserSmtpSettings> UserSmtpSettings => Set<UserSmtpSettings>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<SystemSettings> SystemSettings => Set<SystemSettings>();
+    public DbSet<SmtpGroup> SmtpGroups => Set<SmtpGroup>();
+    public DbSet<TemplateSharedGroup> TemplateSharedGroups => Set<TemplateSharedGroup>();
+    public DbSet<TemplateSharedUser> TemplateSharedUsers => Set<TemplateSharedUser>();
+    // Day 7 G2
+    public DbSet<WebhookEventLog> WebhookEventLogs => Set<WebhookEventLog>();
+    // Day 7 G3
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+    public DbSet<OutboundReply> OutboundReplies => Set<OutboundReply>();
+    // Day 9
+    public DbSet<InboxAiChat> InboxAiChats => Set<InboxAiChat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

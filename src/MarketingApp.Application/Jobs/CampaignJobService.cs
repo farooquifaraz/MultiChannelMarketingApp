@@ -1,7 +1,11 @@
+using MarketingApp.Application.Configuration;
+using MarketingApp.Application.DTOs;
 using MarketingApp.Application.Interfaces;
-using MarketingApp.Domain.Constants;
+using MarketingApp.Application.Services;
 using MarketingApp.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace MarketingApp.Application.Jobs;
@@ -14,7 +18,13 @@ public class CampaignJobService : ICampaignJobService
     private readonly ISmsService _smsService;
     private readonly INotificationService _notificationService;
     private readonly IGenericRepository<UserSmtpSettings> _smtpSettingsRepo;
+    private readonly IGenericRepository<User> _userRepo;
+    private readonly ISystemSettingsService _systemSettings;
+    private readonly ISmtpGroupService _smtpGroups;
     private readonly ILogger<CampaignJobService> _logger;
+    private readonly CampaignSettings _appsettingsFallback;
+    private readonly IConfiguration _config;
+    private readonly IGenericRepository<Contact> _contactRepoForBounce;
 
     public CampaignJobService(
         ICampaignRepository campaignRepo,
@@ -23,7 +33,13 @@ public class CampaignJobService : ICampaignJobService
         ISmsService smsService,
         INotificationService notificationService,
         IGenericRepository<UserSmtpSettings> smtpSettingsRepo,
-        ILogger<CampaignJobService> logger)
+        IGenericRepository<User> userRepo,
+        ISystemSettingsService systemSettings,
+        ISmtpGroupService smtpGroups,
+        ILogger<CampaignJobService> logger,
+        IOptions<CampaignSettings> settings,
+        IConfiguration config,
+        IGenericRepository<Contact> contactRepoForBounce)
     {
         _campaignRepo = campaignRepo;
         _emailService = emailService;
@@ -31,12 +47,159 @@ public class CampaignJobService : ICampaignJobService
         _smsService = smsService;
         _notificationService = notificationService;
         _smtpSettingsRepo = smtpSettingsRepo;
+        _userRepo = userRepo;
+        _systemSettings = systemSettings;
+        _smtpGroups = smtpGroups;
         _logger = logger;
+        _appsettingsFallback = settings.Value;
+        _config = config;
+        _contactRepoForBounce = contactRepoForBounce;
+    }
+
+    /// <summary>
+    /// Detect SMTP hard-bounce signals in an exception message so we can permanently disable the contact.
+    /// We only flag CLEAR hard-bounces — soft failures (timeout, throttle, server error) are retried elsewhere.
+    /// Patterns are matched case-insensitively against the full exception chain.
+    /// </summary>
+    private static (bool IsHardBounce, string? Reason) DetectHardBounce(Exception ex)
+    {
+        var msg = ex.ToString().ToLowerInvariant();
+
+        // SMTP RFC 5321 permanent-failure status codes
+        if (System.Text.RegularExpressions.Regex.IsMatch(msg, @"\b5(5[0-4]|0[0-9]|1[0-9]|3[0-9])\s|status:\s*5\.\d\.\d"))
+            return (true, ExtractFirstLine(ex.Message));
+        // Common provider-agnostic hard-bounce phrasings
+        string[] hardBouncePhrases =
+        {
+            "user unknown",
+            "no such user",
+            "no such recipient",
+            "mailbox not found",
+            "mailbox unavailable",
+            "address rejected",
+            "recipient rejected",
+            "recipient address rejected",
+            "domain does not exist",
+            "domain not found",
+            "invalid recipient",
+            "invalid mailbox",
+            "does not exist",
+            "no mailbox",
+            "user not found",
+            "mailbox is disabled",
+            "account has been disabled",
+            "550-",
+        };
+        foreach (var phrase in hardBouncePhrases)
+        {
+            if (msg.Contains(phrase)) return (true, ExtractFirstLine(ex.Message));
+        }
+        return (false, null);
+    }
+
+    private static string ExtractFirstLine(string s)
+        => string.IsNullOrEmpty(s) ? "Hard bounce" : s.Split('\n')[0].Trim();
+
+    private static bool LooksLikeValidEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return false;
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email.Trim());
+            return addr.Address.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Build a 1x1 open-tracking pixel for the given message — appended to email HTML body.</summary>
+    private string? BuildTrackingPixel(Guid messageId)
+    {
+        var baseUrl = _config["App:PublicBaseUrl"]?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl)) return null;
+        var url = $"{baseUrl}/track/open/{messageId}.gif";
+        // Defensive styling so Gmail/Outlook don't try to render or summarize this.
+        return $"<img src=\"{url}\" width=\"1\" height=\"1\" alt=\"\" border=\"0\" style=\"display:block;width:1px;height:1px;border:0;outline:none;\" />";
+    }
+
+    /// <summary>
+    /// Rewrite every absolute http(s) href in the body to redirect through /track/click,
+    /// so we can record clicks per message. Skips mailto:, tel:, anchor-only (#), and the
+    /// tracking pixel itself. Idempotent — if a URL is already a tracking URL we leave it.
+    /// </summary>
+    private string RewriteLinksForClickTracking(string body, Guid messageId)
+    {
+        var baseUrl = _config["App:PublicBaseUrl"]?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrEmpty(body)) return body;
+
+        var trackPrefix = $"{baseUrl}/track/";
+
+        // === Step 1: auto-link bare (plain-text) URLs so they get tracked too ===
+        // Many emails are typed as plain text — "https://site.com" is NOT an <a> tag, so the href-rewrite
+        // below would miss it and the click would go straight to the destination (untracked). Here we wrap
+        // bare http(s) URLs that appear in TEXT into proper anchors first. Existing <a>…</a> are protected
+        // (placeholdered) so we never double-wrap or nest anchors, and attribute URLs (preceded by " ' =)
+        // are skipped via the lookbehind.
+        var anchors = new List<string>();
+        var protectedBody = System.Text.RegularExpressions.Regex.Replace(
+            body, @"<a\b[^>]*>.*?</a>",
+            m => { anchors.Add(m.Value); return $"A{anchors.Count - 1}"; },
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        protectedBody = System.Text.RegularExpressions.Regex.Replace(
+            protectedBody, @"(?<![""'=])\bhttps?://[^\s<>""']+",
+            m =>
+            {
+                var raw = m.Value;
+                // Strip trailing sentence punctuation so it isn't swallowed into the link.
+                var url = raw.TrimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}', '"', '\'');
+                var trail = raw.Substring(url.Length);
+                return $"<a href=\"{url}\">{url}</a>{trail}";
+            },
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Restore the protected original anchors.
+        if (anchors.Count > 0)
+            protectedBody = System.Text.RegularExpressions.Regex.Replace(
+                protectedBody, "A(\\d+)",
+                m => { var ix = int.Parse(m.Groups[1].Value); return ix >= 0 && ix < anchors.Count ? anchors[ix] : m.Value; });
+
+        // === Step 2: rewrite EVERY href (original + the ones we just created) through /track/click ===
+        // Matches the URL inside href="..." or href='...'. Captures the quote so we put it back.
+        var pattern = new System.Text.RegularExpressions.Regex(
+            @"href\s*=\s*(""|')([^""']+)\1",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        return pattern.Replace(protectedBody, match =>
+        {
+            var quote = match.Groups[1].Value;
+            var url = match.Groups[2].Value;
+
+            // Skip non-http(s), in-page anchors, and already-tracked URLs
+            if (string.IsNullOrWhiteSpace(url)) return match.Value;
+            if (url.StartsWith("#") || url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+                || url.StartsWith("tel:", StringComparison.OrdinalIgnoreCase))
+                return match.Value;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed)
+                || (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
+                return match.Value;
+            if (url.StartsWith(trackPrefix, StringComparison.OrdinalIgnoreCase))
+                return match.Value;
+
+            var encoded = Uri.EscapeDataString(url);
+            var tracked = $"{baseUrl}/track/click/{messageId}?u={encoded}";
+            return $"href={quote}{tracked}{quote}";
+        });
     }
 
     public async Task ProcessCampaignAsync(Guid campaignId)
     {
         _logger.LogInformation("Starting campaign processing: {CampaignId}", campaignId);
+
+        // Pull live admin-controlled settings from DB (with fallback to appsettings.json).
+        // The per-SmtpGroup overrides (if any) are applied LATER, once we resolve the group.
+        CampaignSettings _settings;
+        try { _settings = await _systemSettings.GetCampaignSettingsAsync(); }
+        catch { _settings = _appsettingsFallback; }
 
         var campaign = await _campaignRepo.GetWithTemplateAsync(campaignId, default);
         if (campaign is null)
@@ -45,16 +208,75 @@ public class CampaignJobService : ICampaignJobService
             return;
         }
 
-        // Load user's SMTP settings
+        // Defensive: if the campaign was cancelled (status reverted to draft) after being scheduled,
+        // skip processing. This prevents a "cancelled" campaign from firing when its scheduled time arrives.
+        if (campaign.Status != "queued")
+        {
+            _logger.LogInformation("Campaign {CampaignId} in status '{Status}' — scheduled job is a no-op (likely cancelled).", campaignId, campaign.Status);
+            return;
+        }
+
+        // === SMTP Group resolution ===
+        // Each user is assigned to an SmtpGroup (or falls back to the platform default group).
+        // The group's provider credentials + signature get used to send the campaign.
+        // BUT — the From Name is overridden with the actual sender's full name so recipients see
+        // "Iqra Tariq <ahsan@samdigital.ae>" rather than the static org name.
         UserSmtpSettings? userSmtpSettings = null;
+        User? sender = null;
         try
         {
-            var settings = await _smtpSettingsRepo.FindAsync(s => s.UserId == campaign.UserId);
-            userSmtpSettings = settings.FirstOrDefault();
+            sender = await _userRepo.GetByIdAsync(campaign.UserId, default);
+            var resolvedGroup = await _smtpGroups.ResolveForUserAsync(campaign.UserId, default);
+            if (resolvedGroup is not null)
+            {
+                userSmtpSettings = SmtpGroupService.ToUserSmtpSettings(resolvedGroup);
+                // Override From Name with the actual sender — keeps the From Email as the org address.
+                if (sender is not null && !string.IsNullOrWhiteSpace(sender.FullName))
+                    userSmtpSettings.SmtpFromName = sender.FullName;
+
+                // === Per-SmtpGroup rate limit overrides ===
+                // If the group has its own limits set, they take precedence over the global SystemSettings.
+                // Useful when one group sends via Gmail (slow, capped) and another via SendGrid (fast).
+                var overrides = new List<string>();
+                if (resolvedGroup.DelayBetweenMessagesMs.HasValue)
+                {
+                    _settings = new CampaignSettings
+                    {
+                        BatchSize = _settings.BatchSize,
+                        DelayBetweenBatchesMs = _settings.DelayBetweenBatchesMs,
+                        DelayBetweenMessagesMs = resolvedGroup.DelayBetweenMessagesMs.Value,
+                        MaxMessagesPerMinute = _settings.MaxMessagesPerMinute,
+                    };
+                    overrides.Add($"delay={resolvedGroup.DelayBetweenMessagesMs}ms");
+                }
+                if (resolvedGroup.MaxMessagesPerMinute.HasValue)
+                {
+                    _settings = new CampaignSettings
+                    {
+                        BatchSize = _settings.BatchSize,
+                        DelayBetweenBatchesMs = _settings.DelayBetweenBatchesMs,
+                        DelayBetweenMessagesMs = _settings.DelayBetweenMessagesMs,
+                        MaxMessagesPerMinute = resolvedGroup.MaxMessagesPerMinute.Value,
+                    };
+                    overrides.Add($"maxPerMin={resolvedGroup.MaxMessagesPerMinute}");
+                }
+                if (overrides.Count > 0)
+                    _logger.LogInformation("Applied per-group rate-limit overrides: {Overrides}", string.Join(", ", overrides));
+
+                _logger.LogInformation(
+                    "Resolved SMTP group '{GroupName}' (provider={Provider}, from={FromName} <{FromEmail}>) for campaign owner {UserId}",
+                    resolvedGroup.Name, resolvedGroup.EmailProvider, userSmtpSettings.SmtpFromName, resolvedGroup.FromEmail, campaign.UserId);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "No SMTP group resolved for user {UserId} — no assignment and no default group. Falling back to mock send.",
+                    campaign.UserId);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not load SMTP settings for user {UserId}, using mock", campaign.UserId);
+            _logger.LogWarning(ex, "Could not resolve SMTP group for user {UserId}, using mock", campaign.UserId);
         }
 
         campaign.Status = "running";
@@ -78,11 +300,18 @@ public class CampaignJobService : ICampaignJobService
             var pendingMessages = await _campaignRepo.GetPendingMessagesAsync(campaignId, default);
             var batches = pendingMessages
                 .Select((msg, idx) => new { msg, idx })
-                .GroupBy(x => x.idx / AppConstants.BatchSize)
+                .GroupBy(x => x.idx / _settings.BatchSize)
                 .Select(g => g.Select(x => x.msg).ToList())
                 .ToList();
 
-            _logger.LogInformation("Processing {BatchCount} batches for campaign {CampaignId}", batches.Count, campaignId);
+            _logger.LogInformation(
+                "Processing {BatchCount} batches for campaign {CampaignId} | BatchSize={BatchSize}, BatchDelay={BatchDelay}ms, MsgDelay={MsgDelay}ms, MaxPerMin={MaxPerMin}",
+                batches.Count, campaignId, _settings.BatchSize, _settings.DelayBetweenBatchesMs,
+                _settings.DelayBetweenMessagesMs, _settings.MaxMessagesPerMinute);
+
+            // Rate limiter state (for MaxMessagesPerMinute)
+            var minuteWindowStart = DateTime.UtcNow;
+            var messagesInCurrentMinute = 0;
 
             var batchNumber = 0;
             foreach (var batch in batches)
@@ -91,17 +320,49 @@ public class CampaignJobService : ICampaignJobService
                 _logger.LogInformation("Processing batch {BatchNum}/{TotalBatches} for campaign {CampaignId}",
                     batchNumber, batches.Count, campaignId);
 
-                foreach (var message in batch)
+                for (var i = 0; i < batch.Count; i++)
                 {
-                    var success = await ProcessSingleMessageAsync(message, campaign, userSmtpSettings);
+                    var message = batch[i];
+
+                    // === Rate limiting: max messages per minute ===
+                    if (_settings.MaxMessagesPerMinute > 0)
+                    {
+                        var elapsed = DateTime.UtcNow - minuteWindowStart;
+                        if (elapsed.TotalSeconds >= 60)
+                        {
+                            minuteWindowStart = DateTime.UtcNow;
+                            messagesInCurrentMinute = 0;
+                        }
+                        else if (messagesInCurrentMinute >= _settings.MaxMessagesPerMinute)
+                        {
+                            var waitMs = (int)Math.Ceiling((60 - elapsed.TotalSeconds) * 1000);
+                            _logger.LogInformation(
+                                "Rate limit hit ({Max}/min). Pausing {WaitMs}ms for campaign {CampaignId}",
+                                _settings.MaxMessagesPerMinute, waitMs, campaignId);
+                            await Task.Delay(waitMs);
+                            minuteWindowStart = DateTime.UtcNow;
+                            messagesInCurrentMinute = 0;
+                        }
+                    }
+
+                    var success = await ProcessSingleMessageAsync(message, campaign, userSmtpSettings, sender);
                     if (success) sentCount++;
                     else failedCount++;
 
                     await _campaignRepo.UpdateMessageAsync(message, default);
+                    messagesInCurrentMinute++;
+
+                    // === Per-message delay (helps avoid spam filters) ===
+                    var isLastInBatch = i == batch.Count - 1;
+                    var isLastBatch = batchNumber == batches.Count;
+                    if (_settings.DelayBetweenMessagesMs > 0 && !(isLastInBatch && isLastBatch))
+                    {
+                        await Task.Delay(_settings.DelayBetweenMessagesMs);
+                    }
                 }
 
                 if (batchNumber < batches.Count)
-                    await Task.Delay(AppConstants.DelayBetweenBatchesMs);
+                    await Task.Delay(_settings.DelayBetweenBatchesMs);
             }
 
             campaign.Status = "completed";
@@ -158,7 +419,7 @@ public class CampaignJobService : ICampaignJobService
         _logger.LogInformation("Campaign {CampaignId} completed: Sent={Sent}, Failed={Failed}", campaignId, sentCount, failedCount);
     }
 
-    private async Task<bool> ProcessSingleMessageAsync(CampaignMessage message, Campaign campaign, UserSmtpSettings? smtpSettings)
+    private async Task<bool> ProcessSingleMessageAsync(CampaignMessage message, Campaign campaign, UserSmtpSettings? smtpSettings, User? sender)
     {
         try
         {
@@ -172,8 +433,26 @@ public class CampaignJobService : ICampaignJobService
                 return false;
             }
 
-            var body = PersonalizeTemplate(template.Body, contact);
-            var subject = template.Subject is not null ? PersonalizeTemplate(template.Subject, contact) : campaign.Name;
+            // Pull avatar URL + locale from admin-configured SystemSettings (with safe fallbacks).
+            string avatarUrl = "https://ui-avatars.com/api/?name={name}&size={size}&background={bg}&color={fg}&bold=true&rounded=true";
+            string dateFormat = "MMMM dd, yyyy";
+            System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.InvariantCulture;
+            try
+            {
+                var sys = await _systemSettings.GetAsync();
+                if (!string.IsNullOrWhiteSpace(sys.AvatarServiceUrl)) avatarUrl = sys.AvatarServiceUrl;
+                if (!string.IsNullOrWhiteSpace(sys.DefaultDateFormat)) dateFormat = sys.DefaultDateFormat;
+                if (!string.IsNullOrWhiteSpace(sys.DefaultLocale))
+                {
+                    try { culture = System.Globalization.CultureInfo.GetCultureInfo(sys.DefaultLocale); } catch { /* fall back */ }
+                }
+            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Could not load system settings for personalization"); }
+
+            var body = PersonalizeTemplate(template.Body, contact, sender, smtpSettings, avatarUrl, dateFormat, culture);
+            var subject = template.Subject is not null
+                ? PersonalizeTemplate(template.Subject, contact, sender, smtpSettings, avatarUrl, dateFormat, culture)
+                : campaign.Name;
 
             bool success;
 
@@ -186,10 +465,64 @@ public class CampaignJobService : ICampaignJobService
                         message.ErrorMessage = "Contact has no email address";
                         return false;
                     }
-                    // Use user's SMTP settings if available
-                    success = smtpSettings is not null
-                        ? await _emailService.SendWithUserSettingsAsync(contact.Email, subject, body, smtpSettings)
-                        : await _emailService.SendAsync(contact.Email, subject, body);
+                    // Pre-flight: syntactically invalid email is treated as a hard bounce so we don't waste
+                    // sender reputation re-trying it on every campaign.
+                    if (!LooksLikeValidEmail(contact.Email))
+                    {
+                        message.Status = "bounced";
+                        message.ErrorMessage = "Invalid email address syntax";
+                        await MarkContactBouncedAsync(contact.Id, "Invalid email address syntax");
+                        return false;
+                    }
+
+                    // === Click + Open tracking ===
+                    // 1. Rewrite every absolute http(s) link to redirect through /track/click/{messageId}
+                    //    so we record clicks. Skips mailto:, tel:, anchors, and the tracking pixel itself.
+                    // 2. Append a 1x1 open-tracking pixel.
+                    // Both no-op when App:PublicBaseUrl isn't configured.
+                    var rewritten = RewriteLinksForClickTracking(body, message.Id);
+                    var pixel = BuildTrackingPixel(message.Id);
+                    var bodyToSend = pixel is null ? rewritten : rewritten + "\n" + pixel;
+
+                    // === Day 7 Message-Id generation (Feature 1 + 2 foundation) ===
+                    // Generate a stable Message-Id per CampaignMessage. Provider webhooks (Feature 1) and
+                    // inbox polling (Feature 2) both look this up to correlate events / replies back to the
+                    // originating CampaignMessage. Persist on the entity BEFORE send so even on transient
+                    // failure we don't lose the correlation key.
+                    var fromAddr = smtpSettings?.SmtpFromEmail ?? smtpSettings?.SmtpUsername ?? "noreply@localhost";
+                    var fromDomain = fromAddr.Contains('@') ? fromAddr[(fromAddr.IndexOf('@') + 1)..] : "localhost";
+                    var smtpMessageId = $"<{message.Id:N}@{fromDomain}>";
+                    message.SmtpMessageId = smtpMessageId;
+
+                    var headers = new EmailHeaders
+                    {
+                        MessageId = smtpMessageId,
+                        CampaignMessageId = message.Id.ToString(),
+                    };
+
+                    // Only use real SMTP if credentials are actually filled. Otherwise fall back to mock
+                    // so that signature/personalization can still be tested without SMTP setup.
+                    var hasUsableEmailProvider = smtpSettings is not null && (
+                        (string.Equals(smtpSettings.EmailProvider, "smtp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(smtpSettings.SmtpHost) && !string.IsNullOrWhiteSpace(smtpSettings.SmtpUsername)) ||
+                        (string.Equals(smtpSettings.EmailProvider, "sendgrid", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(smtpSettings.SendGridApiKey)) ||
+                        (string.Equals(smtpSettings.EmailProvider, "brevo", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(smtpSettings.BrevoApiKey)) ||
+                        (string.Equals(smtpSettings.EmailProvider, "mailgun", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(smtpSettings.MailgunApiKey) && !string.IsNullOrWhiteSpace(smtpSettings.MailgunDomain))
+                    );
+                    success = hasUsableEmailProvider
+                        ? await _emailService.SendWithUserSettingsAsync(contact.Email, subject, bodyToSend, smtpSettings!, headers, default)
+                        : await _emailService.SendAsync(contact.Email, subject, bodyToSend);
+
+                    // === Smart SMTP delivery fallback ===
+                    // Pure SMTP providers (Gmail/Hostinger/Outlook/etc.) don't give us delivery webhooks,
+                    // so a successful send is the strongest signal we have. Mark delivered now as
+                    // "best-effort"; webhook-capable providers (SendGrid/Brevo/Mailgun) will UPGRADE
+                    // this to "webhook" later when their event fires.
+                    if (success && hasUsableEmailProvider
+                        && string.Equals(smtpSettings!.EmailProvider, "smtp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        message.DeliveredAt = DateTime.UtcNow;
+                        message.DeliveryConfirmationKind = "best-effort";
+                    }
                     break;
 
                 case "whatsapp":
@@ -222,7 +555,9 @@ public class CampaignJobService : ICampaignJobService
                     return false;
             }
 
-            message.Status = success ? "sent" : "failed";
+            // If a best-effort/webhook delivery was recorded above (SMTP send succeeded), reflect it in the
+            // status so the Delivery Report's "Delivered" count is accurate — not stuck on "sent".
+            message.Status = success ? (message.DeliveredAt is not null ? "delivered" : "sent") : "failed";
             message.SentAt = success ? DateTime.UtcNow : null;
             if (!success) message.ErrorMessage = "Service returned failure";
 
@@ -231,18 +566,98 @@ public class CampaignJobService : ICampaignJobService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing message {MessageId}", message.Id);
-            message.Status = "failed";
-            message.ErrorMessage = ex.Message;
+
+            // Post-flight: if the SMTP error pattern matches a hard bounce, flag the contact so
+            // future campaigns skip them. Soft errors (timeout, throttle) are NOT bounced.
+            var bounce = DetectHardBounce(ex);
+            if (bounce.IsHardBounce && message.ContactId != Guid.Empty)
+            {
+                message.Status = "bounced";
+                message.ErrorMessage = bounce.Reason ?? ex.Message;
+                await MarkContactBouncedAsync(message.ContactId, bounce.Reason ?? "Hard bounce detected");
+            }
+            else
+            {
+                message.Status = "failed";
+                message.ErrorMessage = ex.Message;
+            }
             return false;
         }
     }
 
-    private static string PersonalizeTemplate(string template, Contact contact)
+    /// <summary>Persist a hard-bounce flag on the contact (idempotent — safe to call repeatedly).</summary>
+    private async Task MarkContactBouncedAsync(Guid contactId, string reason)
     {
+        try
+        {
+            var contact = await _contactRepoForBounce.GetByIdAsync(contactId, default);
+            if (contact is null || contact.IsBounced) return; // already flagged
+            contact.IsBounced = true;
+            contact.BouncedAt = DateTime.UtcNow;
+            contact.BounceReason = reason.Length > 500 ? reason[..500] : reason;
+            await _contactRepoForBounce.UpdateAsync(contact, default);
+            _logger.LogWarning("Contact {ContactId} auto-flagged as bounced: {Reason}", contactId, reason);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to flag contact {ContactId} as bounced", contactId);
+        }
+    }
+
+    private static string PersonalizeTemplate(string template, Contact contact, User? sender, UserSmtpSettings? smtpSettings,
+        string avatarServiceUrl = "https://ui-avatars.com/api/?name={name}&size={size}&background={bg}&color={fg}&bold=true&rounded=true",
+        string dateFormat = "MMMM dd, yyyy",
+        System.Globalization.CultureInfo? culture = null)
+    {
+        // === Merged signature resolution ===
+        //   sender_name        = the actual sender's full name (User.FullName)
+        //   sender_email       = org email from SmtpGroup (so recipients reply to the org address)
+        //   sender_designation = user.SignatureDesignation OVERRIDES smtpGroup.SignatureDesignation
+        //   sender_phone       = user.SignaturePhone       OVERRIDES smtpGroup.SignaturePhone
+        //   signature_image    = user.SignatureImageUrl    OVERRIDES smtpGroup.SignatureImageUrl
+        //   company_name       = smtpGroup.FromName (org brand)
+        //   company_website    = smtpGroup.CompanyWebsite (org)
+        var senderName = sender?.FullName ?? smtpSettings?.SmtpFromName ?? "";
+        var senderEmail = smtpSettings?.SmtpFromEmail ?? sender?.Email ?? "";
+        var companyName = smtpSettings?.SmtpFromName ?? sender?.FullName ?? "";
+
+        var senderDesignation = !string.IsNullOrWhiteSpace(sender?.SignatureDesignation)
+            ? sender!.SignatureDesignation!
+            : (smtpSettings?.SignatureDesignation ?? "");
+        var senderPhone = !string.IsNullOrWhiteSpace(sender?.SignaturePhone)
+            ? sender!.SignaturePhone!
+            : (smtpSettings?.SignaturePhone ?? "");
+        var companyWebsite = smtpSettings?.CompanyWebsite ?? "";
+
+        // Image: per-user override → org default → admin-configured avatar service template
+        // Template placeholders: {name}, {size}, {bg}, {fg} — admin can swap providers in SystemSettings.
+        var defaultAvatarUrl = (avatarServiceUrl ?? "")
+            .Replace("{name}", Uri.EscapeDataString(senderName))
+            .Replace("{size}", "128")
+            .Replace("{bg}", "6366f1")
+            .Replace("{fg}", "fff");
+        var signatureImage =
+            !string.IsNullOrWhiteSpace(sender?.SignatureImageUrl) ? sender!.SignatureImageUrl! :
+            !string.IsNullOrWhiteSpace(smtpSettings?.SignatureImageUrl) ? smtpSettings!.SignatureImageUrl! :
+            defaultAvatarUrl;
+
         var result = template
+            // --- Contact (recipient) placeholders ---
             .Replace("{{name}}", contact.FullName ?? "")
+            .Replace("{{first_name}}", (contact.FullName ?? "").Split(' ').FirstOrDefault() ?? "")
             .Replace("{{email}}", contact.Email ?? "")
-            .Replace("{{phone}}", contact.Phone ?? "");
+            .Replace("{{phone}}", contact.Phone ?? "")
+            // --- Sender (signature) placeholders ---
+            .Replace("{{sender_name}}", senderName)
+            .Replace("{{sender_email}}", senderEmail)
+            .Replace("{{sender_designation}}", senderDesignation)
+            .Replace("{{sender_phone}}", senderPhone)
+            .Replace("{{signature_image}}", signatureImage)
+            .Replace("{{company_name}}", companyName)
+            .Replace("{{company_website}}", companyWebsite)
+            // --- Date placeholders (locale-aware via admin SystemSettings) ---
+            .Replace("{{current_year}}", DateTime.UtcNow.Year.ToString())
+            .Replace("{{current_date}}", DateTime.UtcNow.ToString(dateFormat ?? "MMMM dd, yyyy", culture ?? System.Globalization.CultureInfo.InvariantCulture));
 
         if (!string.IsNullOrEmpty(contact.CustomFields))
         {

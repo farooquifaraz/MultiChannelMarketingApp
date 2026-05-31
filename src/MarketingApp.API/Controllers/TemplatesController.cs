@@ -66,4 +66,23 @@ public class TemplatesController : ControllerBase
         var result = await _templateService.PreviewAsync(id, CurrentUserId, sampleData, ct);
         return Ok(ApiResponse<string>.Ok(result));
     }
+
+    /// <summary>
+    /// Admin-only: toggle whether this template is shared with all users.
+    /// Only the owner (an admin) can flip the flag — others get 403.
+    /// </summary>
+    [HttpPost("{id:guid}/share")]
+    [ProducesResponseType(typeof(ApiResponse<TemplateDto>), 200)]
+    public async Task<IActionResult> UpdateShare(Guid id, [FromBody] UpdateTemplateShareDto req, CancellationToken ct)
+    {
+        var isAdmin = string.Equals(User.FindFirstValue(System.Security.Claims.ClaimTypes.Role), "admin", StringComparison.OrdinalIgnoreCase);
+        if (!isAdmin)
+            return StatusCode(403, ApiResponse<object>.Fail("Only admins can share templates."));
+        var result = await _templateService.UpdateShareAsync(id, CurrentUserId, req, ct);
+        var msg = !req.IsShared ? "Template unshared (private)."
+            : req.ShareScope == "groups" ? $"Template shared with {req.SharedWithGroupIds.Count} group(s)."
+            : req.ShareScope == "users"  ? $"Template shared with {req.SharedWithUserIds.Count} user(s)."
+            : "Template shared with all users.";
+        return Ok(ApiResponse<TemplateDto>.Ok(result, msg));
+    }
 }

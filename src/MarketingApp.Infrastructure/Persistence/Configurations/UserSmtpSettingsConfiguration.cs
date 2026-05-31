@@ -41,6 +41,12 @@ public class UserSmtpSettingsConfiguration : IEntityTypeConfiguration<UserSmtpSe
         builder.Property(x => x.NotifyOnMessageFailed).HasDefaultValue(true);
         builder.Property(x => x.NotificationEmail).HasMaxLength(200);
 
+        // Signature fields
+        builder.Property(x => x.SignatureDesignation).HasMaxLength(100);
+        builder.Property(x => x.SignaturePhone).HasMaxLength(30);
+        builder.Property(x => x.CompanyWebsite).HasMaxLength(200);
+        builder.Property(x => x.SignatureImageUrl).HasMaxLength(500);
+
         builder.Property(x => x.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(x => x.UpdatedAt).HasDefaultValueSql("NOW()");
 

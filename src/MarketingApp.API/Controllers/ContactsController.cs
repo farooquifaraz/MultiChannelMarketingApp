@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MarketingApp.Application.DTOs;
 using MarketingApp.Application.Interfaces;
+using MarketingApp.API.Helpers;
 using System.Security.Claims;
 
 namespace MarketingApp.API.Controllers;
@@ -33,6 +34,28 @@ public class ContactsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("export.csv")]
+    public async Task<IActionResult> ExportCsv(
+        [FromQuery] Guid? groupId = null,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+    {
+        // Cap export to 10k rows for safety.
+        var result = await _contactService.GetAllAsync(CurrentUserId, 1, 10000, groupId, search, ct);
+        var bytes = CsvExporter.BuildCsv<ContactDto>(result.Data, new[]
+        {
+            ("Name", (Func<ContactDto, object?>)(c => c.FullName)),
+            ("Email", (Func<ContactDto, object?>)(c => c.Email)),
+            ("Phone", (Func<ContactDto, object?>)(c => c.Phone)),
+            ("WhatsApp", (Func<ContactDto, object?>)(c => c.WhatsAppNumber)),
+            ("Group", (Func<ContactDto, object?>)(c => c.GroupName)),
+            ("Active", (Func<ContactDto, object?>)(c => c.IsActive)),
+            ("CreatedAt", (Func<ContactDto, object?>)(c => c.CreatedAt)),
+        });
+        var filename = $"contacts_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv";
+        return File(bytes, "text/csv", filename);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<ContactDto>), 200)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -55,6 +78,14 @@ public class ContactsController : ControllerBase
     {
         var result = await _contactService.UpdateAsync(id, CurrentUserId, dto, ct);
         return Ok(ApiResponse<ContactDto>.Ok(result));
+    }
+
+    [HttpPost("{id:guid}/clear-bounce")]
+    [ProducesResponseType(typeof(ApiResponse<ContactDto>), 200)]
+    public async Task<IActionResult> ClearBounce(Guid id, CancellationToken ct)
+    {
+        var result = await _contactService.ClearBounceAsync(id, CurrentUserId, ct);
+        return Ok(ApiResponse<ContactDto>.Ok(result, "Bounce flag cleared. Contact will receive future campaigns."));
     }
 
     [HttpDelete("{id:guid}")]
@@ -94,6 +125,14 @@ public class ContactsController : ControllerBase
     {
         var result = await _contactService.CreateGroupAsync(CurrentUserId, dto, ct);
         return StatusCode(201, ApiResponse<ContactGroupDto>.Ok(result, "Group created"));
+    }
+
+    [HttpPut("groups/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ContactGroupDto>), 200)]
+    public async Task<IActionResult> UpdateGroup(Guid id, [FromBody] CreateContactGroupDto dto, CancellationToken ct)
+    {
+        var result = await _contactService.UpdateGroupAsync(id, CurrentUserId, dto, ct);
+        return Ok(ApiResponse<ContactGroupDto>.Ok(result, "Group updated"));
     }
 
     [HttpDelete("groups/{id:guid}")]

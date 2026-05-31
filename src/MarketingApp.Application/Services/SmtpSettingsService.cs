@@ -63,7 +63,11 @@ public class SmtpSettingsService : ISmtpSettingsService
                 SmsSenderNumber = dto.SmsSenderNumber,
                 NotifyOnCampaignComplete = dto.NotifyOnCampaignComplete,
                 NotifyOnMessageFailed = dto.NotifyOnMessageFailed,
-                NotificationEmail = dto.NotificationEmail
+                NotificationEmail = dto.NotificationEmail,
+                SignatureDesignation = dto.SignatureDesignation,
+                SignaturePhone = dto.SignaturePhone,
+                CompanyWebsite = dto.CompanyWebsite,
+                SignatureImageUrl = dto.SignatureImageUrl
             };
 
             await _settingsRepo.AddAsync(settings);
@@ -95,6 +99,10 @@ public class SmtpSettingsService : ISmtpSettingsService
             existing.NotifyOnCampaignComplete = dto.NotifyOnCampaignComplete;
             existing.NotifyOnMessageFailed = dto.NotifyOnMessageFailed;
             existing.NotificationEmail = dto.NotificationEmail;
+            existing.SignatureDesignation = dto.SignatureDesignation;
+            existing.SignaturePhone = dto.SignaturePhone;
+            existing.CompanyWebsite = dto.CompanyWebsite;
+            existing.SignatureImageUrl = dto.SignatureImageUrl;
             existing.UpdatedAt = DateTime.UtcNow;
 
             await _settingsRepo.UpdateAsync(existing);

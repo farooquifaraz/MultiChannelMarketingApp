@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
+using MarketingApp.Application.DTOs;
 using MarketingApp.Application.Interfaces;
 using MarketingApp.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -27,21 +28,24 @@ public class SmtpEmailService : IEmailService
         return true;
     }
 
-    public async Task<bool> SendWithUserSettingsAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct = default)
+    public Task<bool> SendWithUserSettingsAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct = default)
+        => SendWithUserSettingsAsync(toEmail, subject, body, settings, EmailHeaders.Empty, ct);
+
+    public async Task<bool> SendWithUserSettingsAsync(string toEmail, string subject, string body, UserSmtpSettings settings, EmailHeaders headers, CancellationToken ct = default)
     {
         var provider = (settings.EmailProvider ?? "smtp").ToLower();
 
         return provider switch
         {
-            "sendgrid" => await SendViaSendGridAsync(toEmail, subject, body, settings, ct),
-            "brevo" => await SendViaBrevoAsync(toEmail, subject, body, settings, ct),
-            "mailgun" => await SendViaMailgunAsync(toEmail, subject, body, settings, ct),
-            _ => await SendViaSmtpAsync(toEmail, subject, body, settings, ct)
+            "sendgrid" => await SendViaSendGridAsync(toEmail, subject, body, settings, headers, ct),
+            "brevo" => await SendViaBrevoAsync(toEmail, subject, body, settings, headers, ct),
+            "mailgun" => await SendViaMailgunAsync(toEmail, subject, body, settings, headers, ct),
+            _ => await SendViaSmtpAsync(toEmail, subject, body, settings, headers, ct)
         };
     }
 
     // ==================== SMTP (Gmail, Hostinger, any SMTP server) ====================
-    private async Task<bool> SendViaSmtpAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct)
+    private async Task<bool> SendViaSmtpAsync(string toEmail, string subject, string body, UserSmtpSettings settings, EmailHeaders headers, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(settings.SmtpHost) || string.IsNullOrEmpty(settings.SmtpUsername))
         {
@@ -79,6 +83,11 @@ public class SmtpEmailService : IEmailService
             // Add Reply-To header
             message.ReplyToList.Add(new MailAddress(fromEmail, fromName));
 
+            // === Day 7 custom headers ===
+            // Note: System.Net.Mail.SmtpClient is unreliable about Message-Id (some MTAs overwrite).
+            // We still set it for best-effort + always set X-Campaign-Message-Id which providers won't touch.
+            ApplyCustomHeadersToMailMessage(message, headers);
+
             await client.SendMailAsync(message, ct);
             _logger.LogInformation("[SMTP] ✅ Successfully sent to: {Email} | From: {From} via {Host}", toEmail, fromEmail, settings.SmtpHost);
             return true;
@@ -96,8 +105,28 @@ public class SmtpEmailService : IEmailService
         }
     }
 
+    private static void ApplyCustomHeadersToMailMessage(MailMessage message, EmailHeaders headers)
+    {
+        if (!string.IsNullOrWhiteSpace(headers.MessageId))
+        {
+            // System.Net.Mail will reject "Message-Id" via SetAttribute on .Headers; using Headers.Add is fine.
+            message.Headers["Message-Id"] = headers.MessageId;
+        }
+        if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId))
+            message.Headers["X-Campaign-Message-Id"] = headers.CampaignMessageId;
+        if (!string.IsNullOrWhiteSpace(headers.InReplyTo))
+            message.Headers["In-Reply-To"] = headers.InReplyTo;
+        if (!string.IsNullOrWhiteSpace(headers.References))
+            message.Headers["References"] = headers.References;
+        if (headers.Extra is not null)
+        {
+            foreach (var kv in headers.Extra)
+                message.Headers[kv.Key] = kv.Value;
+        }
+    }
+
     // ==================== SendGrid API ====================
-    private async Task<bool> SendViaSendGridAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct)
+    private async Task<bool> SendViaSendGridAsync(string toEmail, string subject, string body, UserSmtpSettings settings, EmailHeaders headers, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(settings.SendGridApiKey))
         {
@@ -110,13 +139,35 @@ public class SmtpEmailService : IEmailService
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.SendGridApiKey}");
 
-            var payload = new
-            {
-                personalizations = new[] { new { to = new[] { new { email = toEmail } } } },
-                from = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
-                subject,
-                content = new[] { new { type = "text/html", value = body } }
-            };
+            // Custom args ride in the `custom_args` field; SendGrid echoes them back in every webhook event.
+            // We put the CampaignMessageId here so the webhook handler can resolve it without parsing Message-Id.
+            var customArgs = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId))
+                customArgs["campaign_message_id"] = headers.CampaignMessageId!;
+
+            // Headers go via the `headers` field on the personalization.
+            var customHeaders = BuildCustomHeaderDict(headers);
+
+            var personalization = customHeaders.Count == 0
+                ? (object)new { to = new[] { new { email = toEmail } } }
+                : new { to = new[] { new { email = toEmail } }, headers = customHeaders };
+
+            var payload = customArgs.Count == 0
+                ? (object)new
+                {
+                    personalizations = new[] { personalization },
+                    from = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
+                    subject,
+                    content = new[] { new { type = "text/html", value = body } }
+                }
+                : new
+                {
+                    personalizations = new[] { personalization },
+                    from = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
+                    subject,
+                    content = new[] { new { type = "text/html", value = body } },
+                    custom_args = customArgs
+                };
 
             var response = await client.PostAsync(
                 "https://api.sendgrid.com/v3/mail/send",
@@ -141,7 +192,7 @@ public class SmtpEmailService : IEmailService
     }
 
     // ==================== Brevo (Sendinblue) API ====================
-    private async Task<bool> SendViaBrevoAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct)
+    private async Task<bool> SendViaBrevoAsync(string toEmail, string subject, string body, UserSmtpSettings settings, EmailHeaders headers, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(settings.BrevoApiKey))
         {
@@ -154,13 +205,24 @@ public class SmtpEmailService : IEmailService
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Add("api-key", settings.BrevoApiKey);
 
-            var payload = new
-            {
-                sender = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
-                to = new[] { new { email = toEmail } },
-                subject,
-                htmlContent = body
-            };
+            var customHeaders = BuildCustomHeaderDict(headers);
+
+            var payload = customHeaders.Count == 0
+                ? (object)new
+                {
+                    sender = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
+                    to = new[] { new { email = toEmail } },
+                    subject,
+                    htmlContent = body
+                }
+                : new
+                {
+                    sender = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
+                    to = new[] { new { email = toEmail } },
+                    subject,
+                    htmlContent = body,
+                    headers = customHeaders
+                };
 
             var response = await client.PostAsync(
                 "https://api.brevo.com/v3/smtp/email",
@@ -185,7 +247,7 @@ public class SmtpEmailService : IEmailService
     }
 
     // ==================== Mailgun API ====================
-    private async Task<bool> SendViaMailgunAsync(string toEmail, string subject, string body, UserSmtpSettings settings, CancellationToken ct)
+    private async Task<bool> SendViaMailgunAsync(string toEmail, string subject, string body, UserSmtpSettings settings, EmailHeaders headers, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(settings.MailgunApiKey) || string.IsNullOrEmpty(settings.MailgunDomain))
         {
@@ -199,13 +261,31 @@ public class SmtpEmailService : IEmailService
             var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($"api:{settings.MailgunApiKey}"));
             client.DefaultRequestHeaders.Add("Authorization", $"Basic {authValue}");
 
-            var formContent = new FormUrlEncodedContent(new[]
+            // Mailgun puts custom headers on form fields prefixed with "h:" and variables on "v:".
+            var fields = new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("from", $"{settings.SmtpFromName ?? "MarketPro"} <{settings.SmtpFromEmail ?? settings.SmtpUsername}>"),
-                new KeyValuePair<string, string>("to", toEmail),
-                new KeyValuePair<string, string>("subject", subject),
-                new KeyValuePair<string, string>("html", body)
-            });
+                new("from", $"{settings.SmtpFromName ?? "MarketPro"} <{settings.SmtpFromEmail ?? settings.SmtpUsername}>"),
+                new("to", toEmail),
+                new("subject", subject),
+                new("html", body)
+            };
+
+            if (!string.IsNullOrWhiteSpace(headers.MessageId))
+                fields.Add(new("h:Message-Id", headers.MessageId));
+            if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId))
+            {
+                // Mailgun lets us tag the message with arbitrary variables; the webhook will echo them under "user-variables".
+                fields.Add(new("v:campaign_message_id", headers.CampaignMessageId));
+                fields.Add(new("h:X-Campaign-Message-Id", headers.CampaignMessageId));
+            }
+            if (!string.IsNullOrWhiteSpace(headers.InReplyTo))
+                fields.Add(new("h:In-Reply-To", headers.InReplyTo));
+            if (!string.IsNullOrWhiteSpace(headers.References))
+                fields.Add(new("h:References", headers.References));
+            if (headers.Extra is not null)
+                foreach (var kv in headers.Extra) fields.Add(new($"h:{kv.Key}", kv.Value));
+
+            var formContent = new FormUrlEncodedContent(fields);
 
             var response = await client.PostAsync(
                 $"https://api.mailgun.net/v3/{settings.MailgunDomain}/messages",
@@ -227,5 +307,19 @@ public class SmtpEmailService : IEmailService
             _logger.LogError(ex, "[Mailgun] Failed to send to: {Email}", toEmail);
             return false;
         }
+    }
+
+    /// <summary>Build the common headers dict applied to API-provider payloads (SendGrid + Brevo). Excludes provider-specific
+    /// custom args which each provider routes through its own field.</summary>
+    private static Dictionary<string, string> BuildCustomHeaderDict(EmailHeaders headers)
+    {
+        var dict = new Dictionary<string, string>();
+        if (!string.IsNullOrWhiteSpace(headers.MessageId)) dict["Message-Id"] = headers.MessageId!;
+        if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId)) dict["X-Campaign-Message-Id"] = headers.CampaignMessageId!;
+        if (!string.IsNullOrWhiteSpace(headers.InReplyTo)) dict["In-Reply-To"] = headers.InReplyTo!;
+        if (!string.IsNullOrWhiteSpace(headers.References)) dict["References"] = headers.References!;
+        if (headers.Extra is not null)
+            foreach (var kv in headers.Extra) dict[kv.Key] = kv.Value;
+        return dict;
     }
 }

@@ -11,11 +11,20 @@ interface AuthState {
   initialize: () => void;
 }
 
+// Read from localStorage synchronously at store creation — fixes ProtectedRoute race condition
+const _accessToken = localStorage.getItem('accessToken');
+const _refreshToken = localStorage.getItem('refreshToken');
+const _userStr = localStorage.getItem('user');
+let _user: UserDto | null = null;
+if (_accessToken && _userStr) {
+  try { _user = JSON.parse(_userStr); } catch { /* ignore */ }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  isAuthenticated: false,
+  user: _user,
+  accessToken: _accessToken,
+  refreshToken: _refreshToken,
+  isAuthenticated: !!(_accessToken && _user),
 
   setAuth: (user, accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);

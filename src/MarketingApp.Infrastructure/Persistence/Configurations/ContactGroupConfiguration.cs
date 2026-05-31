@@ -15,5 +15,12 @@ public class ContactGroupConfiguration : IEntityTypeConfiguration<ContactGroup>
         builder.Property(g => g.CreatedAt).HasDefaultValueSql("NOW()");
 
         builder.HasOne(g => g.User).WithMany(u => u.ContactGroups).HasForeignKey(g => g.UserId).OnDelete(DeleteBehavior.Cascade);
+
+        // Optional link to SmtpGroup — when set, contacts in this group are visible to all users in that SmtpGroup.
+        builder.HasOne(g => g.SmtpGroup)
+            .WithMany()
+            .HasForeignKey(g => g.SmtpGroupId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(g => g.SmtpGroupId);
     }
 }

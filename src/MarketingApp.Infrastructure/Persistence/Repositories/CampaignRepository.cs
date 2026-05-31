@@ -9,9 +9,13 @@ public class CampaignRepository : GenericRepository<Campaign>, ICampaignReposito
     public CampaignRepository(AppDbContext context) : base(context) { }
 
     public async Task<(IEnumerable<Campaign> Items, int TotalCount)> GetPagedAsync(
-        Guid userId, int pageNumber, int pageSize, string? status, string? channel, CancellationToken ct)
+        Guid? userId, int pageNumber, int pageSize, string? status, string? channel, CancellationToken ct)
     {
-        var query = _dbSet.Where(c => c.UserId == userId);
+        // userId == null  → return ALL campaigns (admin view)
+        // userId != null  → return only campaigns owned by that user
+        IQueryable<Campaign> query = _dbSet;
+        if (userId.HasValue)
+            query = query.Where(c => c.UserId == userId.Value);
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(c => c.Status == status);
@@ -23,6 +27,8 @@ public class CampaignRepository : GenericRepository<Campaign>, ICampaignReposito
         var items = await query
             .Include(c => c.Template)
             .Include(c => c.Group)
+            .Include(c => c.User)
+                .ThenInclude(u => u!.SmtpGroup)
             .OrderByDescending(c => c.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -76,5 +82,23 @@ public class CampaignRepository : GenericRepository<Campaign>, ICampaignReposito
             .ToListAsync(ct);
 
         return (items, totalCount);
+    }
+
+    public async Task<IEnumerable<CampaignMessage>> GetMessagesByStatusAsync(Guid campaignId, string status, CancellationToken ct)
+        => await _context.CampaignMessages
+            .Where(m => m.CampaignId == campaignId && m.Status == status)
+            .ToListAsync(ct);
+
+    public async Task BulkUpdateMessageStatusAsync(IEnumerable<Guid> messageIds, string newStatus, CancellationToken ct)
+    {
+        // Single round-trip bulk update — avoids re-fetching the entities.
+        var ids = messageIds.ToHashSet();
+        if (ids.Count == 0) return;
+        await _context.CampaignMessages
+            .Where(m => ids.Contains(m.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Status, newStatus)
+                .SetProperty(m => m.ErrorMessage, (string?)null)
+                .SetProperty(m => m.SentAt, (DateTime?)null), ct);
     }
 }

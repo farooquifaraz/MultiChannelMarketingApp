@@ -7,27 +7,47 @@ import {
   FileText,
   Settings,
   Zap,
+  Server,
+  ShieldAlert,
+  Clock,
+  Inbox,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import { useBrand } from '../../hooks/useBrand';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/send', icon: MessageSquare, label: 'Send Message' },
-  { to: '/campaigns', icon: Send, label: 'Campaigns' },
-  { to: '/contacts', icon: Users, label: 'Contacts' },
-  { to: '/templates', icon: FileText, label: 'Templates' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const baseNav = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', adminOnly: false },
+  { to: '/send', icon: MessageSquare, label: 'Send Message', adminOnly: false },
+  { to: '/campaigns', icon: Send, label: 'Campaigns', adminOnly: false },
+  { to: '/inbox', icon: Inbox, label: 'Inbox', adminOnly: false },
+  { to: '/contacts', icon: Users, label: 'Contacts', adminOnly: false },
+  { to: '/templates', icon: FileText, label: 'Templates', adminOnly: false },
+  { to: '/admin/users', icon: Users, label: 'Users', adminOnly: true },
+  { to: '/admin/smtp-groups', icon: Server, label: 'SMTP Groups', adminOnly: true },
+  { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },
+  { to: '/admin/audit-logs', icon: ShieldAlert, label: 'Audit Logs', adminOnly: true },
+  { to: '/settings', icon: Settings, label: 'Settings', adminOnly: false },
 ];
 
 export default function Sidebar() {
+  const user = useAuthStore((s) => s.user);
+  const brand = useBrand();
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
+  const navItems = baseNav.filter(n => !n.adminOnly || isAdmin);
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-gray-900">MarketPro</span>
+          {brand.logoUrl ? (
+            <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 rounded-lg object-cover" />
+          ) : (
+            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+          )}
+          <span className="text-lg font-bold text-gray-900">{brand.name}</span>
         </div>
       </div>
 

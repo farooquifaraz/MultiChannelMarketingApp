@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Info, CheckCircle2, AlertTriangle, XCircle, X } from 'lucide-react';
 import { notificationsApi, type Notification, type NotificationCount } from '../../api/notificationsApi';
 
 export default function NotificationBell() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<NotificationCount | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +69,30 @@ export default function NotificationBell() {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       fetchUnreadCount();
     } catch {}
+  };
+
+  const buildEntityUrl = (entity?: string, id?: string): string | null => {
+    if (!entity || !id) return null;
+    const e = entity.toLowerCase();
+    if (e === 'campaign') return `/campaigns/${id}`;
+    if (e === 'contact') return `/contacts`;
+    if (e === 'contactgroup') return `/contacts`;
+    if (e === 'template') return `/templates`;
+    if (e === 'smtpgroup') return `/admin/smtp-groups`;
+    if (e === 'user') return `/admin/users`;
+    // Inbox now uses thread-based URLs (?thread=). The notification carries a message-id, not a
+    // thread-id, so just open the inbox — the new reply is sorted to the top + highlighted unread.
+    if (e === 'inboxmessage') return `/inbox`;
+    return null;
+  };
+
+  const handleNotificationClick = async (n: Notification) => {
+    if (!n.isRead) await handleMarkAsRead(n.id);
+    const url = buildEntityUrl(n.relatedEntity, n.relatedEntityId);
+    if (url) {
+      setIsOpen(false);
+      navigate(url);
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -139,6 +166,26 @@ export default function NotificationBell() {
             </div>
           </div>
 
+          {/* Filter Tabs */}
+          <div className="flex border-b border-gray-100 bg-white">
+            <button
+              onClick={() => setFilter('all')}
+              className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
+                filter === 'all' ? 'text-primary-700 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              All ({notifications.length})
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
+                filter === 'unread' ? 'text-primary-700 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Unread ({notifications.filter(n => !n.isRead).length})
+            </button>
+          </div>
+
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
@@ -148,29 +195,45 @@ export default function NotificationBell() {
                 <Bell className="w-10 h-10 text-gray-200 mx-auto mb-2" />
                 <p className="text-gray-400 text-sm">No notifications yet</p>
               </div>
-            ) : (
-              notifications.map(n => (
-                <div
-                  key={n.id}
-                  onClick={() => !n.isRead && handleMarkAsRead(n.id)}
-                  className={`px-4 py-3 border-b border-gray-50 cursor-pointer transition-colors ${
-                    n.isRead ? 'bg-white hover:bg-gray-50' : `${getTypeBg(n.type)} hover:opacity-90`
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">{getTypeIcon(n.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className={`text-sm font-medium truncate ${n.isRead ? 'text-gray-700' : 'text-gray-900'}`}>{n.title}</p>
-                        <span className="text-[11px] text-gray-400 ml-2 whitespace-nowrap">{timeAgo(n.createdAt)}</span>
-                      </div>
-                      <p className={`text-xs mt-0.5 line-clamp-2 ${n.isRead ? 'text-gray-400' : 'text-gray-600'}`}>{n.message}</p>
+            ) : (() => {
+                const visible = filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications;
+                if (visible.length === 0) {
+                  return (
+                    <div className="py-8 text-center">
+                      <CheckCheck className="w-10 h-10 text-green-200 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">All caught up!</p>
                     </div>
-                    {!n.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />}
-                  </div>
-                </div>
-              ))
-            )}
+                  );
+                }
+                return visible.map(n => {
+                  const targetUrl = buildEntityUrl(n.relatedEntity, n.relatedEntityId);
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`px-4 py-3 border-b border-gray-50 cursor-pointer transition-colors ${
+                        n.isRead ? 'bg-white hover:bg-gray-50' : `${getTypeBg(n.type)} hover:opacity-90`
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">{getTypeIcon(n.type)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className={`text-sm font-medium truncate ${n.isRead ? 'text-gray-700' : 'text-gray-900'}`}>{n.title}</p>
+                            <span className="text-[11px] text-gray-400 ml-2 whitespace-nowrap">{timeAgo(n.createdAt)}</span>
+                          </div>
+                          <p className={`text-xs mt-0.5 line-clamp-2 ${n.isRead ? 'text-gray-400' : 'text-gray-600'}`}>{n.message}</p>
+                          {targetUrl && (
+                            <p className="text-[11px] text-primary-600 mt-1 font-medium">View details →</p>
+                          )}
+                        </div>
+                        {!n.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />}
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            }
           </div>
         </div>
       )}

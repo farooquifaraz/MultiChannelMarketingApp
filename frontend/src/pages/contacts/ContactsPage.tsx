@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Upload, Trash2, Users, FolderPlus, X, Check, UserPlus, Edit3 } from 'lucide-react';
+import { Plus, Search, Upload, Trash2, Users, FolderPlus, X, Check, UserPlus, Edit3, Download } from 'lucide-react';
+import { downloadFile } from '../../utils/download';
 import { contactApi } from '../../api/contactApi';
 import { formatDate } from '../../utils/formatters';
 import toast from 'react-hot-toast';
@@ -29,6 +30,7 @@ export default function ContactsPage() {
   // Group form
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
+  const [groupShareWithTeam, setGroupShareWithTeam] = useState(true);
 
   const { data, isLoading } = useQuery({
     queryKey: ['contacts', page, groupFilter, search],
@@ -77,13 +79,57 @@ export default function ContactsPage() {
     },
   });
 
+  const clearBounceMutation = useMutation({
+    mutationFn: (id: string) => contactApi.clearBounce(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Bounce cleared — contact will receive future campaigns');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to clear bounce');
+    },
+  });
+
   const createGroupMutation = useMutation({
     mutationFn: (d: any) => contactApi.createGroup(d),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
       setShowCreateGroup(false);
-      setGroupName(''); setGroupDesc('');
+      setGroupName(''); setGroupDesc(''); setGroupShareWithTeam(true);
       toast.success('Group created');
+    },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: (id: string) => contactApi.deleteGroup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      // Reset filter if the deleted group was selected
+      setGroupFilter('');
+      toast.success('Group deleted');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to delete group');
+    },
+  });
+
+  // Edit group state
+  const [editingGroup, setEditingGroup] = useState<any | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupShare, setEditGroupShare] = useState(true);
+
+  const updateGroupMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => contactApi.updateGroup(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      setEditingGroup(null);
+      toast.success('Group updated');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Update failed');
     },
   });
 
@@ -209,6 +255,23 @@ export default function ContactsPage() {
             <Upload className="w-4 h-4" />
             Import CSV
           </button>
+          <button
+            onClick={async () => {
+              try {
+                await downloadFile(
+                  contactApi.exportCsvUrl({ groupId: groupFilter || undefined, search: search || undefined }),
+                  `contacts_${new Date().toISOString().slice(0, 10)}.csv`,
+                );
+              } catch (e: any) {
+                toast.error(e?.message || 'Export failed');
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50"
+            title="Download current view as CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
           <button onClick={() => setShowCreateGroup(!showCreateGroup)} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50">
             <FolderPlus className="w-4 h-4" />
             New Group
@@ -226,10 +289,39 @@ export default function ContactsPage() {
           <button onClick={() => { setGroupFilter(''); setPage(1); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${!groupFilter ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             All
           </button>
-          {groups.data.map((g) => (
-            <button key={g.id} onClick={() => { setGroupFilter(g.id); setPage(1); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${groupFilter === g.id ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {g.name} ({g.contactCount})
-            </button>
+          {groups.data.map((g: any) => (
+            <span key={g.id} className="group relative inline-flex items-center">
+              <button
+                onClick={() => { setGroupFilter(g.id); setPage(1); }}
+                className={`pl-3 pr-14 py-1.5 rounded-lg text-sm font-medium transition-all ${groupFilter === g.id ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                {g.name} ({g.contactCount})
+              </button>
+              <button
+                onClick={() => {
+                  setEditingGroup(g);
+                  setEditGroupName(g.name);
+                  setEditGroupDesc(g.description || '');
+                  setEditGroupShare(!!g.smtpGroupId);
+                }}
+                title="Edit this group"
+                className="absolute right-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Edit3 className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm(`Delete group "${g.name}"? Its ${g.contactCount} contact(s) will become un-grouped (not deleted).`)) {
+                    deleteGroupMutation.mutate(g.id);
+                  }
+                }}
+                disabled={deleteGroupMutation.isPending}
+                title="Delete this group"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
           ))}
         </div>
       )}
@@ -276,21 +368,134 @@ export default function ContactsPage() {
         </div>
       )}
 
+      {/* Edit Group Modal */}
+      {editingGroup && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Edit Group</h3>
+              <button onClick={() => setEditingGroup(null)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!editGroupName.trim()) {
+                  toast.error('Group name is required');
+                  return;
+                }
+                updateGroupMutation.mutate({
+                  id: editingGroup.id,
+                  data: {
+                    name: editGroupName.trim(),
+                    description: editGroupDesc.trim() || undefined,
+                    shareWithTeam: editGroupShare,
+                  },
+                });
+              }}
+              className="p-6 space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={editGroupName}
+                  onChange={(e) => setEditGroupName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={editGroupDesc}
+                  onChange={(e) => setEditGroupDesc(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                />
+              </div>
+
+              <label className="flex items-start gap-3 p-4 bg-blue-50/40 border border-blue-100 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editGroupShare}
+                  onChange={(e) => setEditGroupShare(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Share with my team</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Anyone in your SMTP group can see and use the contacts in this group.
+                    Uncheck to keep it private (only you).
+                  </p>
+                </div>
+              </label>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setEditingGroup(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={updateGroupMutation.isPending}
+                  className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {updateGroupMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Create Group Form */}
       {showCreateGroup && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold mb-4">Create Group</h3>
-          <form onSubmit={(e) => { e.preventDefault(); createGroupMutation.mutate({ name: groupName, description: groupDesc || undefined }); }} className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              createGroupMutation.mutate({
+                name: groupName,
+                description: groupDesc || undefined,
+                shareWithTeam: groupShareWithTeam,
+              });
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input type="text" value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <input type="text" value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
+
+            {/* Team sharing toggle */}
+            <label className="flex items-start gap-3 p-4 bg-blue-50/40 border border-blue-100 rounded-xl cursor-pointer">
+              <input
+                type="checkbox"
+                checked={groupShareWithTeam}
+                onChange={(e) => setGroupShareWithTeam(e.target.checked)}
+                className="w-4 h-4 mt-0.5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Share with my team</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Anyone in your SMTP group can see and use the contacts in this group.
+                  Uncheck to keep it private (only you).
+                </p>
+              </div>
+            </label>
+
+            <div className="flex gap-3 justify-end">
+              <button type="button" onClick={() => setShowCreateGroup(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
+              <button type="submit" disabled={createGroupMutation.isPending} className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50">
+                {createGroupMutation.isPending ? 'Creating...' : 'Create Group'}
+              </button>
             </div>
-            <button type="submit" className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700">Create</button>
-            <button type="button" onClick={() => setShowCreateGroup(false)} className="p-2.5 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
           </form>
         </div>
       )}
@@ -394,6 +599,7 @@ export default function ContactsPage() {
                     className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                   />
                 </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-14">#</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Phone</th>
@@ -403,7 +609,7 @@ export default function ContactsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {contacts.map((c: any) => (
+              {contacts.map((c: any, idx: number) => (
                 <tr key={c.id} className={`hover:bg-gray-50 ${selectedContacts.includes(c.id) ? 'bg-primary-50/50' : ''}`}>
                   <td className="px-4 py-3">
                     <input
@@ -413,12 +619,25 @@ export default function ContactsPage() {
                       className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                     />
                   </td>
+                  <td className="px-4 py-3 text-sm text-gray-400 tabular-nums">{(page - 1) * 20 + idx + 1}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-sm font-semibold text-primary-600">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-semibold ${
+                        c.isBounced ? 'bg-red-100 text-red-600' : 'bg-primary-100 text-primary-600'
+                      }`}>
                         {c.fullName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium text-gray-900 text-sm">{c.fullName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 text-sm">{c.fullName}</span>
+                        {c.isBounced && (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 uppercase tracking-wide"
+                            title={c.bounceReason || 'Hard bounce — excluded from sends'}
+                          >
+                            Bounced
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{c.email || '-'}</td>
@@ -435,6 +654,20 @@ export default function ContactsPage() {
                   <td className="px-4 py-3 text-sm text-gray-500">{formatDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {c.isBounced && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Clear bounce flag for "${c.fullName}"?\n\nThey'll be eligible for future campaigns again. Make sure the email address is actually deliverable now.`)) {
+                              clearBounceMutation.mutate(c.id);
+                            }
+                          }}
+                          disabled={clearBounceMutation.isPending}
+                          className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg"
+                          title={`Clear bounce — reason: ${c.bounceReason || 'unknown'}`}
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
                       <button onClick={() => startEdit(c)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit">
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -453,8 +686,10 @@ export default function ContactsPage() {
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
             <p className="text-sm text-gray-500">Page {page} of {data.totalPages} ({data.totalCount} total)</p>
             <div className="flex gap-2">
+              <button onClick={() => setPage(1)} disabled={!data.hasPrevious} className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">« First</button>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={!data.hasPrevious} className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">Previous</button>
               <button onClick={() => setPage(p => p + 1)} disabled={!data.hasNext} className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">Next</button>
+              <button onClick={() => setPage(data.totalPages)} disabled={!data.hasNext} className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">Last »</button>
             </div>
           </div>
         )}

@@ -10,4 +10,6 @@ public interface ITemplateService
     Task<TemplateDto> UpdateAsync(Guid id, Guid userId, UpdateTemplateDto dto, CancellationToken ct);
     Task DeleteAsync(Guid id, Guid userId, CancellationToken ct);
     Task<string> PreviewAsync(Guid id, Guid userId, Dictionary<string, string> sampleData, CancellationToken ct);
+    Task<TemplateDto> ToggleShareAsync(Guid id, Guid userId, bool isShared, CancellationToken ct);
+    Task<TemplateDto> UpdateShareAsync(Guid id, Guid userId, UpdateTemplateShareDto dto, CancellationToken ct);
 }

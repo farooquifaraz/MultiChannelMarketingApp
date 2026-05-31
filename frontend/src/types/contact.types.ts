@@ -8,6 +8,9 @@ export interface ContactDto {
   groupName?: string;
   customFields?: Record<string, string>;
   isActive: boolean;
+  isBounced?: boolean;
+  bouncedAt?: string | null;
+  bounceReason?: string | null;
   createdAt: string;
 }
 

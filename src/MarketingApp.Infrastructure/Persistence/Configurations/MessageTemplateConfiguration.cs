@@ -16,6 +16,8 @@ public class MessageTemplateConfiguration : IEntityTypeConfiguration<MessageTemp
         builder.Property(t => t.Subject).HasMaxLength(200);
         builder.Property(t => t.Body).IsRequired();
         builder.Property(t => t.IsActive).HasDefaultValue(true);
+        builder.Property(t => t.IsShared).HasDefaultValue(false);
+        builder.Property(t => t.ShareScope).HasMaxLength(20).HasDefaultValue("global");
         builder.Property(t => t.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(t => t.UpdatedAt).HasDefaultValueSql("NOW()");
 

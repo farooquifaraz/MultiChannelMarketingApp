@@ -19,5 +19,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsActive).HasDefaultValue(true);
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
+
+        // SMTP group assignment (nullable — falls back to default group at send time)
+        builder.HasOne(u => u.SmtpGroup)
+            .WithMany(g => g.AssignedUsers)
+            .HasForeignKey(u => u.SmtpGroupId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(u => u.SmtpGroupId);
+
+        // Per-user signature overrides
+        builder.Property(u => u.SignatureDesignation).HasMaxLength(100);
+        builder.Property(u => u.SignaturePhone).HasMaxLength(30);
+        builder.Property(u => u.SignatureImageUrl).HasMaxLength(500);
     }
 }

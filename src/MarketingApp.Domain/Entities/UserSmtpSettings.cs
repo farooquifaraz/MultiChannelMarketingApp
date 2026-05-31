@@ -44,6 +44,12 @@ public class UserSmtpSettings
     public bool NotifyOnMessageFailed { get; set; } = true;
     public string? NotificationEmail { get; set; }
 
+    // Email Signature — used to render {{sender_designation}}, {{sender_phone}}, {{company_website}}, {{signature_image}} in templates
+    public string? SignatureDesignation { get; set; }
+    public string? SignaturePhone { get; set; }
+    public string? CompanyWebsite { get; set; }
+    public string? SignatureImageUrl { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

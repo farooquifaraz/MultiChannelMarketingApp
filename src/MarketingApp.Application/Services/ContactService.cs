@@ -12,6 +12,9 @@ public class ContactService : IContactService
 {
     private readonly IContactRepository _contactRepo;
     private readonly IGenericRepository<ContactGroup> _groupRepo;
+    private readonly IGenericRepository<User> _userRepo;
+    private readonly IGenericRepository<SmtpGroup> _smtpGroupRepo;
+    private readonly ISystemSettingsService _systemSettings;
     private readonly IAuditService _audit;
     private readonly IMapper _mapper;
     private readonly ILogger<ContactService> _logger;
@@ -19,12 +22,18 @@ public class ContactService : IContactService
     public ContactService(
         IContactRepository contactRepo,
         IGenericRepository<ContactGroup> groupRepo,
+        IGenericRepository<User> userRepo,
+        IGenericRepository<SmtpGroup> smtpGroupRepo,
+        ISystemSettingsService systemSettings,
         IAuditService audit,
         IMapper mapper,
         ILogger<ContactService> logger)
     {
         _contactRepo = contactRepo;
         _groupRepo = groupRepo;
+        _userRepo = userRepo;
+        _smtpGroupRepo = smtpGroupRepo;
+        _systemSettings = systemSettings;
         _audit = audit;
         _mapper = mapper;
         _logger = logger;
@@ -106,6 +115,24 @@ public class ContactService : IContactService
         contact.UpdatedAt = DateTime.UtcNow;
         await _contactRepo.UpdateAsync(contact, ct);
         await _audit.LogAsync(userId, "ContactUpdated", "Contact", id, ct: ct);
+        return _mapper.Map<ContactDto>(contact);
+    }
+
+    public async Task<ContactDto> ClearBounceAsync(Guid contactId, Guid userId, CancellationToken ct)
+    {
+        var contact = await _contactRepo.GetByIdAsync(contactId, ct)
+            ?? throw new NotFoundException("Contact", contactId);
+        if (contact.UserId != userId)
+            throw new ForbiddenException();
+        if (!contact.IsBounced)
+            return _mapper.Map<ContactDto>(contact);
+
+        contact.IsBounced = false;
+        contact.BouncedAt = null;
+        contact.BounceReason = null;
+        contact.UpdatedAt = DateTime.UtcNow;
+        await _contactRepo.UpdateAsync(contact, ct);
+        await _audit.LogAsync(userId, "ContactBounceCleared", "Contact", contactId, ct: ct);
         return _mapper.Map<ContactDto>(contact);
     }
 
@@ -193,7 +220,25 @@ public class ContactService : IContactService
 
     public async Task<IEnumerable<ContactGroupDto>> GetGroupsAsync(Guid userId, CancellationToken ct)
     {
-        var groups = await _groupRepo.FindAsync(g => g.UserId == userId, ct);
+        // Resolve requester's SmtpGroupId so we can include shared contact groups linked to it.
+        var requester = await _userRepo.GetByIdAsync(userId, ct);
+        var requesterSmtpGroupId = requester?.SmtpGroupId;
+
+        // Groups visible to this user:
+        //   1. Groups OWNED by the requester, OR
+        //   2. Groups whose SmtpGroupId == requester's SmtpGroupId (team-shared)
+        var groups = (await _groupRepo.FindAsync(g =>
+            g.UserId == userId ||
+            (requesterSmtpGroupId != null && g.SmtpGroupId == requesterSmtpGroupId),
+            ct)).ToList();
+
+        // Lookup table for SmtpGroup names (for the "Shared with: X" label)
+        var allSmtpGroupIds = groups.Where(g => g.SmtpGroupId.HasValue).Select(g => g.SmtpGroupId!.Value).Distinct().ToList();
+        var smtpGroupNames = allSmtpGroupIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _smtpGroupRepo.FindAsync(sg => allSmtpGroupIds.Contains(sg.Id), ct))
+                .ToDictionary(sg => sg.Id, sg => sg.Name);
+
         var dtos = new List<ContactGroupDto>();
         foreach (var g in groups)
         {
@@ -204,6 +249,9 @@ public class ContactService : IContactService
                 Name = g.Name,
                 Description = g.Description,
                 ContactCount = count,
+                SmtpGroupId = g.SmtpGroupId,
+                SmtpGroupName = g.SmtpGroupId.HasValue && smtpGroupNames.TryGetValue(g.SmtpGroupId.Value, out var n) ? n : null,
+                OwnerUserId = g.UserId,
                 CreatedAt = g.CreatedAt
             });
         }
@@ -212,14 +260,111 @@ public class ContactService : IContactService
 
     public async Task<ContactGroupDto> CreateGroupAsync(Guid userId, CreateContactGroupDto dto, CancellationToken ct)
     {
+        // Resolve creator + platform-wide sharing policy
+        var creator = await _userRepo.GetByIdAsync(userId, ct)
+            ?? throw new NotFoundException("User", userId);
+        var isAdmin = string.Equals(creator.Role, "admin", StringComparison.OrdinalIgnoreCase);
+
+        bool sharingAllowedByPlatform = true;
+        try
+        {
+            var sys = await _systemSettings.GetAsync(ct);
+            sharingAllowedByPlatform = sys.AllowUsersToSeeSharedContacts || isAdmin;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not load system settings — defaulting to allow share"); }
+
+        // Decide which SmtpGroup the contact group is linked to:
+        //   - Admin: can explicitly target any SmtpGroupId via dto, or null = private.
+        //   - Regular user: if ShareWithTeam=true AND platform allows AND they have an SmtpGroup → inherit it.
+        //                   else → private (null).
+        Guid? linkedSmtpGroupId = null;
+        if (isAdmin)
+        {
+            linkedSmtpGroupId = dto.SmtpGroupId;
+        }
+        else if (dto.ShareWithTeam && sharingAllowedByPlatform && creator.SmtpGroupId.HasValue)
+        {
+            linkedSmtpGroupId = creator.SmtpGroupId.Value;
+        }
+
         var group = new ContactGroup
         {
             UserId = userId,
             Name = dto.Name,
-            Description = dto.Description
+            Description = dto.Description,
+            SmtpGroupId = linkedSmtpGroupId,
         };
         await _groupRepo.AddAsync(group, ct);
-        return new ContactGroupDto { Id = group.Id, Name = group.Name, Description = group.Description, CreatedAt = group.CreatedAt };
+
+        // Resolve linked SmtpGroup name for the response (helps UI show "Shared with: X" badge)
+        string? linkedName = null;
+        // Note: we can't reach SmtpGroups directly here without a repo; leave name lookup to GET endpoint.
+
+        return new ContactGroupDto
+        {
+            Id = group.Id,
+            Name = group.Name,
+            Description = group.Description,
+            SmtpGroupId = group.SmtpGroupId,
+            SmtpGroupName = linkedName,
+            OwnerUserId = group.UserId,
+            CreatedAt = group.CreatedAt,
+        };
+    }
+
+    public async Task<ContactGroupDto> UpdateGroupAsync(Guid groupId, Guid userId, CreateContactGroupDto dto, CancellationToken ct)
+    {
+        var group = await _groupRepo.GetByIdAsync(groupId, ct)
+            ?? throw new NotFoundException("ContactGroup", groupId);
+        // Only the OWNER can edit (mirrors share/delete authorisation)
+        if (group.UserId != userId) throw new ForbiddenException();
+
+        var creator = await _userRepo.GetByIdAsync(userId, ct);
+        var isAdmin = string.Equals(creator?.Role, "admin", StringComparison.OrdinalIgnoreCase);
+
+        bool sharingAllowed = true;
+        try { sharingAllowed = (await _systemSettings.GetAsync(ct)).AllowUsersToSeeSharedContacts || isAdmin; }
+        catch { /* allow */ }
+
+        if (!string.IsNullOrWhiteSpace(dto.Name)) group.Name = dto.Name.Trim();
+        group.Description = dto.Description;
+
+        // Re-evaluate SmtpGroup link with same rules as Create
+        Guid? linkedSmtpGroupId = group.SmtpGroupId; // default: keep existing
+        if (isAdmin)
+        {
+            linkedSmtpGroupId = dto.SmtpGroupId; // admin explicitly sets/clears
+        }
+        else if (dto.ShareWithTeam && sharingAllowed && creator?.SmtpGroupId.HasValue == true)
+        {
+            linkedSmtpGroupId = creator.SmtpGroupId.Value;
+        }
+        else if (!dto.ShareWithTeam)
+        {
+            linkedSmtpGroupId = null; // user explicitly made it private
+        }
+        group.SmtpGroupId = linkedSmtpGroupId;
+
+        await _groupRepo.UpdateAsync(group, ct);
+
+        var count = await _contactRepo.CountAsync(c => c.GroupId == group.Id && c.IsActive, ct);
+        string? linkedName = null;
+        if (group.SmtpGroupId.HasValue)
+        {
+            var sg = await _smtpGroupRepo.GetByIdAsync(group.SmtpGroupId.Value, ct);
+            linkedName = sg?.Name;
+        }
+        return new ContactGroupDto
+        {
+            Id = group.Id,
+            Name = group.Name,
+            Description = group.Description,
+            ContactCount = count,
+            SmtpGroupId = group.SmtpGroupId,
+            SmtpGroupName = linkedName,
+            OwnerUserId = group.UserId,
+            CreatedAt = group.CreatedAt,
+        };
     }
 
     public async Task DeleteGroupAsync(Guid groupId, Guid userId, CancellationToken ct)

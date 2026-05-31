@@ -23,7 +23,9 @@ public class CampaignConfiguration : IEntityTypeConfiguration<Campaign>
         builder.HasIndex(c => c.Status);
 
         builder.HasOne(c => c.User).WithMany(u => u.Campaigns).HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
-        builder.HasOne(c => c.Template).WithMany(t => t.Campaigns).HasForeignKey(c => c.TemplateId);
-        builder.HasOne(c => c.Group).WithMany().HasForeignKey(c => c.GroupId);
+        // RESTRICT (not the EF default Cascade): deleting a Template or ContactGroup must NEVER silently
+        // cascade-delete campaigns + their message history. Blocked with a clear error instead.
+        builder.HasOne(c => c.Template).WithMany(t => t.Campaigns).HasForeignKey(c => c.TemplateId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(c => c.Group).WithMany().HasForeignKey(c => c.GroupId).OnDelete(DeleteBehavior.Restrict);
     }
 }

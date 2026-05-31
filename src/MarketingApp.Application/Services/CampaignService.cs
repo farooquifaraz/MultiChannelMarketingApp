@@ -39,25 +39,50 @@ public class CampaignService : ICampaignService
         _logger = logger;
     }
 
-    public async Task<PagedResponse<CampaignDto>> GetAllAsync(Guid userId, int pageNumber, int pageSize, string? status, string? channel, CancellationToken ct)
+    public async Task<PagedResponse<CampaignDto>> GetAllAsync(Guid? userId, int pageNumber, int pageSize, string? status, string? channel, CancellationToken ct)
     {
+        // userId == null → admin-wide view (all users, all groups)
         var (items, totalCount) = await _campaignRepo.GetPagedAsync(userId, pageNumber, pageSize, status, channel, ct);
+        var dtos = items.Select(c => new CampaignDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Channel = c.Channel,
+            Status = c.Status,
+            TemplateName = c.Template?.Name,
+            GroupName = c.Group?.Name,
+            TotalContacts = c.TotalContacts,
+            SentCount = c.SentCount,
+            FailedCount = c.FailedCount,
+            ScheduledAt = c.ScheduledAt,
+            CompletedAt = c.CompletedAt,
+            CreatedAt = c.CreatedAt,
+            OwnerUserId = c.UserId,
+            OwnerName = c.User?.FullName,
+            OwnerEmail = c.User?.Email,
+            SmtpGroupName = c.User?.SmtpGroup?.Name,
+        });
         return new PagedResponse<CampaignDto>
         {
-            Data = _mapper.Map<IEnumerable<CampaignDto>>(items),
+            Data = dtos,
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalCount = totalCount
         };
     }
 
-    public async Task<CampaignDetailDto> GetByIdAsync(Guid id, Guid userId, CancellationToken ct)
+    public async Task<CampaignDetailDto> GetByIdAsync(Guid id, Guid? requesterUserId, bool requesterIsAdmin, CancellationToken ct)
     {
         var campaign = await _campaignRepo.GetWithTemplateAsync(id, ct)
             ?? throw new NotFoundException("Campaign", id);
-        if (campaign.UserId != userId) throw new ForbiddenException();
+        // Admin can view any campaign; regular user only their own.
+        if (!requesterIsAdmin && campaign.UserId != requesterUserId)
+            throw new ForbiddenException();
         return _mapper.Map<CampaignDetailDto>(campaign);
     }
+
+    public async Task<CampaignDetailDto> GetByIdAsync(Guid id, Guid userId, CancellationToken ct)
+        => await GetByIdAsync(id, userId, false, ct);
 
     public async Task<CampaignDto> CreateAsync(Guid userId, CreateCampaignDto dto, CancellationToken ct)
     {
@@ -108,9 +133,11 @@ public class CampaignService : ICampaignService
             throw new ConflictException($"Campaign is already in {campaign.Status} state.");
 
         var contacts = await _contactRepo.GetByGroupAsync(campaign.GroupId, ct);
-        var contactList = contacts.ToList();
+        // Auto-exclude bounced contacts (hard-bounced previously) AND inactive ones.
+        // Protects sender reputation by not re-emailing addresses we know are bad.
+        var contactList = contacts.Where(c => c.IsActive && !c.IsBounced).ToList();
         if (!contactList.Any())
-            throw new AppValidationException("Campaign group has no contacts.");
+            throw new AppValidationException("Campaign group has no deliverable contacts (after excluding bounced and inactive).");
 
         var messages = contactList.Select(c => new CampaignMessage
         {
@@ -139,11 +166,72 @@ public class CampaignService : ICampaignService
         await _audit.LogAsync(userId, "CampaignSent", "Campaign", id, new { scheduledAt }, ct: ct);
     }
 
-    public async Task<CampaignReportDto> GetReportAsync(Guid id, Guid userId, CancellationToken ct)
+    public async Task CancelScheduledAsync(Guid id, Guid requesterUserId, bool requesterIsAdmin, CancellationToken ct)
     {
         var campaign = await _campaignRepo.GetByIdAsync(id, ct)
             ?? throw new NotFoundException("Campaign", id);
-        if (campaign.UserId != userId) throw new ForbiddenException();
+
+        // Owner or admin only
+        if (!requesterIsAdmin && campaign.UserId != requesterUserId)
+            throw new ForbiddenException();
+
+        // Only queued campaigns with a future scheduledAt can be cancelled.
+        if (campaign.Status != "queued")
+            throw new ConflictException($"Cannot cancel a campaign in '{campaign.Status}' state.");
+        if (!campaign.ScheduledAt.HasValue || campaign.ScheduledAt <= DateTime.UtcNow)
+            throw new ConflictException("Only future scheduled campaigns can be cancelled.");
+
+        // Revert to draft. The Hangfire-scheduled job will still fire but ProcessCampaignAsync
+        // checks the status upfront and exits early when it isn't 'queued'.
+        campaign.Status = "draft";
+        campaign.ScheduledAt = null;
+        campaign.TotalContacts = 0;
+        await _campaignRepo.UpdateAsync(campaign, ct);
+
+        await _audit.LogAsync(requesterUserId, "CampaignScheduleCancelled", "Campaign", id, ct: ct);
+        _logger.LogInformation("Campaign {CampaignId} scheduled send cancelled by user {UserId}", id, requesterUserId);
+    }
+
+    public async Task<int> RetryFailedAsync(Guid id, Guid requesterUserId, bool requesterIsAdmin, CancellationToken ct)
+    {
+        var campaign = await _campaignRepo.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException("Campaign", id);
+
+        if (!requesterIsAdmin && campaign.UserId != requesterUserId)
+            throw new ForbiddenException();
+
+        // Retry only makes sense on a finished campaign. Running/queued mean the job is still
+        // chewing through messages on its own.
+        if (campaign.Status != "completed" && campaign.Status != "failed")
+            throw new ConflictException($"Cannot retry while campaign is in '{campaign.Status}' state. Wait for it to finish first.");
+
+        var failed = (await _campaignRepo.GetMessagesByStatusAsync(id, "failed", ct)).ToList();
+        if (failed.Count == 0)
+            throw new ConflictException("No failed messages to retry.");
+
+        // Reset failed messages back to pending so the job picks them up.
+        await _campaignRepo.BulkUpdateMessageStatusAsync(failed.Select(m => m.Id), "pending", ct);
+
+        // Adjust counts and re-queue.
+        campaign.Status = "queued";
+        campaign.FailedCount = Math.Max(0, campaign.FailedCount - failed.Count);
+        campaign.CompletedAt = null;
+        await _campaignRepo.UpdateAsync(campaign, ct);
+
+        _backgroundJobs.Enqueue<ICampaignJobService>(j => j.ProcessCampaignAsync(id));
+        await _audit.LogAsync(requesterUserId, "CampaignRetryFailed", "Campaign", id, new { retriedCount = failed.Count }, ct: ct);
+        _logger.LogInformation("Retry queued for {Count} failed messages in campaign {CampaignId}", failed.Count, id);
+
+        return failed.Count;
+    }
+
+    public async Task<CampaignReportDto> GetReportAsync(Guid id, Guid requesterUserId, bool requesterIsAdmin, CancellationToken ct)
+    {
+        var campaign = await _campaignRepo.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException("Campaign", id);
+        // Admin can pull any campaign's report; regular users only their own.
+        if (!requesterIsAdmin && campaign.UserId != requesterUserId)
+            throw new ForbiddenException();
 
         var messages = await _campaignRepo.GetPendingMessagesAsync(id, ct); // gets all messages actually
         var allMessages = (await _campaignRepo.GetMessagesPagedAsync(id, 1, int.MaxValue, null, ct)).Items;
@@ -158,17 +246,23 @@ public class CampaignService : ICampaignService
             SentCount = campaign.SentCount,
             FailedCount = campaign.FailedCount,
             DeliveredCount = allMessages.Count(m => m.Status == "delivered"),
-            OpenedCount = allMessages.Count(m => m.Status == "opened"),
+            // OpenedAt / ClickedAt are set by the tracking endpoints regardless of status.
+            // Count by those fields, not the status string.
+            OpenedCount = allMessages.Count(m => m.OpenedAt != null),
+            ClickedCount = allMessages.Count(m => m.ClickedAt != null),
+            TotalClicks = allMessages.Sum(m => m.ClickCount),
+            BouncedCount = allMessages.Count(m => m.Status == "bounced"),
             StartedAt = campaign.StartedAt,
             CompletedAt = campaign.CompletedAt
         };
     }
 
-    public async Task<PagedResponse<CampaignMessageDto>> GetMessagesAsync(Guid id, Guid userId, int pageNumber, int pageSize, string? status, CancellationToken ct)
+    public async Task<PagedResponse<CampaignMessageDto>> GetMessagesAsync(Guid id, Guid requesterUserId, bool requesterIsAdmin, int pageNumber, int pageSize, string? status, CancellationToken ct)
     {
         var campaign = await _campaignRepo.GetByIdAsync(id, ct)
             ?? throw new NotFoundException("Campaign", id);
-        if (campaign.UserId != userId) throw new ForbiddenException();
+        if (!requesterIsAdmin && campaign.UserId != requesterUserId)
+            throw new ForbiddenException();
 
         var (items, totalCount) = await _campaignRepo.GetMessagesPagedAsync(id, pageNumber, pageSize, status, ct);
         return new PagedResponse<CampaignMessageDto>

@@ -24,6 +24,11 @@ public record SmtpSettingsDto
     public bool NotifyOnCampaignComplete { get; init; }
     public bool NotifyOnMessageFailed { get; init; }
     public string? NotificationEmail { get; init; }
+    // Signature
+    public string? SignatureDesignation { get; init; }
+    public string? SignaturePhone { get; init; }
+    public string? CompanyWebsite { get; init; }
+    public string? SignatureImageUrl { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
 }
@@ -53,6 +58,11 @@ public record CreateSmtpSettingsDto
     public bool NotifyOnCampaignComplete { get; init; } = true;
     public bool NotifyOnMessageFailed { get; init; } = true;
     public string? NotificationEmail { get; init; }
+    // Signature
+    public string? SignatureDesignation { get; init; }
+    public string? SignaturePhone { get; init; }
+    public string? CompanyWebsite { get; init; }
+    public string? SignatureImageUrl { get; init; }
 }
 
 public record UpdateSmtpSettingsDto

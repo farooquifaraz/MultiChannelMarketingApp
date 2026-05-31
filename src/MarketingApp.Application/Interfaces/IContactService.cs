@@ -12,6 +12,10 @@ public interface IContactService
     Task<ImportResultDto> ImportContactsAsync(Guid userId, Stream fileStream, string fileName, Guid? groupId, CancellationToken ct);
     Task<IEnumerable<ContactGroupDto>> GetGroupsAsync(Guid userId, CancellationToken ct);
     Task<ContactGroupDto> CreateGroupAsync(Guid userId, CreateContactGroupDto dto, CancellationToken ct);
+    Task<ContactGroupDto> UpdateGroupAsync(Guid groupId, Guid userId, CreateContactGroupDto dto, CancellationToken ct);
     Task DeleteGroupAsync(Guid groupId, Guid userId, CancellationToken ct);
     Task<int> AssignToGroupAsync(Guid userId, List<Guid> contactIds, Guid? groupId, CancellationToken ct);
+
+    /// <summary>Clear the bounce flag on a contact so they are deliverable again.</summary>
+    Task<ContactDto> ClearBounceAsync(Guid contactId, Guid userId, CancellationToken ct);
 }

@@ -11,15 +11,36 @@ public class ContactRepository : GenericRepository<Contact>, IContactRepository
     public async Task<(IEnumerable<Contact> Items, int TotalCount)> GetPagedAsync(
         Guid userId, int pageNumber, int pageSize, Guid? groupId, string? search, CancellationToken ct)
     {
-        var query = _dbSet.Where(c => c.UserId == userId && c.IsActive);
+        // Resolve the requester's SmtpGroupId once — used for the "shared via SmtpGroup" branch.
+        var requesterSmtpGroupId = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.SmtpGroupId)
+            .FirstOrDefaultAsync(ct);
+
+        // Visible contacts:
+        //   1. The user's OWN contacts, OR
+        //   2. Contacts whose ContactGroup is linked to the SAME SmtpGroup the requester belongs to.
+        var query = _dbSet
+            .Where(c => c.IsActive)
+            .Where(c =>
+                c.UserId == userId
+                || (requesterSmtpGroupId != null
+                    && c.GroupId != null
+                    && c.Group != null
+                    && c.Group.SmtpGroupId == requesterSmtpGroupId));
 
         if (groupId.HasValue)
             query = query.Where(c => c.GroupId == groupId.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(c => c.FullName.Contains(search) ||
-                                     (c.Email != null && c.Email.Contains(search)) ||
-                                     (c.Phone != null && c.Phone.Contains(search)));
+        {
+            // Case-INSENSITIVE match (ILIKE). Plain .Contains() translates to a case-sensitive LIKE in
+            // PostgreSQL, so "faraz" wouldn't find "Faraz Farooqui". ILike fixes that across name/email/phone.
+            var pattern = $"%{search}%";
+            query = query.Where(c => EF.Functions.ILike(c.FullName, pattern) ||
+                                     (c.Email != null && EF.Functions.ILike(c.Email, pattern)) ||
+                                     (c.Phone != null && EF.Functions.ILike(c.Phone, pattern)));
+        }
 
         var totalCount = await query.CountAsync(ct);
         var items = await query

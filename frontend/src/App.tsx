@@ -12,6 +12,12 @@ const ContactsPage = lazy(() => import('./pages/contacts/ContactsPage'));
 const TemplatesPage = lazy(() => import('./pages/templates/TemplatesPage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const SendMessagePage = lazy(() => import('./pages/messages/SendMessagePage'));
+const SmtpGroupsPage = lazy(() => import('./pages/admin/SmtpGroupsPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const UserProfilePage = lazy(() => import('./pages/profile/UserProfilePage'));
+const AuditLogsPage = lazy(() => import('./pages/admin/AuditLogsPage'));
+const ScheduledCampaignsPage = lazy(() => import('./pages/campaigns/ScheduledCampaignsPage'));
+const InboxPage = lazy(() => import('./pages/inbox/InboxPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -50,11 +56,17 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="campaigns" element={<CampaignsPage />} />
+          <Route path="campaigns/scheduled" element={<ScheduledCampaignsPage />} />
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="contacts" element={<ContactsPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="send" element={<SendMessagePage />} />
+          <Route path="admin/smtp-groups" element={<SmtpGroupsPage />} />
+          <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="profile" element={<UserProfilePage />} />
+          <Route path="admin/audit-logs" element={<AuditLogsPage />} />
+          <Route path="inbox" element={<InboxPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

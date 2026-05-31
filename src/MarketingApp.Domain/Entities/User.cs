@@ -11,6 +11,17 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // SMTP group assignment — every user (except admin who never sends) should belong to a group.
+    // If null, the platform's default SmtpGroup (IsDefault=true) is used.
+    public Guid? SmtpGroupId { get; set; }
+    public SmtpGroup? SmtpGroup { get; set; }
+
+    // === Personal email signature (per-user override over SmtpGroup defaults) ===
+    // sender_name comes from FullName above.
+    public string? SignatureDesignation { get; set; }
+    public string? SignaturePhone { get; set; }
+    public string? SignatureImageUrl { get; set; }
+
     // Navigation
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
     public ICollection<ContactGroup> ContactGroups { get; set; } = new List<ContactGroup>();

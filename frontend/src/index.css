@@ -16,3 +16,41 @@ body {
 
 /* Smooth transitions */
 * { @apply transition-colors duration-150; }
+
+/* === Day 8: inline email body rendering (Gmail-style, replaces cramped iframes) === */
+.email-html-body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #374151;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.email-html-body p { margin: 0 0 0.6em; }
+.email-html-body a { color: #4f46e5; text-decoration: underline; }
+.email-html-body img { max-width: 100%; height: auto; border-radius: 6px; }
+.email-html-body blockquote {
+  border-left: 3px solid #e5e7eb;
+  margin: 0.5em 0; padding-left: 0.75em; color: #6b7280;
+}
+.email-html-body ul, .email-html-body ol { margin: 0 0 0.6em 1.25em; }
+.email-html-body table { max-width: 100%; border-collapse: collapse; }
+.email-html-body * { transition: none !important; }
+
+/* === Day 9: AI chat answer formatting === */
+.ai-chat-answer p { margin: 0 0 0.5em; line-height: 1.55; }
+.ai-chat-answer p:last-child { margin-bottom: 0; }
+.ai-chat-answer ul { margin: 0.25em 0 0.5em 1.1em; list-style: disc; }
+.ai-chat-answer li { margin: 0.15em 0; }
+.ai-chat-answer strong { font-weight: 600; }
+
+/* === Day 10: Ask AI tab attention blink === */
+@keyframes ai-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.0); color: inherit; }
+  50% { box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25); color: #7e22ce; }
+}
+.ask-ai-blink { animation: ai-glow 1.6s ease-in-out infinite; border-radius: 8px; }
+.ask-ai-blink .ai-spark { animation: ai-spark-pulse 1.6s ease-in-out infinite; }
+@keyframes ai-spark-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.25); opacity: 1; }
+}

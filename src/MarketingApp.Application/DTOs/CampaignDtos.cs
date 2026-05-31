@@ -14,6 +14,12 @@ public class CampaignDto
     public DateTime? ScheduledAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // Sender info (populated for admin view + campaign detail)
+    public Guid OwnerUserId { get; set; }
+    public string? OwnerName { get; set; }
+    public string? OwnerEmail { get; set; }
+    public string? SmtpGroupName { get; set; }
 }
 
 public class CampaignDetailDto : CampaignDto
@@ -56,8 +62,13 @@ public class CampaignReportDto
     public int FailedCount { get; set; }
     public int DeliveredCount { get; set; }
     public int OpenedCount { get; set; }
+    public int ClickedCount { get; set; }
+    public int TotalClicks { get; set; }
+    public int BouncedCount { get; set; }
     public double SendRate => TotalContacts > 0 ? Math.Round((double)SentCount / TotalContacts * 100, 2) : 0;
     public double FailRate => TotalContacts > 0 ? Math.Round((double)FailedCount / TotalContacts * 100, 2) : 0;
+    public double OpenRate => SentCount > 0 ? Math.Round((double)OpenedCount / SentCount * 100, 2) : 0;
+    public double ClickRate => OpenedCount > 0 ? Math.Round((double)ClickedCount / OpenedCount * 100, 2) : 0;
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 }
@@ -72,4 +83,5 @@ public class CampaignMessageDto
     public string? ErrorMessage { get; set; }
     public DateTime? SentAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
+    public DateTime? OpenedAt { get; set; }
 }

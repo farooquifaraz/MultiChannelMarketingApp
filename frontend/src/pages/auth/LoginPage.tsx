@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Zap, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/authApi';
+import { useBrand } from '../../hooks/useBrand';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -12,6 +13,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const brand = useBrand();
+
+  // Already logged in → go straight to dashboard
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +44,14 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">MarketPro</span>
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand.name} className="w-10 h-10 rounded-xl object-cover" />
+            ) : (
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+            )}
+            <span className="text-2xl font-bold text-white">{brand.name}</span>
           </div>
           <h1 className="text-4xl font-bold text-white leading-tight">
             Multi-Channel<br />Marketing Platform
@@ -69,10 +79,14 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">MarketPro</span>
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+            )}
+            <span className="text-xl font-bold">{brand.name}</span>
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>

@@ -27,12 +27,16 @@ export default function Header() {
       </div>
       <div className="flex items-center gap-3">
         <NotificationBell />
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl">
+        <button
+          onClick={() => navigate('/profile')}
+          className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+          title="My Profile"
+        >
           <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
             <User className="w-4 h-4 text-primary-600" />
           </div>
           <span className="text-sm font-medium text-gray-700">{user?.email}</span>
-        </div>
+        </button>
         <button
           onClick={handleLogout}
           className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"

@@ -31,12 +31,26 @@ export const contactApi = {
   getGroups: () =>
     axiosInstance.get<any, ApiResponse<ContactGroupDto[]>>('/contacts/groups'),
 
-  createGroup: (data: { name: string; description?: string }) =>
+  createGroup: (data: { name: string; description?: string; shareWithTeam?: boolean }) =>
     axiosInstance.post<any, ApiResponse<ContactGroupDto>>('/contacts/groups', data),
+
+  updateGroup: (id: string, data: { name: string; description?: string; shareWithTeam?: boolean; smtpGroupId?: string | null }) =>
+    axiosInstance.put<any, ApiResponse<ContactGroupDto>>(`/contacts/groups/${id}`, data),
 
   deleteGroup: (id: string) =>
     axiosInstance.delete(`/contacts/groups/${id}`),
 
   assignToGroup: (contactIds: string[], groupId: string | null) =>
     axiosInstance.post<any, ApiResponse<{ assignedCount: number }>>('/contacts/assign-group', { contactIds, groupId }),
+
+  clearBounce: (id: string) =>
+    axiosInstance.post<any, ApiResponse<ContactDto>>(`/contacts/${id}/clear-bounce`),
+
+  exportCsvUrl: (params: { groupId?: string; search?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.groupId) q.set('groupId', params.groupId);
+    if (params.search) q.set('search', params.search);
+    const qs = q.toString();
+    return `/contacts/export.csv${qs ? '?' + qs : ''}`;
+  },
 };

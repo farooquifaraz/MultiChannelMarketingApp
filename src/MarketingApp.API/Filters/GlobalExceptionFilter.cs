@@ -24,6 +24,8 @@ public class GlobalExceptionFilter : IExceptionFilter
             ConflictException ex => (409, ex.Message),
             ExternalServiceException => (502, "External service error. Please try again."),
             UnauthorizedAccessException => (401, "Unauthorized access."),
+            _ when IsForeignKeyViolation(context.Exception) =>
+                (409, "Can't delete this item because other records still depend on it (for example, campaigns that use this group or template). Delete or reassign those first."),
             _ => (500, "An unexpected error occurred.")
         };
 
@@ -43,5 +45,21 @@ public class GlobalExceptionFilter : IExceptionFilter
 
         context.Result = new ObjectResult(response) { StatusCode = statusCode };
         context.ExceptionHandled = true;
+    }
+
+    /// <summary>Detects a PostgreSQL foreign-key violation (SQLSTATE 23503) anywhere in the exception
+    /// chain, without taking a hard Npgsql dependency. Surfaced as a friendly 409 instead of a 500 so
+    /// RESTRICT-protected deletes (e.g. deleting a ContactGroup/Template still used by campaigns) give
+    /// the user a clear, actionable message.</summary>
+    private static bool IsForeignKeyViolation(Exception ex)
+    {
+        for (Exception? e = ex; e is not null; e = e.InnerException)
+        {
+            var sqlState = e.GetType().GetProperty("SqlState")?.GetValue(e) as string;
+            if (sqlState == "23503") return true;
+            if (e.Message.Contains("23503") ||
+                e.Message.Contains("foreign key", StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
     }
 }

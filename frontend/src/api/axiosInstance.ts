@@ -42,8 +42,17 @@ axiosInstance.interceptors.response.use(
 
     // Only show toast if the caller doesn't handle errors themselves
     if (!originalRequest?._silent) {
-      const message = error.response?.data?.message || 'Something went wrong';
-      toast.error(message);
+      const status = error.response?.status;
+      const method = (originalRequest?.method || 'get').toLowerCase();
+      // A 404 on a GET means "this resource isn't here" — the calling page renders its own
+      // not-found / empty state for that. Auto-toasting the raw backend message ("X with key
+      // (...) was not found.") just spams the user, especially when React Query refetches a
+      // stale/deleted resource on an interval (StrictMode + retry multiply it). Suppress it.
+      const isGetNotFound = status === 404 && method === 'get';
+      if (!isGetNotFound) {
+        const message = error.response?.data?.message || 'Something went wrong';
+        toast.error(message);
+      }
     }
     return Promise.reject(error);
   }

@@ -29,6 +29,24 @@ jobs:
   ci:
     name: Build + verify
     runs-on: ubuntu-latest
+    # K1: a real Postgres for the regression-test fixture. Same image we run in prod.
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: yourpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Pickup by RegressionTestFactory at fixture init.
+      TEST_POSTGRES_CONNECTION: "Host=localhost;Port=5432;Database=marketingapp_test;Username=postgres;Password=yourpassword;Pooling=true;MinPoolSize=2;MaxPoolSize=10"
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +59,29 @@ jobs:
         run: |
           dotnet restore src/MarketingApp.API/MarketingApp.API.csproj
           dotnet build   src/MarketingApp.API/MarketingApp.API.csproj -c Release --no-restore
+
+      # --- K1: regression-test harness ---
+      # Runs the 17-item Zero-Regression Checklist (currently 29 xUnit tests
+      # under MarketingApp.Tests/Regression/). Fails the CI job if any
+      # regression is introduced.
+      - name: Restore + build test project
+        run: |
+          dotnet restore src/MarketingApp.Tests/MarketingApp.Tests.csproj
+          dotnet build   src/MarketingApp.Tests/MarketingApp.Tests.csproj -c Release --no-restore
+      - name: Run regression tests
+        run: |
+          dotnet test src/MarketingApp.Tests/MarketingApp.Tests.csproj \
+            -c Release --no-build \
+            --filter "FullyQualifiedName~Regression" \
+            --logger "console;verbosity=normal" \
+            --logger "trx;LogFileName=regression.trx"
+      - name: Upload regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results
+          path: src/MarketingApp.Tests/TestResults/regression.trx
+          retention-days: 30
 
       # --- Frontend ---
       - name: Setup Node

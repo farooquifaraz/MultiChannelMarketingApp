@@ -195,9 +195,36 @@ broken" class of disaster.
 
 ## 5. Running the regression suite
 
-(Coming in task K1 — will be a single command like `npm run regress` or
-`dotnet test --filter Regression`. For now, run the items in Section 3
-manually.)
+The K1 task delivered an automated regression harness. **One command runs everything**:
+
+```bash
+# From the repo root:
+dotnet test src/MarketingApp.Tests/MarketingApp.Tests.csproj \
+  --filter "FullyQualifiedName~Regression" \
+  --logger "console;verbosity=minimal"
+
+# Or, from the frontend folder (npm alias of the above):
+cd frontend && npm run regress
+```
+
+### What it covers (29 xUnit tests across 3 classes)
+- **AuthRegressionTests** — registration, login, JWT issuance, refresh, tampered token rejection, BUG-001 first-user-becomes-admin
+- **PaginationRegressionTests** — BUG-003 defensive clamping across 5 paged endpoints (contacts, campaigns, audit-logs, inbox, threads); negative pageNumber / negative pageSize / huge pageSize all handled without 500
+- **ContactsRegressionTests** — CRUD cycle, duplicate-email rejection, invalid-email rejection, ILIKE case-insensitive search, phone-substring search
+
+### Local prerequisites
+- The harness spins up the real API in-process via `WebApplicationFactory<Program>`
+- It needs a Postgres on `localhost:5432` with user `postgres` / password `yourpassword`
+  (the dev default in `docker-compose.yml`)
+- The factory creates and drops a dedicated `marketingapp_test` database per run —
+  your dev `marketingapp` DB is never touched
+- Override the connection via the `TEST_POSTGRES_CONNECTION` env var if needed
+  (CI does this automatically)
+
+### Adding new regression tests
+- Put new test classes under `src/MarketingApp.Tests/Regression/`
+- Mark them `[Collection("Regression")]` and accept `RegressionTestFactory` via `IClassFixture<>`
+- The collection serializes tests against the shared fixture so they don't trample each other
 
 ---
 

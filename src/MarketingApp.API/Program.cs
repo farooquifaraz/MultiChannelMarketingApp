@@ -594,3 +594,7 @@ catch (Exception ex)
 }
 
 app.Run();
+
+// Exposed so the K1 regression-test harness can spin the API up in-process via
+// WebApplicationFactory<Program>. Has no effect on production runtime.
+public partial class Program { }

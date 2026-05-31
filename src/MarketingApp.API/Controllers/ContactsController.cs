@@ -29,7 +29,8 @@ public class ContactsController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        if (pageSize > 100) pageSize = 100;
+        // BUG-003 defensive clamp — prevents Skip(-N) / Take(huge) crashes.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
         var result = await _contactService.GetAllAsync(CurrentUserId, pageNumber, pageSize, groupId, search, ct);
         return Ok(result);
     }

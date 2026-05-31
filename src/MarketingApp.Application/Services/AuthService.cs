@@ -32,20 +32,28 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
-        var exists = await _userRepo.AnyAsync(u => u.Email == dto.Email, ct);
+        var normalizedEmail = dto.Email.ToLowerInvariant();
+        var exists = await _userRepo.AnyAsync(u => u.Email == normalizedEmail, ct);
         if (exists)
             throw new ConflictException("A user with this email already exists.");
+
+        // BUG-001 fix: the FIRST user on a fresh deployment becomes admin automatically.
+        // Without this, a fresh prod deploy ends up with zero admins and the Settings /
+        // SmtpGroups / Audit Logs / Admin Users pages are unreachable except via direct
+        // DB intervention. Industry-standard pattern for self-hosted SaaS first-run.
+        var anyUserAlready = await _userRepo.AnyAsync(u => true, ct);
+        var role = anyUserAlready ? "user" : "admin";
 
         var user = new User
         {
             FullName = dto.FullName,
-            Email = dto.Email.ToLowerInvariant(),
+            Email = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password, workFactor: 12),
-            Role = "user"
+            Role = role
         };
 
         await _userRepo.AddAsync(user, ct);
-        _logger.LogInformation("User registered: {Email}", user.Email);
+        _logger.LogInformation("User registered: {Email} as role={Role}", user.Email, role);
 
         return await GenerateAuthResponse(user, ct);
     }

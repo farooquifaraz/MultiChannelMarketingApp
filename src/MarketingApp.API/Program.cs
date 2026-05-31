@@ -280,8 +280,12 @@ app.MapHub<MarketingApp.API.Hubs.InboxHub>("/hubs/inbox");
 app.MapHangfireDashboard("/hangfire");
 app.MapHealthChecks("/health");
 
-// Auto-create tables on startup in development
-if (app.Environment.IsDevelopment())
+// Auto-create tables + run idempotent column migrations on startup.
+// Every statement below uses CREATE TABLE / ADD COLUMN IF NOT EXISTS, so re-running on
+// an already-migrated database is a no-op. Safe in production too — previously this was
+// gated on IsDevelopment(), which meant fresh production deploys ended up with an empty
+// public schema (only the hangfire-owned tables existed) and every DB call 500'd. The
+// braces below still scope the `using var scope`, just unconditionally.
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

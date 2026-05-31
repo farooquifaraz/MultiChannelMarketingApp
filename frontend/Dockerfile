@@ -46,5 +46,7 @@ RUN echo 'server { \
 }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost/ >/dev/null || exit 1
+# Probe nginx's index.html — `--spider` returns 0 on 2xx and doesn't download.
+# start-period 20s gives nginx time to read its config and bind port 80 on first boot.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -q --spider http://localhost/ || exit 1

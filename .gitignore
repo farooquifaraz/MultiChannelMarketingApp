@@ -1,33 +1,83 @@
-# Dependencies
+# ===== Node / Frontend =====
 node_modules/
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Build output
 dist/
 dist-ssr/
 build/
-
-# IDE
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+.vite/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Claude
+# ===== .NET / Backend =====
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+*.userprefs
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Visual Studio
+.vs/
+*.sln.docstates
+.vshistory/
+
+# Rider / Resharper
+.idea/
+_ReSharper.*/
+*.DotSettings.user
+
+# Debug / Coverage
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+
+# ===== Environment / Secrets =====
+# Never commit real secrets — only .env.example
+.env
+.env.local
+.env.*.local
+.env.production
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+
+# ===== Editor =====
+.vscode/
+*.sw?
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Claude / agent state =====
 .claude/
+
+# ===== Temp / scratch =====
+*.tmp
+*.bak
+*.orig
+fix_*.py
+
+# ===== Local test data (PII) — never commit real contact lists =====
+frontend/public/sam_*.csv
+frontend/public/sam_*.html
+frontend/public/email_preview.html
+frontend/public/izylrn_*.html
+*_contacts.csv
+*_outreach.csv

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Inbox, Mail, MailOpen, RefreshCw, Sparkles, Send, Save, RotateCcw, Eye, Archive, AlertCircle,
+  Inbox, Mail, MailOpen, RefreshCw, Sparkles, Send, Save, RotateCcw, Eye, AlertCircle,
   ChevronLeft, ChevronRight, Search, X, Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon, List, ListOrdered, Wifi,
   Trash2, ChevronDown, ChevronUp
 } from 'lucide-react';

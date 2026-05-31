@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Edit2, Star, Users, Send, Loader2, X, Eye, EyeOff, Shield, CheckCircle2, Server, Sparkles, Copy } from 'lucide-react';
+import { Mail, Plus, Trash2, Edit2, Star, Users, Send, Loader2, X, Eye, EyeOff, CheckCircle2, Server, Sparkles, Copy } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { smtpGroupsApi, type SmtpGroup, type CreateSmtpGroup, type UserAssignment } from '../../api/smtpGroupsApi';

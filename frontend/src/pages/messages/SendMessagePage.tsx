@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MessageSquare, Smartphone, Send, Users, User, FileText, Eye, Loader2, CheckCircle, ChevronDown, Search, X, Sparkles, Edit3, Code2, Save, RefreshCw, Clock } from 'lucide-react';
+import { Mail, MessageSquare, Smartphone, Send, Users, User, Eye, Loader2, ChevronDown, Search, X, Sparkles, Edit3, Code2, Save, RefreshCw, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../api/axiosInstance';
 import SendProgressCard from '../../components/messages/SendProgressCard';
@@ -46,7 +46,7 @@ export default function SendMessagePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [subject, setSubject] = useState('');
   const [messageBody, setMessageBody] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);

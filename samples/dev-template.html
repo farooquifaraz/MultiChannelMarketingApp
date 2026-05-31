@@ -1,0 +1,36 @@
+<!--
+  Dev sample template for MarketPro local testing.
+  Paste the body below into Templates → New Template.
+  Subject: "Hello {{full_name}} — Welcome to MarketPro"
+-->
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff; color: #1f2937;">
+    <h1 style="margin: 0 0 16px; color: #4f46e5;">Hi {{full_name}}!</h1>
+
+    <p style="font-size: 16px; line-height: 1.6;">
+        This is a dev sample template. It uses two merge tags:
+    </p>
+
+    <ul style="font-size: 15px; line-height: 1.6;">
+        <li><code>{{full_name}}</code> — the contact's full name</li>
+        <li><code>{{email}}</code> — the contact's email (this one: {{email}})</li>
+    </ul>
+
+    <p style="font-size: 15px; line-height: 1.6;">
+        Click the link below to verify click-tracking is working:
+    </p>
+
+    <p style="margin: 24px 0;">
+        <a href="https://samdigital.ae"
+           style="display: inline-block; padding: 12px 24px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">
+            Visit SAM Digital
+        </a>
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">
+
+    <p style="font-size: 13px; color: #6b7280;">
+        Sent from MarketPro dev environment — {{sender_name}}<br>
+        {{sender_designation}}<br>
+        {{company_website}}
+    </p>
+</div>

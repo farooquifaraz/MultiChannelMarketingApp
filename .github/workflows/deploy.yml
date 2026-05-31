@@ -1,0 +1,94 @@
+# =========================================================================
+# CI/CD — on push to master, build + deploy to the VPS
+#
+# Flow:
+#   1. ci   — restore + build .NET API and frontend, fail fast on errors
+#              (so a bad push is rejected BEFORE we touch the live server)
+#   2. deploy — SSH into the VPS, `git pull` + `docker compose up -d --build`
+#
+# Required GitHub secrets (Settings → Secrets and variables → Actions):
+#   VPS_HOST         — VPS public IP or hostname
+#   VPS_USER         — SSH user (e.g. root or deploy)
+#   VPS_SSH_KEY      — full PRIVATE SSH key (matched to a public key in
+#                       /root/.ssh/authorized_keys on the VPS)
+#   VPS_DEPLOY_PATH  — absolute path on VPS, e.g. /opt/marketingapp
+# =========================================================================
+
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:   # lets you trigger a redeploy manually from the Actions tab
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # never cancel an in-flight deploy
+
+jobs:
+  ci:
+    name: Build + verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Backend ---
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore + build API
+        run: |
+          dotnet restore src/MarketingApp.API/MarketingApp.API.csproj
+          dotnet build   src/MarketingApp.API/MarketingApp.API.csproj -c Release --no-restore
+
+      # --- Frontend ---
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Frontend install + typecheck + build
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit
+          npm run build
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            git fetch origin master
+            git reset --hard origin/master
+            # Rebuild + restart only the services that changed; --remove-orphans
+            # cleans up containers from deleted services.
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            # Prune dangling images so the disk doesn't fill up over time.
+            docker image prune -af --filter "until=168h"
+            # Verify the API is responding (5 retries, 5s apart).
+            for i in 1 2 3 4 5; do
+              if curl -fsS http://localhost:80/ >/dev/null 2>&1 \
+                 || docker exec marketingapp-api curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
+                echo "✅ deploy healthy"
+                exit 0
+              fi
+              echo "waiting for API to come up... ($i/5)"
+              sleep 5
+            done
+            echo "❌ API didn't become healthy in time"
+            docker compose -f docker-compose.prod.yml logs --tail 80 api
+            exit 1

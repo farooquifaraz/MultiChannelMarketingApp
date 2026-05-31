@@ -1,0 +1,50 @@
+# =========================================================================
+# .NET 10 API — multi-stage production image
+#
+# Stage 1 (sdk): restore + publish a self-contained release build.
+# Stage 2 (runtime): copy ONLY the published output into a minimal aspnet base
+#   image. Keeps the final image small (~120 MB vs ~700 MB for sdk).
+#
+# Build from repo root:   docker build -f Dockerfile.api -t marketingapp-api .
+# Run:                    docker run -p 8080:8080 --env-file .env marketingapp-api
+# =========================================================================
+
+# --- Stage 1: build ---
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy ONLY csproj files first so NuGet restore is cached separately from source.
+# This makes incremental builds dramatically faster (NuGet only re-runs when a
+# .csproj changes, not on every code edit).
+COPY src/MarketingApp.API/MarketingApp.API.csproj            src/MarketingApp.API/
+COPY src/MarketingApp.Application/MarketingApp.Application.csproj   src/MarketingApp.Application/
+COPY src/MarketingApp.Domain/MarketingApp.Domain.csproj      src/MarketingApp.Domain/
+COPY src/MarketingApp.Infrastructure/MarketingApp.Infrastructure.csproj src/MarketingApp.Infrastructure/
+RUN dotnet restore src/MarketingApp.API/MarketingApp.API.csproj
+
+# Now copy the rest of the source and publish.
+COPY src/ src/
+RUN dotnet publish src/MarketingApp.API/MarketingApp.API.csproj \
+    -c Release -o /app/publish --no-restore /p:UseAppHost=false
+
+# --- Stage 2: runtime ---
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Run as a non-root user (security best practice — limits damage if the
+# container is ever compromised).
+RUN groupadd -r app && useradd -r -g app app
+COPY --from=build --chown=app:app /app/publish .
+USER app
+
+# Kestrel listens on port 8080 by default in the aspnet:10.0 base image.
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_RUNNING_IN_CONTAINER=true
+
+# Health probe — docker-compose + nginx use this to know when the API is ready.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "MarketingApp.API.dll"]

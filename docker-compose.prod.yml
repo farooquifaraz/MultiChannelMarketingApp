@@ -1,0 +1,117 @@
+# =========================================================================
+# Production docker-compose — VPS deployment
+#
+# Services on a private internal network:
+#   postgres  — data store (no public port, volume-backed for persistence)
+#   redis     — cache / hangfire (no public port, volume-backed)
+#   api       — .NET API, internal port 8080
+#   frontend  — Vite SPA + nginx, internal port 80
+#   nginx     — public-facing reverse proxy on host 80 / 443
+#                routes app.<domain>  → frontend
+#                       api.<domain>  → api  (with WebSocket upgrade for SignalR)
+#
+# All secrets come from .env (NEVER commit real values). On the VPS:
+#   cp .env.production.example .env  and fill values
+#   docker compose -f docker-compose.prod.yml up -d --build
+# =========================================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: marketingapp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marketingapp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?postgres password required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [marketingapp]
+    # NOTE: no `ports:` mapping = postgres is reachable ONLY by other containers
+    # on the marketingapp network. NOT exposed to the public internet. ✅
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: marketingapp-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks: [marketingapp]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: marketingapp-api:latest
+    container_name: marketingapp-api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      # Connection strings + secrets — all from .env, NEVER hardcoded.
+      # The Postgres host is the SERVICE NAME (`postgres`), not localhost.
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-marketingapp};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=5;MaxPoolSize=100"
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?jwt secret required}
+      Jwt__Issuer: ${JWT_ISSUER:-MarketingApp}
+      Jwt__Audience: ${JWT_AUDIENCE:-MarketingAppUsers}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      Jwt__RefreshTokenExpiryDays: ${JWT_REFRESH_DAYS:-30}
+      # PublicBaseUrl — used to bake tracking-pixel + click-redirect URLs into outbound emails.
+      # MUST be the public API URL so Gmail/Outlook can reach it.
+      App__PublicBaseUrl: ${PUBLIC_API_URL:?public api url required, e.g. https://api.yourdomain.com}
+      # CORS — comma-separated. Include both the public app URL and (optional) localhost for dev.
+      AllowedOrigins: ${ALLOWED_ORIGINS:?allowed origins required}
+    networks: [marketingapp]
+    # No `ports:` — only reachable via the nginx reverse proxy.
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Vite bakes env vars at BUILD time — supply the public API URL here.
+        VITE_API_URL: ${PUBLIC_API_URL}/api/v1
+    image: marketingapp-frontend:latest
+    container_name: marketingapp-frontend
+    restart: unless-stopped
+    depends_on: [api]
+    networks: [marketingapp]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: marketingapp-nginx
+    restart: unless-stopped
+    depends_on: [api, frontend]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Let's Encrypt certs (read-only mount from host).
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    networks: [marketingapp]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  marketingapp:
+    driver: bridge

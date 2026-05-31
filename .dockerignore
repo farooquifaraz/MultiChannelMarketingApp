@@ -1,0 +1,35 @@
+# Speed up `docker build` by excluding paths that aren't needed inside the image.
+# These would otherwise be sent over the docker daemon socket as build context.
+.git
+.github
+.gitignore
+.vscode
+.idea
+.claude
+.vs
+
+# .NET artifacts
+**/bin
+**/obj
+**/*.user
+TestResults
+publish
+
+# Node artifacts (frontend has its own Dockerfile + .dockerignore)
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Local files
+.env
+.env.*
+appsettings.Local.json
+appsettings.Production.json
+*.log
+*.bak
+fix_*.py
+
+# Docs / readmes (not needed in image)
+README.md
+*.md
+docs/

@@ -62,7 +62,24 @@ jobs:
     needs: ci
     if: github.ref == 'refs/heads/master'
     steps:
+      # First-time setup: secrets may not yet be configured. We don't want every
+      # push to show a red ✗ in that case — we want a clean green ✓ with a
+      # warning, and the deploy step is simply skipped. Once the user adds the
+      # 4 secrets (VPS_HOST/USER/SSH_KEY/DEPLOY_PATH), the next push auto-deploys.
+      - name: Check deployment secrets
+        id: secrets
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "${VPS_HOST:-}" ]; then
+            echo "::warning::VPS_HOST secret not configured — skipping deploy. Add Settings → Secrets and variables → Actions → VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_DEPLOY_PATH to enable auto-deploy."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy over SSH
+        if: steps.secrets.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host:     ${{ secrets.VPS_HOST }}

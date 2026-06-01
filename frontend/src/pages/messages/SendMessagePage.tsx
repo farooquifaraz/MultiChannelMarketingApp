@@ -3,6 +3,7 @@ import { Mail, MessageSquare, Smartphone, Send, Users, User, Eye, Loader2, Chevr
 import toast from 'react-hot-toast';
 import axiosInstance from '../../api/axiosInstance';
 import SendProgressCard from '../../components/messages/SendProgressCard';
+import ActiveSenderBanner from '../../components/messages/ActiveSenderBanner';
 import { buildAvatarUrl } from '../../config/brand';
 
 type Channel = 'email' | 'whatsapp' | 'sms';
@@ -444,6 +445,9 @@ export default function SendMessagePage() {
           <p className="text-gray-500 text-sm">Compose and send messages to your contacts</p>
         </div>
       </div>
+
+      {/* M2 — pre-send transparency: provider + from-address + credential health */}
+      <ActiveSenderBanner channel={channel} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Compose */}

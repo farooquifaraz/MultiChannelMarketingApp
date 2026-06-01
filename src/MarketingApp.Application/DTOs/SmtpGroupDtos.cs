@@ -13,6 +13,10 @@ public record SmtpGroupDto
     public int SmtpPort { get; init; }
     public string? SmtpUsername { get; init; }
     // SmtpPassword is intentionally excluded from the read DTO for security.
+    // SmtpPasswordSet exposes only whether a password is configured (boolean) —
+    // M1 indicator. UI uses this to render "✅ Password configured" without ever
+    // returning the secret value itself.
+    public bool SmtpPasswordSet { get; init; }
     public bool SmtpEnableSsl { get; init; }
     public int SmtpTimeout { get; init; }
 

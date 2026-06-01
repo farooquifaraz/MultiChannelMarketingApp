@@ -24,4 +24,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Lets the test project hit internal helpers like CampaignJobService.DetectHardBounce
+         without having to widen their visibility to public. -->
+    <InternalsVisibleTo Include="MarketingApp.Tests" />
+  </ItemGroup>
+
 </Project>

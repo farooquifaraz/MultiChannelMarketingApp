@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, MessageCircle, Smartphone, Users, CheckCircle, XCircle
 import toast from 'react-hot-toast';
 import { campaignApi } from '../../api/campaignApi';
 import { formatDate, formatNumber, getStatusColor, getChannelColor } from '../../utils/formatters';
+import ActiveSenderBanner from '../../components/messages/ActiveSenderBanner';
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +70,12 @@ export default function CampaignDetailPage() {
             <p className="text-gray-500 mt-1">Created {formatDate(c.createdAt)}</p>
           </div>
         </div>
+        {/* M2 — when a retry is possible, the user is about to trigger a send; show provider info. */}
+        {(c.status === 'completed' || c.status === 'failed') && c.failedCount > 0 && c.channel === 'email' && (
+          <div className="w-full">
+            <ActiveSenderBanner channel="email" compact />
+          </div>
+        )}
         {/* Retry only makes sense when the campaign has finished and has some failures */}
         {(c.status === 'completed' || c.status === 'failed') && c.failedCount > 0 && (
           <button

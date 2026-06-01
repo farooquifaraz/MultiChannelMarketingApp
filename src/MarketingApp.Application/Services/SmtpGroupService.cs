@@ -42,6 +42,7 @@ public class SmtpGroupService : ISmtpGroupService
         SmtpHost = g.SmtpHost,
         SmtpPort = g.SmtpPort,
         SmtpUsername = g.SmtpUsername,
+        SmtpPasswordSet = !string.IsNullOrWhiteSpace(g.SmtpPassword),
         SmtpEnableSsl = g.SmtpEnableSsl,
         SmtpTimeout = g.SmtpTimeout,
         SendGridApiKeyMasked = Mask(g.SendGridApiKey),

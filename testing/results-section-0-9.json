@@ -1,0 +1,121 @@
+﻿[
+    {
+        "id":  "SS-2b",
+        "name":  "Update system settings (admin)",
+        "status":  "PASS",
+        "detail":  "batchSize=25",
+        "section":  "4b. Admin endpoints (re-test after promote)"
+    },
+    {
+        "id":  "AUD-1b",
+        "name":  "List audit logs (admin)",
+        "status":  "PASS",
+        "detail":  "items=5 total=140",
+        "section":  "4b. Admin endpoints (re-test after promote)"
+    },
+    {
+        "id":  "AUD-2",
+        "name":  "Audit log has \u0027CampaignSent\u0027 or similar action types",
+        "status":  "PASS",
+        "detail":  "distinct actions: AiReplyGenerated, CampaignCreated, CampaignSent, ContactCreated, ContactDeleted, ContactsAssignedToGroup, ContactsImported, ContactUpdated, TemplateCreated",
+        "section":  "4b. Admin endpoints (re-test after promote)"
+    },
+    {
+        "id":  "CG-1",
+        "name":  "Create contact group",
+        "status":  "PASS",
+        "detail":  "id=8f371602-f1a8-4384-ae7f-28b8fca1db2f name=QA Group A",
+        "section":  "7. Contact Groups (B2)"
+    },
+    {
+        "id":  "CG-2",
+        "name":  "List contact groups",
+        "status":  "PASS",
+        "detail":  "groups=1",
+        "section":  "7. Contact Groups (B2)"
+    },
+    {
+        "id":  "CG-3",
+        "name":  "Add contact to group",
+        "status":  "FAIL",
+        "detail":  " (HTTP 404)",
+        "section":  "7. Contact Groups (B2)"
+    },
+    {
+        "id":  "CG-4",
+        "name":  "Filter contacts by group",
+        "status":  "PASS",
+        "detail":  "contacts in group=0",
+        "section":  "7. Contact Groups (B2)"
+    },
+    {
+        "id":  "TPL-1",
+        "name":  "Create email template",
+        "status":  "PASS",
+        "detail":  "id=cf0b6692-42c1-4377-ae5e-bafb7b597e81 name=QA Welcome Template",
+        "section":  "8. Templates"
+    },
+    {
+        "id":  "TPL-2",
+        "name":  "List templates",
+        "status":  "PASS",
+        "detail":  "count=2",
+        "section":  "8. Templates"
+    },
+    {
+        "id":  "TPL-3",
+        "name":  "Update template",
+        "status":  "PASS",
+        "detail":  "name=QA Welcome Template (Updated)",
+        "section":  "8. Templates"
+    },
+    {
+        "id":  "TPL-4",
+        "name":  "Get template by ID",
+        "status":  "PASS",
+        "detail":  "channel=email subjLen=29",
+        "section":  "8. Templates"
+    },
+    {
+        "id":  "SG-1",
+        "name":  "Create SmtpGroup",
+        "status":  "PASS",
+        "detail":  "id=d2cb7645-1b58-41b7-8a96-70e9caf24631 name=QA SMTP Group A",
+        "section":  "9. SmtpGroups + Clone"
+    },
+    {
+        "id":  "SG-2",
+        "name":  "List SmtpGroups",
+        "status":  "PASS",
+        "detail":  "groups=4",
+        "section":  "9. SmtpGroups + Clone"
+    },
+    {
+        "id":  "SG-3",
+        "name":  "Clone SmtpGroup (NEW feature)",
+        "status":  "PASS",
+        "detail":  "clone id=b290844d-de8e-4404-9d3b-a64d3b057c4d name=\u0027Copy of QA SMTP Group A\u0027 isDefault=False",
+        "section":  "9. SmtpGroups + Clone"
+    },
+    {
+        "id":  "SG-4",
+        "name":  "Clone preserves config but not default flag",
+        "status":  "PASS",
+        "detail":  "preserved fromEmail + isDefault=false ✓",
+        "section":  "9. SmtpGroups + Clone"
+    },
+    {
+        "id":  "SG-5",
+        "name":  "Cannot delete SmtpGroup with assigned users (RESTRICT)",
+        "status":  "PASS",
+        "detail":  "Correctly blocked: 409",
+        "section":  "9. SmtpGroups + Clone"
+    },
+    {
+        "id":  "SG-6",
+        "name":  "Delete the clone (not default, no users)",
+        "status":  "PASS",
+        "detail":  "deleted",
+        "section":  "9. SmtpGroups + Clone"
+    }
+]

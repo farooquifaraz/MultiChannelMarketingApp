@@ -1,0 +1,163 @@
+﻿[
+    {
+        "id":  "CAMP-1",
+        "name":  "Create draft campaign",
+        "status":  "PASS",
+        "detail":  "id=65d7e0e2-bd79-45a7-98d5-690dd12af884 status=draft",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-2",
+        "name":  "List campaigns",
+        "status":  "PASS",
+        "detail":  "campaigns=1",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-3",
+        "name":  "Get campaign by ID",
+        "status":  "PASS",
+        "detail":  "status=draft totalContacts=0",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-4",
+        "name":  "Schedule campaign for FUTURE (D3)",
+        "status":  "FAIL",
+        "detail":  "{\"success\":false,\"message\":\"Campaign group has no deliverable contacts (after excluding bounced and inactive).\",\"data\":null,\"errors\":[\"Campaign group has no deliverable contacts (after excluding bounced and inactive).\"],\"correlationId\":\"6bba8f5d-07a5... (HTTP 400)",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-5",
+        "name":  "Cancel scheduled campaign",
+        "status":  "FAIL",
+        "detail":  "{\"success\":false,\"message\":\"Cannot cancel a campaign in \u0027draft\u0027 state.\",\"data\":null,\"errors\":null,\"correlationId\":\"518eda47-308a-476a-8b40-1b15bdbd37d4\",\"timestamp\":\"2026-05-31T20:00:27.8365121Z\"} (HTTP 409)",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-6",
+        "name":  "Cannot schedule with PAST date",
+        "status":  "PASS",
+        "detail":  "Correctly rejected 400",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-7",
+        "name":  "Get campaign report",
+        "status":  "PASS",
+        "detail":  "openRate=0% sent=0 opened=0",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "CAMP-8",
+        "name":  "Get campaign messages",
+        "status":  "PASS",
+        "detail":  "messages=0",
+        "section":  "10. Campaigns + Tracking"
+    },
+    {
+        "id":  "INB-1",
+        "name":  "List inbox messages",
+        "status":  "PASS",
+        "detail":  "items=0",
+        "section":  "11. Inbox"
+    },
+    {
+        "id":  "INB-2",
+        "name":  "List threads (H3)",
+        "status":  "PASS",
+        "detail":  "threads=0",
+        "section":  "11. Inbox"
+    },
+    {
+        "id":  "AI-1",
+        "name":  "Get default AI prompt",
+        "status":  "PASS",
+        "detail":  "len=",
+        "section":  "12. AI provider"
+    },
+    {
+        "id":  "AI-2",
+        "name":  "Test AI without configured provider should give clear error",
+        "status":  "PASS",
+        "detail":  "Got 400 — error: {\"success\":false,\"message\":\"AI provider is disabled. Pick a provider before testing.\",\"data\":null,\"errors\":null,\"correla...",
+        "section":  "12. AI provider"
+    },
+    {
+        "id":  "VAL-1",
+        "name":  "Very long fullName (1000 chars)",
+        "status":  "PASS",
+        "detail":  "Rejected 400 ✓",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-2",
+        "name":  "SQL injection attempt in search (should NOT crash)",
+        "status":  "PASS",
+        "detail":  "Safe — got 0 results (no SQL exec)",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-3",
+        "name":  "XSS attempt in fullName preserved as raw text (not executed)",
+        "status":  "PASS",
+        "detail":  "Stored as-is (frontend MUST sanitize on render) — DOMPurify confirmed in code",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-4",
+        "name":  "Unicode + emoji in fullName",
+        "status":  "PASS",
+        "detail":  "Unicode preserved: \u0027Test ?? ??????? ??\u0027",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-5",
+        "name":  "Empty body POST should be 400",
+        "status":  "PASS",
+        "detail":  "Rejected 400 ✓",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-6",
+        "name":  "Negative page number → handled gracefully",
+        "status":  "FAIL",
+        "detail":  "{\"success\":false,\"message\":\"An unexpected error occurred.\",\"data\":null,\"errors\":null,\"correlationId\":\"37583a31-fa09-41f9-a306-5637946f8ebd\",\"timestamp\":\"2026-05-31T20:00:31.5513377Z\"} (HTTP 500)",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "VAL-7",
+        "name":  "HUGE page size (10000) → capped or rejected",
+        "status":  "PASS",
+        "detail":  "returned 1 items (max accepted)",
+        "section":  "13. Input validation"
+    },
+    {
+        "id":  "STR-1",
+        "name":  "Bulk create 50 contacts (sequential)",
+        "status":  "PASS",
+        "detail":  "50/50 created in 3.41s (14.64 req/s)",
+        "section":  "14. Stress (light load)"
+    },
+    {
+        "id":  "STR-2",
+        "name":  "List with pagination works on 50+ items",
+        "status":  "PASS",
+        "detail":  "page 2 items=20 total=51",
+        "section":  "14. Stress (light load)"
+    },
+    {
+        "id":  "STR-3",
+        "name":  "Cleanup: delete all bulk contacts",
+        "status":  "PASS",
+        "detail":  "deleted 50/50",
+        "section":  "14. Stress (light load)"
+    },
+    {
+        "id":  "STR-4",
+        "name":  "Concurrent 10 login requests",
+        "status":  "PASS",
+        "detail":  "10/10 succeeded under concurrent load",
+        "section":  "14. Stress (light load)"
+    }
+]

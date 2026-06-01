@@ -33,6 +33,8 @@ public class AdminAuditLogsController : ControllerBase
         CancellationToken ct = default)
     {
         if (GuardAdmin() is { } forbidden) return forbidden;
+        // BUG-003 defensive clamp.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
 
         var result = await _audit.QueryAsync(new AuditLogQuery
         {

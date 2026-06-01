@@ -34,7 +34,8 @@ public class CampaignsController : ControllerBase
         [FromQuery] bool viewAll = false,
         CancellationToken ct = default)
     {
-        if (pageSize > 100) pageSize = 100;
+        // BUG-003 defensive clamp.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
         // Admins can flip viewAll=true to see ALL users' campaigns. Non-admins always scoped to themselves.
         Guid? scopeUserId = (IsAdmin && viewAll) ? null : CurrentUserId;
         var result = await _campaignService.GetAllAsync(scopeUserId, pageNumber, pageSize, status, channel, ct);
@@ -149,7 +150,8 @@ public class CampaignsController : ControllerBase
         [FromQuery] string? status = null,
         CancellationToken ct = default)
     {
-        if (pageSize > 100) pageSize = 100;
+        // BUG-003 defensive clamp.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
         var result = await _campaignService.GetMessagesAsync(id, CurrentUserId, IsAdmin, pageNumber, pageSize, status, ct);
         return Ok(result);
     }

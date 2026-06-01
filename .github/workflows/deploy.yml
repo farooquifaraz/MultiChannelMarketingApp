@@ -97,12 +97,39 @@ jobs:
           npx tsc --noEmit
           npm run build
 
+  # =========================================================================
+  # Deploy job — branch-based target selection
+  #
+  #   refs/heads/master  → live  (production app.samdigital.ae)
+  #   refs/heads/staging → staging (staging.app.samdigital.ae)
+  #   other branches     → skipped entirely
+  #
+  # CI still runs build + regression on every push to feature branches; only
+  # the deploy step is branch-gated.
+  # =========================================================================
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging'
     steps:
+      - name: Resolve deployment target
+        id: target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+            echo "target=staging" >> "$GITHUB_OUTPUT"
+            echo "deploy_path=/opt/marketingapp-staging" >> "$GITHUB_OUTPUT"
+            echo "branch=staging" >> "$GITHUB_OUTPUT"
+            echo "compose=docker-compose.staging.yml" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploying to STAGING (staging.app.samdigital.ae)"
+          else
+            echo "target=live" >> "$GITHUB_OUTPUT"
+            echo "deploy_path=${{ secrets.VPS_DEPLOY_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "branch=master" >> "$GITHUB_OUTPUT"
+            echo "compose=docker-compose.prod.yml" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploying to LIVE (app.samdigital.ae)"
+          fi
+
       # First-time setup: secrets may not yet be configured. We don't want every
       # push to show a red ✗ in that case — we want a clean green ✓ with a
       # warning, and the deploy step is simply skipped. Once the user adds the
@@ -127,26 +154,37 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key:      ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
+          envs: TARGET,DEPLOY_PATH,BRANCH,COMPOSE
           script: |
             set -euo pipefail
-            cd ${{ secrets.VPS_DEPLOY_PATH }}
-            git fetch origin master
-            git reset --hard origin/master
-            # Rebuild + restart only the services that changed; --remove-orphans
-            # cleans up containers from deleted services.
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            cd "$DEPLOY_PATH"
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            # deploy.sh handles target-specific paths, env files, and nginx
+            # vhost splicing for staging. Single command for both targets.
+            bash deploy.sh --target "$TARGET"
             # Prune dangling images so the disk doesn't fill up over time.
             docker image prune -af --filter "until=168h"
-            # Verify the API is responding (5 retries, 5s apart).
+            # Verify the API is responding (5 retries, 5s apart). Container
+            # name varies by target.
+            if [ "$TARGET" = "staging" ]; then
+              API_CONTAINER="marketingapp-staging-api"
+            else
+              API_CONTAINER="marketingapp-api"
+            fi
             for i in 1 2 3 4 5; do
-              if curl -fsS http://localhost:80/ >/dev/null 2>&1 \
-                 || docker exec marketingapp-api curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
-                echo "✅ deploy healthy"
+              if docker exec "$API_CONTAINER" curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
+                echo "✅ $TARGET deploy healthy"
                 exit 0
               fi
-              echo "waiting for API to come up... ($i/5)"
+              echo "waiting for $TARGET API to come up... ($i/5)"
               sleep 5
             done
-            echo "❌ API didn't become healthy in time"
-            docker compose -f docker-compose.prod.yml logs --tail 80 api
+            echo "❌ $TARGET API didn't become healthy in time"
+            docker compose -f "$COMPOSE" logs --tail 80 api
             exit 1
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+          DEPLOY_PATH: ${{ steps.target.outputs.deploy_path }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          COMPOSE: ${{ steps.target.outputs.compose }}

@@ -230,9 +230,71 @@ cd frontend && npm run regress
 
 ## 6. Deploying to staging
 
-(Coming in task K2 — will be `bash deploy.sh --target staging` or similar.
-For now, staging is treated as a code-review checkpoint only; the existing
-`deploy.sh` only targets live.)
+K2 delivered an isolated staging stack that runs side-by-side with prod on
+the same VPS. Strict isolation:
+
+- separate folder: `/opt/marketingapp-staging` (prod uses `/opt/marketingapp`)
+- separate containers: `marketingapp-staging-*` (prod uses `marketingapp-*`)
+- separate Docker network + persistent volumes
+- separate DB: `marketingapp_staging` (prod uses `marketingapp_prod`)
+- separate env file: `.env.staging` (prod uses `.env`) — secrets MUST differ
+- one prod nginx terminates TLS for BOTH; staging vhosts are spliced into
+  the shared nginx config so only one process owns 80/443
+
+### Auto-deploy via CI (recommended)
+
+Push to the `staging` branch and GitHub Actions auto-deploys to staging:
+
+```bash
+git checkout staging
+git merge feature/your-branch     # only after Section 3 regression checklist passes locally
+git push origin staging           # CI builds, runs regression, deploys to staging
+```
+
+Staging URLs once DNS + cert SANs are in place:
+- Frontend: `https://staging.app.samdigital.ae`
+- API:      `https://staging.api.samdigital.ae`
+
+### Manual deploy (rarely needed)
+
+```bash
+ssh root@195.35.23.193
+cd /opt/marketingapp-staging   # cloned by deploy.sh on first run
+bash deploy.sh --target staging
+```
+
+### Promoting staging → master (production)
+
+After manual QA on staging passes:
+
+```bash
+git checkout master
+git merge --ff-only staging     # only fast-forward; no surprise commits
+git push origin master          # CI deploys to live
+```
+
+### One-time staging-stack setup on the VPS (done once, then forgotten)
+
+1. **DNS**: add A records for `staging.app` and `staging.api` pointing to the
+   VPS IP (`195.35.23.193`). Same flow as the original prod records.
+2. **SSL**: expand the existing prod Let's Encrypt cert to cover the staging
+   SANs (one-time):
+   ```bash
+   certbot --expand -d app.samdigital.ae -d api.samdigital.ae \
+                    -d staging.app.samdigital.ae -d staging.api.samdigital.ae \
+       --non-interactive --agree-tos --email YOU@samdigital.ae
+   docker exec marketingapp-nginx nginx -s reload
+   ```
+3. **First deploy**: clone + run staging script
+   ```bash
+   cd /opt
+   git clone https://github.com/farooquifaraz/MultiChannelMarketingApp.git marketingapp-staging
+   cd marketingapp-staging
+   git checkout staging
+   bash deploy.sh --target staging
+   ```
+   The script generates `.env.staging` with fresh random secrets the first
+   time and reuses it on every subsequent run.
 
 ---
 

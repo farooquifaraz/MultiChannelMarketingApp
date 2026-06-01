@@ -1,0 +1,115 @@
+# =========================================================================
+# Staging docker-compose — runs ALONGSIDE production on the same VPS.
+#
+# Strict isolation from production:
+#   - separate container names      (marketingapp-staging-*)
+#   - separate docker network       (marketingapp_staging)
+#   - separate persistent volumes   (postgres_staging_data, redis_staging_data)
+#   - separate DB name              (marketingapp_staging — different from
+#                                    prod's marketingapp_prod)
+#   - separate JWT secret + .env    (loaded from .env.staging at deploy time)
+#   - separate Nginx vhosts         (staging.app.samdigital.ae, staging.api.samdigital.ae)
+#
+# Port strategy:
+#   - host 80/443 are owned by the PROD nginx (always)
+#   - staging nginx exposes 8080/8443 on host loopback only; the prod nginx
+#     proxies staging.* subdomains to it. That way only ONE TLS process needs
+#     to manage Let's Encrypt and the public surface stays uniform.
+#
+# Bring up:
+#   ./deploy.sh --target staging
+# =========================================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: marketingapp-staging-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marketingapp_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-marketingapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?staging postgres password required}
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    networks: [marketingapp_staging]
+    # Expose only on loopback so devs can DBeaver-tunnel into staging exactly
+    # like they do for prod. Note we pick port 5433 to avoid colliding with
+    # the prod postgres which already binds 127.0.0.1:5432.
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketingapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: marketingapp-staging-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_staging_data:/data
+    networks: [marketingapp_staging]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: marketingapp-staging-api:latest
+    container_name: marketingapp-staging-api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ASPNETCORE_URLS: http://+:8080
+      # Staging DB lives on the SERVICE NAME 'postgres' within the staging network.
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-marketingapp_staging};Username=${POSTGRES_USER:-marketingapp};Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=5;MaxPoolSize=100"
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?staging jwt secret required}
+      Jwt__Issuer: ${JWT_ISSUER:-MarketingApp.Staging}
+      Jwt__Audience: ${JWT_AUDIENCE:-MarketingAppUsers.Staging}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      Jwt__RefreshTokenExpiryDays: ${JWT_REFRESH_DAYS:-30}
+      App__PublicBaseUrl: ${PUBLIC_API_URL:?public api url required, e.g. https://staging.api.samdigital.ae}
+      AllowedOrigins: ${ALLOWED_ORIGINS:?allowed origins required}
+    networks: [marketingapp_staging]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${PUBLIC_API_URL}/api/v1
+    image: marketingapp-staging-frontend:latest
+    container_name: marketingapp-staging-frontend
+    restart: unless-stopped
+    depends_on: [api]
+    networks: [marketingapp_staging]
+
+  # Internal-only nginx that the PROD nginx proxies to via the shared bridge.
+  # No public ports — only the prod nginx talks to it via the staging network.
+  # We use container DNS so prod nginx can reach `staging-frontend:80` and
+  # `staging-api:8080` (see nginx/conf.d/staging-marketingapp.conf).
+  # No separate nginx container for staging — prod nginx handles vhost routing.
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+
+networks:
+  marketingapp_staging:
+    driver: bridge
+    # The production docker-compose creates a network called
+    # `marketingapp_marketingapp` (project_name_networkname). For prod's nginx
+    # to reach the staging api/frontend containers, we mark the staging
+    # network as attachable so the prod nginx container can join it.
+    # Done via a one-time `docker network connect` in deploy.sh.
+    attachable: true

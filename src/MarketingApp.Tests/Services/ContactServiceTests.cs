@@ -16,6 +16,9 @@ public class ContactServiceTests
 {
     private readonly Mock<IContactRepository> _contactRepoMock;
     private readonly Mock<IGenericRepository<ContactGroup>> _groupRepoMock;
+    private readonly Mock<IGenericRepository<User>> _userRepoMock;
+    private readonly Mock<IGenericRepository<SmtpGroup>> _smtpGroupRepoMock;
+    private readonly Mock<ISystemSettingsService> _systemSettingsMock;
     private readonly Mock<IAuditService> _auditMock;
     private readonly Mock<ILogger<ContactService>> _loggerMock;
     private readonly IMapper _mapper;
@@ -25,6 +28,9 @@ public class ContactServiceTests
     {
         _contactRepoMock = new Mock<IContactRepository>();
         _groupRepoMock = new Mock<IGenericRepository<ContactGroup>>();
+        _userRepoMock = new Mock<IGenericRepository<User>>();
+        _smtpGroupRepoMock = new Mock<IGenericRepository<SmtpGroup>>();
+        _systemSettingsMock = new Mock<ISystemSettingsService>();
         _auditMock = new Mock<IAuditService>();
         _loggerMock = new Mock<ILogger<ContactService>>();
 
@@ -34,6 +40,9 @@ public class ContactServiceTests
         _sut = new ContactService(
             _contactRepoMock.Object,
             _groupRepoMock.Object,
+            _userRepoMock.Object,
+            _smtpGroupRepoMock.Object,
+            _systemSettingsMock.Object,
             _auditMock.Object,
             _mapper,
             _loggerMock.Object);
@@ -280,6 +289,13 @@ public class ContactServiceTests
     {
         var userId = Guid.NewGuid();
         var dto = new CreateContactGroupDto { Name = "VIP Contacts", Description = "Top clients" };
+
+        // CreateGroupAsync now resolves the creator first (for the sharing-policy check
+        // added with the multi-tenant contacts work). Mock a valid user so it doesn't
+        // bail on NotFoundException before exercising the actual creation logic.
+        _userRepoMock
+            .Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { Id = userId, Email = "creator@test.com", FullName = "Creator", Role = "user" });
 
         _groupRepoMock
             .Setup(r => r.AddAsync(It.IsAny<ContactGroup>(), It.IsAny<CancellationToken>()))

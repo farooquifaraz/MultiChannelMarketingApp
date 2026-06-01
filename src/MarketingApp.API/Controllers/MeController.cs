@@ -41,6 +41,69 @@ public class MeController : ControllerBase
     public record UpdateMyProfileDto(string FullName);
     public record ChangeMyPasswordDto(string CurrentPassword, string NewPassword);
 
+    /// <summary>
+    /// M2 — what every Send Message / Send Campaign page asks before letting the user
+    /// click Send: "which provider will actually deliver this email?". Resolves the
+    /// user's assigned SmtpGroup (or platform default), and exposes enough info to
+    /// render a clear banner: provider, from-address, daily/hourly rate caps.
+    /// Returns null group when no default is configured — the UI then surfaces a
+    /// warning instead of silently falling back to the mock service.
+    /// </summary>
+    public record ActiveSenderDto(
+        Guid? GroupId,
+        string? GroupName,
+        string? Provider,
+        string? FromEmail,
+        string? FromName,
+        bool IsDefault,
+        bool IsAssignedToUser,
+        bool HasApiKey,
+        bool HasSmtpPassword,
+        int? DelayBetweenMessagesMs,
+        int? MaxMessagesPerMinute);
+
+    [HttpGet("active-sender")]
+    public async Task<IActionResult> GetActiveSender(CancellationToken ct)
+    {
+        var userId = GetUserId();
+        var user = await _userRepo.GetByIdAsync(userId, ct) ?? throw new NotFoundException("User", userId);
+        var group = await _smtpGroups.ResolveForUserAsync(userId, ct);
+
+        if (group is null)
+        {
+            return Ok(ApiResponse<ActiveSenderDto>.Ok(new ActiveSenderDto(
+                null, null, null, null, null, false, false, false, false, null, null)));
+        }
+
+        // Whether this group is the user's assigned group (vs the platform-wide default fallback).
+        var isAssigned = user.SmtpGroupId == group.Id;
+
+        // Provider-specific credential presence — surfaced so the UI can warn
+        // "Brevo selected but API key missing" before the user clicks Send.
+        var provider = (group.EmailProvider ?? "smtp").ToLowerInvariant();
+        var hasApiKey = provider switch
+        {
+            "brevo"    => !string.IsNullOrWhiteSpace(group.BrevoApiKey),
+            "sendgrid" => !string.IsNullOrWhiteSpace(group.SendGridApiKey),
+            "mailgun"  => !string.IsNullOrWhiteSpace(group.MailgunApiKey),
+            _          => false, // SMTP doesn't use an API key
+        };
+        var hasSmtpPassword = provider == "smtp" && !string.IsNullOrWhiteSpace(group.SmtpPassword);
+
+        return Ok(ApiResponse<ActiveSenderDto>.Ok(new ActiveSenderDto(
+            GroupId: group.Id,
+            GroupName: group.Name,
+            Provider: provider,
+            FromEmail: group.FromEmail,
+            FromName: group.FromName,
+            IsDefault: group.IsDefault,
+            IsAssignedToUser: isAssigned,
+            HasApiKey: hasApiKey,
+            HasSmtpPassword: hasSmtpPassword,
+            DelayBetweenMessagesMs: group.DelayBetweenMessagesMs,
+            MaxMessagesPerMinute: group.MaxMessagesPerMinute)));
+    }
+
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
     {

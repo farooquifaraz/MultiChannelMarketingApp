@@ -57,38 +57,107 @@ public class CampaignJobService : ICampaignJobService
     }
 
     /// <summary>
-    /// Detect SMTP hard-bounce signals in an exception message so we can permanently disable the contact.
-    /// We only flag CLEAR hard-bounces — soft failures (timeout, throttle, server error) are retried elsewhere.
-    /// Patterns are matched case-insensitively against the full exception chain.
+    /// Detect SMTP hard-bounce signals in an exception message so we can permanently disable
+    /// the contact. We only flag CLEAR hard-bounces — soft failures (rate limit, throttle,
+    /// timeout, server error, mailbox full, greylisting) are retried elsewhere and MUST NOT
+    /// taint the contact's `IsBounced` flag.
+    ///
+    /// Resolution order (first match wins):
+    ///   1. Soft-bounce / rate-limit keywords → IsHardBounce=false (even if a hard pattern
+    ///      would otherwise match later in the message). This is the most important rule —
+    ///      Zoho's "Mailbox unavailable. 5.4.6 Unusual sending activity detected" looks like
+    ///      a hard bounce but is actually a temporary throttle.
+    ///   2. Definitively permanent SMTP enhanced status codes: 5.1.x (addressing), 5.5.x
+    ///      (protocol), 5.6.x (content), 5.7.x (security/policy). NOT 5.2.x (mailbox-status
+    ///      includes "mailbox full" which is soft), NOT 5.3.x (system status — often soft),
+    ///      NOT 5.4.x (network/routing — Zoho rate-limit returns 5.4.6).
+    ///   3. Bare 3-digit hard codes: 550 / 551 / 553 (user unknown / not local / invalid).
+    ///   4. Provider-agnostic hard-bounce phrases — tightened to remove ambiguous matches
+    ///      ("mailbox unavailable" / "does not exist" alone are NOT enough).
     /// </summary>
-    private static (bool IsHardBounce, string? Reason) DetectHardBounce(Exception ex)
+    internal static (bool IsHardBounce, string? Reason) DetectHardBounce(Exception ex)
     {
         var msg = ex.ToString().ToLowerInvariant();
 
-        // SMTP RFC 5321 permanent-failure status codes
-        if (System.Text.RegularExpressions.Regex.IsMatch(msg, @"\b5(5[0-4]|0[0-9]|1[0-9]|3[0-9])\s|status:\s*5\.\d\.\d"))
+        // Rule 1 — soft-bounce keywords ALWAYS win. Treat as transient; retry later, do
+        // NOT flag the contact. This list grew from the 2026-06-01 prod incident where
+        // 48 Zoho-throttled deliveries got wrongly hard-bounced.
+        string[] softBouncePhrases =
+        {
+            "rate limit",
+            "rate-limit",
+            "rate exceeded",
+            "throttle",
+            "throttled",
+            "too many",
+            "try again later",
+            "try after",
+            "try after sometime",
+            "unusual sending activity",
+            "quota exceeded",
+            "exceeded sending rate",
+            "exceeded the allowed limit",
+            "temporary failure",
+            "temporarily unavailable",
+            "service unavailable",
+            "service not available",
+            "greylisted",
+            "greylisting",
+            "deferred",
+            "mailbox full",                  // 5.2.2 — soft, can free up
+            "over quota",
+            "is full",
+            "exceeded storage allocation",
+            "connection refused",            // transient network
+            "connection timed out",
+            "timeout",
+            "temporary local problem",
+        };
+        foreach (var phrase in softBouncePhrases)
+        {
+            if (msg.Contains(phrase)) return (false, null);
+        }
+
+        // Rule 2 — definitively permanent enhanced status codes.
+        // 5.1.x (addressing), 5.5.x (protocol), 5.6.x (content), 5.7.x (security/policy).
+        if (System.Text.RegularExpressions.Regex.IsMatch(msg, @"\b5\.[1567]\.\d\b"))
             return (true, ExtractFirstLine(ex.Message));
-        // Common provider-agnostic hard-bounce phrasings
+
+        // Rule 3 — bare 3-digit permanent-failure codes.
+        //   550 = user unknown / mailbox unavailable (permanent — distinct from soft 451)
+        //   551 = user not local
+        //   553 = invalid recipient address
+        // Excluded: 552 (mailbox over quota — soft), 554 (transaction failed — ambiguous).
+        if (System.Text.RegularExpressions.Regex.IsMatch(msg, @"\b55[013]\b"))
+            return (true, ExtractFirstLine(ex.Message));
+
+        // Rule 4 — provider-agnostic hard-bounce phrases.
+        // NOTE: ambiguous phrases ("mailbox unavailable", "does not exist") REMOVED — they
+        // appear in legitimate transient errors too (e.g. Zoho rate-limit message).
         string[] hardBouncePhrases =
         {
             "user unknown",
             "no such user",
             "no such recipient",
-            "mailbox not found",
-            "mailbox unavailable",
+            "no such mailbox",
+            "no mailbox here by that name",
             "address rejected",
-            "recipient rejected",
             "recipient address rejected",
+            "recipient rejected",
             "domain does not exist",
             "domain not found",
+            "no relay access",
             "invalid recipient",
             "invalid mailbox",
-            "does not exist",
-            "no mailbox",
+            "invalid address",
             "user not found",
             "mailbox is disabled",
+            "mailbox has been disabled",
             "account has been disabled",
-            "550-",
+            "account is disabled",
+            "account does not exist",
+            "this account is locked",
+            "blacklisted by recipient",
         };
         foreach (var phrase in hardBouncePhrases)
         {

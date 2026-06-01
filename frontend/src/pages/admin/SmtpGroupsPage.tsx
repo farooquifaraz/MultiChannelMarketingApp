@@ -52,6 +52,37 @@ export default function SmtpGroupsPage() {
 
   useEffect(() => { loadAll(); }, []);
 
+  // M1 — when editing an existing group, this is the saved version (from API).
+  // It carries the *Masked credential fields so we can show "✅ Currently configured: xkey…9gU1eB"
+  // without ever leaking the real secret back into a form field.
+  const editingGroup: SmtpGroup | null = editId ? (groups.find(g => g.id === editId) ?? null) : null;
+
+  /**
+   * M1 — render a "credential configured" hint below sensitive inputs. Three cases:
+   *   (a) creating a brand-new group → no hint (the input itself is the only state)
+   *   (b) editing, secret IS set → green ✅ pill with masked tail + "leave blank to keep" copy
+   *   (c) editing, secret is NOT set → amber ⚠ pill prompting the admin to fill it
+   * Backend already preserves the existing secret when the field is blank, so this is
+   * purely a UX clarification of the long-standing behavior.
+   */
+  const credentialIndicator = (masked: string | null | undefined, label: string) => {
+    if (!editId) return null; // case (a)
+    if (masked) {
+      return (
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
+          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+          <span><strong>{label} configured:</strong> <code className="font-mono">{masked}</code> — leave blank to keep, or paste a new one to replace.</span>
+        </p>
+      );
+    }
+    return (
+      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+        <span className="flex-shrink-0">⚠</span>
+        <span><strong>{label} not set</strong> — paste a key to enable this group, otherwise sends through it will fail.</span>
+      </p>
+    );
+  };
+
   const resetForm = () => {
     setForm(emptyGroup);
     setEditId(null);
@@ -283,6 +314,10 @@ export default function SmtpGroupsPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {/* M1 — boolean indicator from backend (SmtpPasswordSet); we don't have the masked value for SMTP */}
+                  {editId && editingGroup?.smtpPasswordSet
+                    ? credentialIndicator('••••••••', 'SMTP password')
+                    : credentialIndicator(null, 'SMTP password')}
                 </div>
                 <label className="flex items-center gap-2 col-span-2">
                   <input type="checkbox" checked={form.smtpEnableSsl} onChange={e => setForm({...form, smtpEnableSsl: e.target.checked})} className="w-4 h-4 text-indigo-600 rounded" />
@@ -293,23 +328,26 @@ export default function SmtpGroupsPage() {
 
             {form.emailProvider === 'sendgrid' && (
               <div>
-                <label className={labelCls}>SendGrid API Key *</label>
+                <label className={labelCls}>SendGrid API Key * {editId && <span className="text-gray-400 font-normal">(leave blank to keep)</span>}</label>
                 <input type="password" className={inputCls} placeholder="SG.xxxxx..." value={form.sendGridApiKey ?? ''} onChange={e => setForm({...form, sendGridApiKey: e.target.value})} />
+                {credentialIndicator(editingGroup?.sendGridApiKeyMasked, 'SendGrid API key')}
               </div>
             )}
 
             {form.emailProvider === 'brevo' && (
               <div>
-                <label className={labelCls}>Brevo API Key *</label>
+                <label className={labelCls}>Brevo API Key * {editId && <span className="text-gray-400 font-normal">(leave blank to keep)</span>}</label>
                 <input type="password" className={inputCls} placeholder="xkeysib-xxxxx..." value={form.brevoApiKey ?? ''} onChange={e => setForm({...form, brevoApiKey: e.target.value})} />
+                {credentialIndicator(editingGroup?.brevoApiKeyMasked, 'Brevo API key')}
               </div>
             )}
 
             {form.emailProvider === 'mailgun' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Mailgun API Key *</label>
+                  <label className={labelCls}>Mailgun API Key * {editId && <span className="text-gray-400 font-normal">(leave blank to keep)</span>}</label>
                   <input type="password" className={inputCls} value={form.mailgunApiKey ?? ''} onChange={e => setForm({...form, mailgunApiKey: e.target.value})} />
+                  {credentialIndicator(editingGroup?.mailgunApiKeyMasked, 'Mailgun API key')}
                 </div>
                 <div>
                   <label className={labelCls}>Mailgun Domain *</label>

@@ -10,6 +10,8 @@ export interface SmtpGroup {
   smtpHost?: string;
   smtpPort: number;
   smtpUsername?: string;
+  /** M1 — true when an SMTP password is configured (boolean only; value never returned). */
+  smtpPasswordSet?: boolean;
   smtpEnableSsl: boolean;
   smtpTimeout: number;
   sendGridApiKeyMasked?: string;

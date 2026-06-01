@@ -1,0 +1,570 @@
+﻿[
+    {
+        "Section":  "A",
+        "Id":  "A1",
+        "Name":  "Health endpoint returns 200 Healthy",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  146
+    },
+    {
+        "Section":  "A",
+        "Id":  "A2",
+        "Name":  "POST /auth/login with no body returns 4xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  234
+    },
+    {
+        "Section":  "A",
+        "Id":  "A3",
+        "Name":  "POST /auth/login wrong creds returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  85
+    },
+    {
+        "Section":  "A",
+        "Id":  "A4",
+        "Name":  "POST /auth/register first user creates admin",
+        "Status":  "FAIL",
+        "Error":  "no token in response",
+        "Ms":  781
+    },
+    {
+        "Section":  "A",
+        "Id":  "A5",
+        "Name":  "POST /auth/register second user gets role=user (BUG-001 regression)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  388
+    },
+    {
+        "Section":  "A",
+        "Id":  "A6",
+        "Name":  "POST /auth/register duplicate email returns 4xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  25
+    },
+    {
+        "Section":  "A",
+        "Id":  "A7",
+        "Name":  "POST /auth/login with correct creds returns JWT",
+        "Status":  "FAIL",
+        "Error":  "no token",
+        "Ms":  354
+    },
+    {
+        "Section":  "A",
+        "Id":  "A8",
+        "Name":  "Protected endpoint without token returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  17
+    },
+    {
+        "Section":  "A",
+        "Id":  "A9",
+        "Name":  "Protected endpoint with bogus token returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  22
+    },
+    {
+        "Section":  "B",
+        "Id":  "B1",
+        "Name":  "GET /me/profile returns admin profile",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  19
+    },
+    {
+        "Section":  "B",
+        "Id":  "B2",
+        "Name":  "GET /me/profile returns user profile",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  18
+    },
+    {
+        "Section":  "B",
+        "Id":  "B3",
+        "Name":  "PUT /me/profile updates full name",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  37
+    },
+    {
+        "Section":  "B",
+        "Id":  "B4",
+        "Name":  "POST /me/password wrong current rejected",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  17
+    },
+    {
+        "Section":  "B",
+        "Id":  "B5",
+        "Name":  "POST /me/password too short rejected",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  17
+    },
+    {
+        "Section":  "B",
+        "Id":  "B6",
+        "Name":  "GET /me/signature returns merged signature DTO",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  24
+    },
+    {
+        "Section":  "B",
+        "Id":  "B7",
+        "Name":  "PUT /me/signature updates designation",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  17
+    },
+    {
+        "Section":  "C",
+        "Id":  "C1",
+        "Name":  "GET /me/active-sender exists (NOT 404)",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  19
+    },
+    {
+        "Section":  "C",
+        "Id":  "C2",
+        "Name":  "GET /me/active-sender returns expected fields",
+        "Status":  "FAIL",
+        "Error":  "Cannot index into a null array.",
+        "Ms":  48
+    },
+    {
+        "Section":  "C",
+        "Id":  "C3",
+        "Name":  "GET /me/active-sender requires auth (no token = 401)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  20
+    },
+    {
+        "Section":  "D",
+        "Id":  "D1",
+        "Name":  "GET /smtp-groups requires admin (user gets 403)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  22
+    },
+    {
+        "Section":  "D",
+        "Id":  "D2",
+        "Name":  "GET /smtp-groups admin returns list",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  22
+    },
+    {
+        "Section":  "D",
+        "Id":  "D3",
+        "Name":  "POST /smtp-groups create Brevo group with API key",
+        "Status":  "FAIL",
+        "Error":  "status=404 body=",
+        "Ms":  22
+    },
+    {
+        "Section":  "D",
+        "Id":  "D4",
+        "Name":  "GET created group has BrevoApiKeyMasked set (NOT empty)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  45
+    },
+    {
+        "Section":  "D",
+        "Id":  "D5",
+        "Name":  "M1 -- BrevoApiKeyMasked uses xkey...**** format",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  53
+    },
+    {
+        "Section":  "D",
+        "Id":  "D6",
+        "Name":  "PUT group with blank brevoApiKey preserves existing (M1 contract)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  25
+    },
+    {
+        "Section":  "D",
+        "Id":  "D7",
+        "Name":  "POST create SMTP group exposes SmtpPasswordSet=true (M1 boolean)",
+        "Status":  "FAIL",
+        "Error":  "status=404 body=",
+        "Ms":  22
+    },
+    {
+        "Section":  "D",
+        "Id":  "D8",
+        "Name":  "Test send to created Brevo group with dummy key returns failure (graceful)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  19
+    },
+    {
+        "Section":  "D",
+        "Id":  "D9",
+        "Name":  "GET /smtp-groups/users-assignments returns user list (admin only)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  24
+    },
+    {
+        "Section":  "D",
+        "Id":  "D10",
+        "Name":  "POST /smtp-groups/:id/clone creates a copy",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  32
+    },
+    {
+        "Section":  "E",
+        "Id":  "E1",
+        "Name":  "GET /contacts requires auth",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  25
+    },
+    {
+        "Section":  "E",
+        "Id":  "E2",
+        "Name":  "GET /contacts empty list ok",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  18
+    },
+    {
+        "Section":  "E",
+        "Id":  "E3",
+        "Name":  "POST /contacts create new",
+        "Status":  "FAIL",
+        "Error":  "status=401 body=",
+        "Ms":  26
+    },
+    {
+        "Section":  "E",
+        "Id":  "E4",
+        "Name":  "GET /contacts?search=bb-contact returns it",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  33
+    },
+    {
+        "Section":  "E",
+        "Id":  "E5",
+        "Name":  "GET /contacts?pageNumber=-5 clamped to 1 (BUG-003 fix)",
+        "Status":  "FAIL",
+        "Error":  "status=401 -- should be 200 (clamped) but got 401",
+        "Ms":  19
+    },
+    {
+        "Section":  "E",
+        "Id":  "E6",
+        "Name":  "GET /contacts?pageSize=99999 clamped to max",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  29
+    },
+    {
+        "Section":  "E",
+        "Id":  "E7",
+        "Name":  "PUT /contacts/:id update",
+        "Status":  "FAIL",
+        "Error":  "status=405",
+        "Ms":  73
+    },
+    {
+        "Section":  "E",
+        "Id":  "E8",
+        "Name":  "POST /contacts/groups create group",
+        "Status":  "FAIL",
+        "Error":  "status=401 body=",
+        "Ms":  72
+    },
+    {
+        "Section":  "E",
+        "Id":  "E9",
+        "Name":  "GET /contacts/groups list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  91
+    },
+    {
+        "Section":  "E",
+        "Id":  "E10",
+        "Name":  "POST /contacts/assign-group bulk",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  42
+    },
+    {
+        "Section":  "E",
+        "Id":  "E11",
+        "Name":  "DELETE /contacts/:id",
+        "Status":  "FAIL",
+        "Error":  "status=405",
+        "Ms":  43
+    },
+    {
+        "Section":  "F",
+        "Id":  "F1",
+        "Name":  "GET /templates list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  28
+    },
+    {
+        "Section":  "F",
+        "Id":  "F2",
+        "Name":  "POST /templates create email template",
+        "Status":  "FAIL",
+        "Error":  "status=401 body=",
+        "Ms":  25
+    },
+    {
+        "Section":  "F",
+        "Id":  "F3",
+        "Name":  "PUT /templates/:id update",
+        "Status":  "FAIL",
+        "Error":  "status=405",
+        "Ms":  47
+    },
+    {
+        "Section":  "F",
+        "Id":  "F4",
+        "Name":  "DELETE /templates/:id",
+        "Status":  "FAIL",
+        "Error":  "status=405",
+        "Ms":  25
+    },
+    {
+        "Section":  "G",
+        "Id":  "G1",
+        "Name":  "GET /campaigns list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  34
+    },
+    {
+        "Section":  "G",
+        "Id":  "G2",
+        "Name":  "GET /campaigns pageNumber=-1 clamped (BUG-003)",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  28
+    },
+    {
+        "Section":  "G",
+        "Id":  "G3",
+        "Name":  "GET /campaigns/nonexistent-id returns 404",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  107
+    },
+    {
+        "Section":  "H",
+        "Id":  "H1",
+        "Name":  "GET /settings (admin) returns system settings",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  42
+    },
+    {
+        "Section":  "H",
+        "Id":  "H2",
+        "Name":  "GET /settings rejected for user (403)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  32
+    },
+    {
+        "Section":  "H",
+        "Id":  "H3",
+        "Name":  "GET /settings/smtp user-level",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  89
+    },
+    {
+        "Section":  "H",
+        "Id":  "H4",
+        "Name":  "GET /system-settings/ai admin",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  18
+    },
+    {
+        "Section":  "I",
+        "Id":  "I1",
+        "Name":  "GET /inbox/threads returns list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  68
+    },
+    {
+        "Section":  "I",
+        "Id":  "I2",
+        "Name":  "GET /inbox/threads?pageNumber=-3 clamped (BUG-003)",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  64
+    },
+    {
+        "Section":  "I",
+        "Id":  "I3",
+        "Name":  "GET /inbox/messages list",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  30
+    },
+    {
+        "Section":  "J",
+        "Id":  "J1",
+        "Name":  "GET /audit-logs (admin) returns list",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  95
+    },
+    {
+        "Section":  "J",
+        "Id":  "J2",
+        "Name":  "GET /audit-logs?pageNumber=-7 clamped",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  41
+    },
+    {
+        "Section":  "J",
+        "Id":  "J3",
+        "Name":  "GET /audit-logs rejected for user (403)",
+        "Status":  "FAIL",
+        "Error":  "status=404",
+        "Ms":  16
+    },
+    {
+        "Section":  "K",
+        "Id":  "K1",
+        "Name":  "GET /admin/users (admin) returns list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  19
+    },
+    {
+        "Section":  "K",
+        "Id":  "K2",
+        "Name":  "GET /admin/users rejected for user",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  33
+    },
+    {
+        "Section":  "L",
+        "Id":  "L1",
+        "Name":  "GET /scheduled-campaigns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  23
+    },
+    {
+        "Section":  "M",
+        "Id":  "M1",
+        "Name":  "GET /notifications returns list",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  80
+    },
+    {
+        "Section":  "M",
+        "Id":  "M2",
+        "Name":  "GET /notifications/unread-count",
+        "Status":  "FAIL",
+        "Error":  "status=401",
+        "Ms":  137
+    },
+    {
+        "Section":  "N",
+        "Id":  "N1",
+        "Name":  "GET /contacts/export.csv returns CSV",
+        "Status":  "FAIL",
+        "Error":  "ex: The remote server returned an error: (401) Unauthorized.",
+        "Ms":  84
+    },
+    {
+        "Section":  "O",
+        "Id":  "O1",
+        "Name":  "GET /tracking/pixel/:id unauthenticated returns 200 PNG",
+        "Status":  "FAIL",
+        "Error":  "404 -- tracking should always return 200",
+        "Ms":  26
+    },
+    {
+        "Section":  "P",
+        "Id":  "P1",
+        "Name":  "GET / returns SPA index",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  138
+    },
+    {
+        "Section":  "P",
+        "Id":  "P2",
+        "Name":  "GET /login (SPA fallback) returns index too",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  87
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q1",
+        "Name":  "POST /webhooks/brevo without auth returns 401 or 400",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  228
+    },
+    {
+        "Section":  "R",
+        "Id":  "R1",
+        "Name":  "CORS preflight to /api/v1/me/profile returns headers",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  28
+    },
+    {
+        "Section":  "R",
+        "Id":  "R2",
+        "Name":  "GET /swagger or /openapi exposed in dev",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  86
+    },
+    {
+        "Section":  "R",
+        "Id":  "R3",
+        "Name":  "Invalid JSON body returns 400 not 500",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  25
+    },
+    {
+        "Section":  "R",
+        "Id":  "R4",
+        "Name":  "Long input rejected gracefully (no 500)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  34
+    }
+]

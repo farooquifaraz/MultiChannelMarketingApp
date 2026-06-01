@@ -33,6 +33,8 @@ public class InboxController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
+        // BUG-003 defensive clamp.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
         var result = await _service.GetAllAsync(
             CurrentUserId, IsAdmin, viewAll, pageNumber, pageSize,
             unreadOnly, category, smtpGroupId, search, ct);
@@ -64,6 +66,8 @@ public class InboxController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
+        // BUG-003 defensive clamp.
+        Helpers.PagingHelper.Clamp(ref pageNumber, ref pageSize);
         var result = await _service.GetThreadsAsync(
             CurrentUserId, IsAdmin, viewAll, pageNumber, pageSize, unreadOnly, category, search, ct);
         return Ok(result);

@@ -1,0 +1,104 @@
+﻿[
+    {
+        "id":  "BUG001-1",
+        "name":  "Subsequent user registration → role=\u0027user\u0027 (since DB non-empty)",
+        "status":  "PASS",
+        "detail":  "role=user ✓ (correct, since DB has existing users)"
+    },
+    {
+        "id":  "BUG001-2",
+        "name":  "Fix code present in AuthService.cs (manual verify)",
+        "status":  "PASS",
+        "detail":  "Fix code confirmed at L39-46"
+    },
+    {
+        "id":  "BUG003-1",
+        "name":  "Negative pageNumber on contacts no longer crashes",
+        "status":  "PASS",
+        "detail":  "No 500 — got page 1, items=1"
+    },
+    {
+        "id":  "BUG003-2",
+        "name":  "Negative pageSize → clamped",
+        "status":  "PASS",
+        "detail":  "No 500 — items=1"
+    },
+    {
+        "id":  "BUG003-3",
+        "name":  "Huge pageSize (99999) → clamped to MaxPageSize",
+        "status":  "PASS",
+        "detail":  "Clamped at 200 (got 1 actual items, max=200)"
+    },
+    {
+        "id":  "BUG003-4",
+        "name":  "Negative pageNumber on campaigns no longer crashes",
+        "status":  "PASS",
+        "detail":  "No 500 — items=1"
+    },
+    {
+        "id":  "BUG003-5",
+        "name":  "Negative pageNumber on audit-logs no longer crashes",
+        "status":  "PASS",
+        "detail":  "No 500 — items=5"
+    },
+    {
+        "id":  "BUG003-6",
+        "name":  "Negative pageNumber on inbox no longer crashes",
+        "status":  "PASS",
+        "detail":  "No 500 — items=0"
+    },
+    {
+        "id":  "BUG003-7",
+        "name":  "Negative pageNumber on inbox threads no longer crashes",
+        "status":  "PASS",
+        "detail":  "No 500 — items=0"
+    },
+    {
+        "id":  "SMOKE-1",
+        "name":  "Login still works",
+        "status":  "PASS",
+        "detail":  "JWT len=433"
+    },
+    {
+        "id":  "SMOKE-2",
+        "name":  "List contacts (normal)",
+        "status":  "PASS",
+        "detail":  "items=1 total=1"
+    },
+    {
+        "id":  "SMOKE-3",
+        "name":  "Case-insensitive search still works",
+        "status":  "PASS",
+        "detail":  "matches=0 (ILIKE intact)"
+    },
+    {
+        "id":  "SMOKE-4",
+        "name":  "System settings still GET-able",
+        "status":  "PASS",
+        "detail":  "batchSize=25"
+    },
+    {
+        "id":  "SMOKE-5",
+        "name":  "Audit logs still GET-able (admin)",
+        "status":  "PASS",
+        "detail":  "items=5"
+    },
+    {
+        "id":  "SMOKE-6",
+        "name":  "SmtpGroups still listable",
+        "status":  "PASS",
+        "detail":  "groups=4"
+    },
+    {
+        "id":  "SMOKE-7",
+        "name":  "Templates still listable",
+        "status":  "PASS",
+        "detail":  "items=2"
+    },
+    {
+        "id":  "SMOKE-8",
+        "name":  "Campaigns still listable",
+        "status":  "PASS",
+        "detail":  "items=1"
+    }
+]

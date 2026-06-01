@@ -1,0 +1,770 @@
+﻿[
+    {
+        "Section":  "A",
+        "Id":  "A1",
+        "Name":  "Health endpoint returns 200 Healthy",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  127
+    },
+    {
+        "Section":  "A",
+        "Id":  "A2",
+        "Name":  "POST /auth/login no body returns 4xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  100
+    },
+    {
+        "Section":  "A",
+        "Id":  "A3",
+        "Name":  "POST /auth/login wrong creds returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  62
+    },
+    {
+        "Section":  "A",
+        "Id":  "A4",
+        "Name":  "POST /auth/register creates admin/user + returns accessToken",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  1536
+    },
+    {
+        "Section":  "A",
+        "Id":  "A5",
+        "Name":  "POST /auth/register second user gets role=user",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  365
+    },
+    {
+        "Section":  "A",
+        "Id":  "A6",
+        "Name":  "BUG-001: a role=admin user exists in the system",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  2
+    },
+    {
+        "Section":  "A",
+        "Id":  "A7",
+        "Name":  "POST /auth/register duplicate email rejected",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  10
+    },
+    {
+        "Section":  "A",
+        "Id":  "A8",
+        "Name":  "POST /auth/login correct creds returns accessToken",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  355
+    },
+    {
+        "Section":  "A",
+        "Id":  "A9",
+        "Name":  "Protected endpoint no token returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  11
+    },
+    {
+        "Section":  "A",
+        "Id":  "A10",
+        "Name":  "Protected endpoint bogus token returns 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  16
+    },
+    {
+        "Section":  "A",
+        "Id":  "A11",
+        "Name":  "POST /auth/refresh with bogus refresh token returns 4xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  39
+    },
+    {
+        "Section":  "B",
+        "Id":  "B1",
+        "Name":  "GET /me/profile (admin) returns email",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  107
+    },
+    {
+        "Section":  "B",
+        "Id":  "B2",
+        "Name":  "GET /me/profile (user) returns role=user",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  22
+    },
+    {
+        "Section":  "B",
+        "Id":  "B3",
+        "Name":  "PUT /me/profile updates full name",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  39
+    },
+    {
+        "Section":  "B",
+        "Id":  "B4",
+        "Name":  "POST /me/password wrong current rejected",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  355
+    },
+    {
+        "Section":  "B",
+        "Id":  "B5",
+        "Name":  "POST /me/password too short rejected",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  356
+    },
+    {
+        "Section":  "B",
+        "Id":  "B6",
+        "Name":  "GET /me/signature returns merged signature DTO",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  34
+    },
+    {
+        "Section":  "B",
+        "Id":  "B7",
+        "Name":  "PUT /me/signature updates designation",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  28
+    },
+    {
+        "Section":  "C",
+        "Id":  "C1",
+        "Name":  "GET /me/active-sender exists (NOT 404)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  35
+    },
+    {
+        "Section":  "C",
+        "Id":  "C2",
+        "Name":  "GET /me/active-sender has all expected fields",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  20
+    },
+    {
+        "Section":  "C",
+        "Id":  "C3",
+        "Name":  "GET /me/active-sender requires auth",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  4
+    },
+    {
+        "Section":  "D",
+        "Id":  "D1",
+        "Name":  "GET /admin/smtp-groups requires admin",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  11
+    },
+    {
+        "Section":  "D",
+        "Id":  "D2",
+        "Name":  "GET /admin/smtp-groups (admin) returns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  101
+    },
+    {
+        "Section":  "D",
+        "Id":  "D3",
+        "Name":  "POST /admin/smtp-groups create Brevo group with API key",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  50
+    },
+    {
+        "Section":  "D",
+        "Id":  "D4",
+        "Name":  "GET created group exposes brevoApiKeyMasked (M1)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  52
+    },
+    {
+        "Section":  "D",
+        "Id":  "D5",
+        "Name":  "Mask format starts with xkey (M1 transparency)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  18
+    },
+    {
+        "Section":  "D",
+        "Id":  "D6",
+        "Name":  "Raw brevoApiKey NEVER returned (security)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  19
+    },
+    {
+        "Section":  "D",
+        "Id":  "D7",
+        "Name":  "PUT with blank brevoApiKey preserves existing (M1 contract)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  73
+    },
+    {
+        "Section":  "D",
+        "Id":  "D8",
+        "Name":  "POST create SMTP group exposes smtpPasswordSet=true (M1 boolean)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  21
+    },
+    {
+        "Section":  "D",
+        "Id":  "D9",
+        "Name":  "Raw smtpPassword NEVER returned (security)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  34
+    },
+    {
+        "Section":  "D",
+        "Id":  "D10",
+        "Name":  "GET /admin/smtp-groups/users-assignments returns user list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  7
+    },
+    {
+        "Section":  "D",
+        "Id":  "D11",
+        "Name":  "POST /admin/smtp-groups/:id/clone clones a group",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  39
+    },
+    {
+        "Section":  "E",
+        "Id":  "E1",
+        "Name":  "GET /contacts requires auth",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  5
+    },
+    {
+        "Section":  "E",
+        "Id":  "E2",
+        "Name":  "GET /contacts returns list (200)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  149
+    },
+    {
+        "Section":  "E",
+        "Id":  "E3",
+        "Name":  "POST /contacts creates new",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  230
+    },
+    {
+        "Section":  "E",
+        "Id":  "E4",
+        "Name":  "GET /contacts?search=BB returns it (fullName ILIKE)",
+        "Status":  "FAIL",
+        "Error":  "0 results",
+        "Ms":  86
+    },
+    {
+        "Section":  "E",
+        "Id":  "E5",
+        "Name":  "BUG-003: GET /contacts?pageNumber=-5 clamps to 1 (no 500)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  23
+    },
+    {
+        "Section":  "E",
+        "Id":  "E6",
+        "Name":  "BUG-003: GET /contacts?pageNumber=0 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  23
+    },
+    {
+        "Section":  "E",
+        "Id":  "E7",
+        "Name":  "GET /contacts?pageSize=99999 clamps to max",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  21
+    },
+    {
+        "Section":  "E",
+        "Id":  "E8",
+        "Name":  "GET /contacts?pageSize=-100 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  18
+    },
+    {
+        "Section":  "E",
+        "Id":  "E9",
+        "Name":  "PUT /contacts/:id update",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  42
+    },
+    {
+        "Section":  "E",
+        "Id":  "E10",
+        "Name":  "POST /contacts/groups creates group",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  71
+    },
+    {
+        "Section":  "E",
+        "Id":  "E11",
+        "Name":  "GET /contacts/groups list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  55
+    },
+    {
+        "Section":  "E",
+        "Id":  "E12",
+        "Name":  "POST /contacts/assign-group bulk assignment",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  48
+    },
+    {
+        "Section":  "E",
+        "Id":  "E13",
+        "Name":  "GET /contacts/export.csv returns CSV",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  31
+    },
+    {
+        "Section":  "E",
+        "Id":  "E14",
+        "Name":  "DELETE /contacts/:id removes",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  34
+    },
+    {
+        "Section":  "F",
+        "Id":  "F1",
+        "Name":  "GET /templates list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  166
+    },
+    {
+        "Section":  "F",
+        "Id":  "F2",
+        "Name":  "POST /templates create email template",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  68
+    },
+    {
+        "Section":  "F",
+        "Id":  "F3",
+        "Name":  "PUT /templates/:id update",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  57
+    },
+    {
+        "Section":  "F",
+        "Id":  "F4",
+        "Name":  "DELETE /templates/:id removes",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  49
+    },
+    {
+        "Section":  "G",
+        "Id":  "G1",
+        "Name":  "GET /campaigns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  120
+    },
+    {
+        "Section":  "G",
+        "Id":  "G2",
+        "Name":  "BUG-003: GET /campaigns?pageNumber=-1 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  23
+    },
+    {
+        "Section":  "G",
+        "Id":  "G3",
+        "Name":  "GET /campaigns/\u003crandom-guid\u003e returns 404",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  51
+    },
+    {
+        "Section":  "G",
+        "Id":  "G4",
+        "Name":  "GET /campaigns/\u003cinvalid-guid\u003e returns 4xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  6
+    },
+    {
+        "Section":  "H",
+        "Id":  "H1",
+        "Name":  "GET /settings/smtp user-level returns 200/204",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  49
+    },
+    {
+        "Section":  "H",
+        "Id":  "H2",
+        "Name":  "GET /admin/system-settings (admin) returns settings",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  60
+    },
+    {
+        "Section":  "H",
+        "Id":  "H3",
+        "Name":  "GET /admin/system-settings allowed for user (intentional â€” read-only platform settings)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  58
+    },
+    {
+        "Section":  "H",
+        "Id":  "H4",
+        "Name":  "PUT /admin/system-settings rejected for user (write requires admin)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  36
+    },
+    {
+        "Section":  "I",
+        "Id":  "I1",
+        "Name":  "GET /inbox returns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  155
+    },
+    {
+        "Section":  "I",
+        "Id":  "I2",
+        "Name":  "BUG-003: GET /inbox?pageNumber=-3 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  50
+    },
+    {
+        "Section":  "I",
+        "Id":  "I3",
+        "Name":  "GET /inbox/threads list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  80
+    },
+    {
+        "Section":  "I",
+        "Id":  "I4",
+        "Name":  "BUG-003: GET /inbox/threads?pageNumber=-2 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  33
+    },
+    {
+        "Section":  "I",
+        "Id":  "I5",
+        "Name":  "GET /inbox/unread-count returns integer",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  59
+    },
+    {
+        "Section":  "I",
+        "Id":  "I6",
+        "Name":  "GET /inbox/threads/\u003crandom\u003e returns 404",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  61
+    },
+    {
+        "Section":  "J",
+        "Id":  "J1",
+        "Name":  "GET /admin/audit-logs (admin) returns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  165
+    },
+    {
+        "Section":  "J",
+        "Id":  "J2",
+        "Name":  "BUG-003: GET /admin/audit-logs?pageNumber=-7 clamps",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  47
+    },
+    {
+        "Section":  "J",
+        "Id":  "J3",
+        "Name":  "GET /admin/audit-logs rejected for user",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  6
+    },
+    {
+        "Section":  "K",
+        "Id":  "K1",
+        "Name":  "GET /admin/users (admin) returns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  64
+    },
+    {
+        "Section":  "K",
+        "Id":  "K2",
+        "Name":  "GET /admin/users rejected for user",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  9
+    },
+    {
+        "Section":  "K",
+        "Id":  "K3",
+        "Name":  "Verify at least one admin exists (BUG-001)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  93
+    },
+    {
+        "Section":  "L",
+        "Id":  "L1",
+        "Name":  "GET /notifications returns list",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  82
+    },
+    {
+        "Section":  "L",
+        "Id":  "L2",
+        "Name":  "GET /notifications/unread-count returns int",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  38
+    },
+    {
+        "Section":  "M",
+        "Id":  "M1",
+        "Name":  "GET /dashboard returns stats",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  8
+    },
+    {
+        "Section":  "N",
+        "Id":  "N1",
+        "Name":  "GET /track/open/\u003crandom\u003e.gif returns 200 (always)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  62
+    },
+    {
+        "Section":  "N",
+        "Id":  "N2",
+        "Name":  "GET /track/click/\u003crandom\u003e?u=URL redirects to URL",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  69
+    },
+    {
+        "Section":  "N",
+        "Id":  "N3",
+        "Name":  "GET /track/click without u= returns 400 (anti-open-redirect)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  33
+    },
+    {
+        "Section":  "N",
+        "Id":  "N4",
+        "Name":  "GET /track/click with javascript: URL rejected (anti-open-redirect)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  30
+    },
+    {
+        "Section":  "O",
+        "Id":  "O1",
+        "Name":  "POST /webhooks/brevo without auth/signature accepts or 401",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  153
+    },
+    {
+        "Section":  "O",
+        "Id":  "O2",
+        "Name":  "POST /webhooks/sendgrid",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  30
+    },
+    {
+        "Section":  "O",
+        "Id":  "O3",
+        "Name":  "POST /webhooks/mailgun",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  34
+    },
+    {
+        "Section":  "P",
+        "Id":  "P1",
+        "Name":  "GET / returns SPA index",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  28
+    },
+    {
+        "Section":  "P",
+        "Id":  "P2",
+        "Name":  "GET /login (SPA fallback) returns index",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  25
+    },
+    {
+        "Section":  "P",
+        "Id":  "P3",
+        "Name":  "GET /dashboard (SPA fallback)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  25
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q1",
+        "Name":  "Invalid JSON body returns 4xx not 5xx",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  8
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q2",
+        "Name":  "Very long input gracefully rejected (no 500)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  21
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q3",
+        "Name":  "GET /api/v1/nonexistent returns 404 not 500",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  6
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q4",
+        "Name":  "POST with method that should be GET returns 405",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  6
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q5",
+        "Name":  "SQL-injection-like input in search safely handled",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  33
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q6",
+        "Name":  "XSS-like input in template body safely stored",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  30
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q7",
+        "Name":  "Unicode input gracefully accepted or rejected (no 500)",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  52
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q8",
+        "Name":  "Email field missing @ rejected",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  26
+    },
+    {
+        "Section":  "Q",
+        "Id":  "Q9",
+        "Name":  "Email too long rejected",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  24
+    },
+    {
+        "Section":  "R",
+        "Id":  "R1",
+        "Name":  "Admin sees Brevo group as default if marked",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  31
+    },
+    {
+        "Section":  "R",
+        "Id":  "R2",
+        "Name":  "/me/active-sender now reflects Brevo group + provider=brevo",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  31
+    },
+    {
+        "Section":  "R",
+        "Id":  "R3",
+        "Name":  "Provider banner gracefully handles no groups",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  26
+    },
+    {
+        "Section":  "Z",
+        "Id":  "Z1",
+        "Name":  "DELETE the test Brevo group",
+        "Status":  "PASS",
+        "Error":  null,
+        "Ms":  70
+    }
+]

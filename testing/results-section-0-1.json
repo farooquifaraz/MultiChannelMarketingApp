@@ -1,0 +1,93 @@
+﻿[
+    {
+        "id":  "H1",
+        "name":  "Local API /health",
+        "status":  "PASS",
+        "detail":  "Healthy",
+        "section":  "0. Health"
+    },
+    {
+        "id":  "H2",
+        "name":  "Local API Swagger UI",
+        "status":  "PASS",
+        "detail":  "Swagger reachable",
+        "section":  "0. Health"
+    },
+    {
+        "id":  "AUTH-1",
+        "name":  "Register first user (becomes admin)",
+        "status":  "PASS",
+        "detail":  "Registered: qatest.admin@dev.test role=user",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-2",
+        "name":  "Login with correct creds → JWT",
+        "status":  "PASS",
+        "detail":  "Got JWT (len=432) role=user id=9ac2c79a-b8c7-4d8d-a66b-6d40b96650f0",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-3",
+        "name":  "Login WRONG password rejected (proper error)",
+        "status":  "PASS",
+        "detail":  "Rejected: 400",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-4",
+        "name":  "Login NON-EXISTENT email rejected",
+        "status":  "PASS",
+        "detail":  "Rejected: 400",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-5",
+        "name":  "Register DUPLICATE email rejected",
+        "status":  "PASS",
+        "detail":  "Rejected: 409",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-6",
+        "name":  "Register WEAK password (\u003c6) rejected",
+        "status":  "PASS",
+        "detail":  "Rejected: 400",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-7",
+        "name":  "Register INVALID email rejected",
+        "status":  "PASS",
+        "detail":  "Rejected: 400",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-8",
+        "name":  "Protected endpoint requires JWT (anonymous → 401)",
+        "status":  "PASS",
+        "detail":  "401 returned",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-9",
+        "name":  "Protected endpoint with VALID JWT → 200",
+        "status":  "PASS",
+        "detail":  "Got: items=0 total=0",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-10",
+        "name":  "Refresh token returns new JWT",
+        "status":  "PASS",
+        "detail":  "New JWT len=432",
+        "section":  "1. Authentication"
+    },
+    {
+        "id":  "AUTH-11",
+        "name":  "Tampered JWT rejected",
+        "status":  "PASS",
+        "detail":  "401 returned",
+        "section":  "1. Authentication"
+    }
+]

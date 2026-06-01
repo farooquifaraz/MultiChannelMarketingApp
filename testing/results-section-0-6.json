@@ -1,0 +1,128 @@
+﻿[
+    {
+        "id":  "PROF-1",
+        "name":  "GET /me returns current user",
+        "status":  "FAIL",
+        "detail":  " (HTTP 404)",
+        "section":  "2. User Profile (B3)"
+    },
+    {
+        "id":  "PROF-2",
+        "name":  "GET /me/signature",
+        "status":  "PASS",
+        "detail":  "fullName=QA Admin",
+        "section":  "2. User Profile (B3)"
+    },
+    {
+        "id":  "PROF-3",
+        "name":  "PUT /me/signature updates",
+        "status":  "PASS",
+        "detail":  "designation=QA Tester",
+        "section":  "2. User Profile (B3)"
+    },
+    {
+        "id":  "NOTIF-1",
+        "name":  "Notifications unread count",
+        "status":  "PASS",
+        "detail":  "count=@{totalUnread=0; infoCount=0; successCount=0; warningCount=0; errorCount=0}",
+        "section":  "3. Notifications (B4)"
+    },
+    {
+        "id":  "NOTIF-2",
+        "name":  "List notifications",
+        "status":  "PASS",
+        "detail":  "items=0",
+        "section":  "3. Notifications (B4)"
+    },
+    {
+        "id":  "SS-1",
+        "name":  "GET system settings as admin",
+        "status":  "PASS",
+        "detail":  "batchSize=50 aiProvider=gemini cron=\u0027*/1 * * * *\u0027",
+        "section":  "4. System Settings (D1)"
+    },
+    {
+        "id":  "SS-2",
+        "name":  "Update batch size",
+        "status":  "FAIL",
+        "detail":  "{\"success\":false,\"message\":\"Only admins can change platform settings.\",\"data\":null,\"errors\":null,\"correlationId\":null,\"timestamp\":\"2026-05-31T19:54:54.2826666Z\"} (HTTP 403)",
+        "section":  "4. System Settings (D1)"
+    },
+    {
+        "id":  "AUD-1",
+        "name":  "List audit logs (admin)",
+        "status":  "FAIL",
+        "detail":  "{\"success\":false,\"message\":\"Admin role required.\",\"data\":null,\"errors\":null,\"correlationId\":null,\"timestamp\":\"2026-05-31T19:54:54.3557135Z\"} (HTTP 403)",
+        "section":  "5. Audit Logs (D2)"
+    },
+    {
+        "id":  "C-1",
+        "name":  "Create contact",
+        "status":  "PASS",
+        "detail":  "id=61df6952-2c11-46c5-86ab-903f0f703307",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-2",
+        "name":  "Create with duplicate email rejected",
+        "status":  "PASS",
+        "detail":  "Rejected 409",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-3",
+        "name":  "Create with INVALID email rejected",
+        "status":  "PASS",
+        "detail":  "Rejected 400",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-4",
+        "name":  "List contacts pagination",
+        "status":  "PASS",
+        "detail":  "items=1 total=1 hasNext=False",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-5",
+        "name":  "Get contact by ID",
+        "status":  "PASS",
+        "detail":  "email=qa.contact.one@dev.test",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-6",
+        "name":  "Update contact",
+        "status":  "PASS",
+        "detail":  "name=QA Contact One UPDATED",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-7",
+        "name":  "Search CASE-INSENSITIVE (ILIKE fix)",
+        "status":  "PASS",
+        "detail":  "ILIKE works, found=1",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-8",
+        "name":  "Search by partial NAME",
+        "status":  "PASS",
+        "detail":  "matches=1",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-9",
+        "name":  "Search by PHONE substring",
+        "status":  "PASS",
+        "detail":  "phone-match=1",
+        "section":  "6. Contacts CRUD (B2)"
+    },
+    {
+        "id":  "C-10",
+        "name":  "Delete contact + verify gone",
+        "status":  "PASS",
+        "detail":  "404 (deleted)",
+        "section":  "6. Contacts CRUD (B2)"
+    }
+]

@@ -16,6 +16,9 @@ public class ContactServiceTests
 {
     private readonly Mock<IContactRepository> _contactRepoMock;
     private readonly Mock<IGenericRepository<ContactGroup>> _groupRepoMock;
+    private readonly Mock<IGenericRepository<User>> _userRepoMock;
+    private readonly Mock<IGenericRepository<SmtpGroup>> _smtpGroupRepoMock;
+    private readonly Mock<ISystemSettingsService> _systemSettingsMock;
     private readonly Mock<IAuditService> _auditMock;
     private readonly Mock<ILogger<ContactService>> _loggerMock;
     private readonly IMapper _mapper;
@@ -25,6 +28,9 @@ public class ContactServiceTests
     {
         _contactRepoMock = new Mock<IContactRepository>();
         _groupRepoMock = new Mock<IGenericRepository<ContactGroup>>();
+        _userRepoMock = new Mock<IGenericRepository<User>>();
+        _smtpGroupRepoMock = new Mock<IGenericRepository<SmtpGroup>>();
+        _systemSettingsMock = new Mock<ISystemSettingsService>();
         _auditMock = new Mock<IAuditService>();
         _loggerMock = new Mock<ILogger<ContactService>>();
 
@@ -34,6 +40,9 @@ public class ContactServiceTests
         _sut = new ContactService(
             _contactRepoMock.Object,
             _groupRepoMock.Object,
+            _userRepoMock.Object,
+            _smtpGroupRepoMock.Object,
+            _systemSettingsMock.Object,
             _auditMock.Object,
             _mapper,
             _loggerMock.Object);

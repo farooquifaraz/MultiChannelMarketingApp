@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<OutboundReply> OutboundReplies => Set<OutboundReply>();
     // Day 9
     public DbSet<InboxAiChat> InboxAiChats => Set<InboxAiChat>();
+    // L2 — cached WhatsApp approved templates
+    public DbSet<WhatsAppTemplate> WhatsAppTemplates => Set<WhatsAppTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

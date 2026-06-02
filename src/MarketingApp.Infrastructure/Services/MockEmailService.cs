@@ -207,22 +207,26 @@ public class SmtpEmailService : IEmailService
 
             var customHeaders = BuildCustomHeaderDict(headers);
 
-            var payload = customHeaders.Count == 0
-                ? (object)new
-                {
-                    sender = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
-                    to = new[] { new { email = toEmail } },
-                    subject,
-                    htmlContent = body
-                }
-                : new
-                {
-                    sender = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
-                    to = new[] { new { email = toEmail } },
-                    subject,
-                    htmlContent = body,
-                    headers = customHeaders
-                };
+            // CRITICAL for webhook correlation: Brevo does NOT echo arbitrary custom headers
+            // (like X-Campaign-Message-Id) back in its transactional webhooks. It only round-trips
+            // two things: the special "X-Mailin-custom" header, and "tags". So to map a later
+            // delivered/opened/clicked/bounced webhook back to THIS CampaignMessage we must stamp
+            // the message id through BOTH channels (belt-and-suspenders — different Brevo event
+            // types surface them inconsistently).
+            if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId))
+                customHeaders["X-Mailin-custom"] = headers.CampaignMessageId!;
+
+            var payload = new Dictionary<string, object?>
+            {
+                ["sender"] = new { email = settings.SmtpFromEmail ?? settings.SmtpUsername, name = settings.SmtpFromName ?? "MarketPro" },
+                ["to"] = new[] { new { email = toEmail } },
+                ["subject"] = subject,
+                ["htmlContent"] = body,
+            };
+            if (customHeaders.Count > 0)
+                payload["headers"] = customHeaders;
+            if (!string.IsNullOrWhiteSpace(headers.CampaignMessageId))
+                payload["tags"] = new[] { headers.CampaignMessageId };
 
             var response = await client.PostAsync(
                 "https://api.brevo.com/v3/smtp/email",

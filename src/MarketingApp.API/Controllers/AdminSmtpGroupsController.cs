@@ -12,8 +12,13 @@ namespace MarketingApp.API.Controllers;
 public class AdminSmtpGroupsController : ControllerBase
 {
     private readonly ISmtpGroupService _service;
+    private readonly IWhatsAppTemplateService _waTemplates;
 
-    public AdminSmtpGroupsController(ISmtpGroupService service) { _service = service; }
+    public AdminSmtpGroupsController(ISmtpGroupService service, IWhatsAppTemplateService waTemplates)
+    {
+        _service = service;
+        _waTemplates = waTemplates;
+    }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private bool IsAdmin() => string.Equals(User.FindFirstValue(ClaimTypes.Role), "admin", StringComparison.OrdinalIgnoreCase);
@@ -114,5 +119,25 @@ public class AdminSmtpGroupsController : ControllerBase
         if (GuardAdmin() is { } forbidden) return forbidden;
         var users = await _service.GetUserAssignmentsAsync(ct);
         return Ok(ApiResponse<IEnumerable<UserAssignmentDto>>.Ok(users));
+    }
+
+    // ===== L2 — WhatsApp approved templates (Meta Business) =====
+
+    /// <summary>Pull the latest approved templates from Meta for this group's WhatsApp Business Account.</summary>
+    [HttpPost("{id:guid}/whatsapp-templates/sync")]
+    public async Task<IActionResult> SyncWhatsAppTemplates(Guid id, CancellationToken ct)
+    {
+        if (GuardAdmin() is { } forbidden) return forbidden;
+        var result = await _waTemplates.SyncFromMetaAsync(id, ct);
+        return Ok(ApiResponse<WhatsAppTemplateSyncResultDto>.Ok(result, result.Message));
+    }
+
+    /// <summary>List cached WhatsApp templates for this group (all statuses).</summary>
+    [HttpGet("{id:guid}/whatsapp-templates")]
+    public async Task<IActionResult> ListWhatsAppTemplates(Guid id, CancellationToken ct)
+    {
+        if (GuardAdmin() is { } forbidden) return forbidden;
+        var items = await _waTemplates.ListAsync(id, approvedOnly: false, ct);
+        return Ok(ApiResponse<IEnumerable<WhatsAppTemplateDto>>.Ok(items));
     }
 }

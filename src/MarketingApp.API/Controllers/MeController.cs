@@ -21,17 +21,20 @@ public class MeController : ControllerBase
     private readonly IGenericRepository<User> _userRepo;
     private readonly ISmtpGroupService _smtpGroups;
     private readonly ISystemSettingsService _systemSettings;
+    private readonly IWhatsAppTemplateService _waTemplates;
     private readonly ILogger<MeController> _logger;
 
     public MeController(
         IGenericRepository<User> userRepo,
         ISmtpGroupService smtpGroups,
         ISystemSettingsService systemSettings,
+        IWhatsAppTemplateService waTemplates,
         ILogger<MeController> logger)
     {
         _userRepo = userRepo;
         _smtpGroups = smtpGroups;
         _systemSettings = systemSettings;
+        _waTemplates = waTemplates;
         _logger = logger;
     }
 
@@ -102,6 +105,20 @@ public class MeController : ControllerBase
             HasSmtpPassword: hasSmtpPassword,
             DelayBetweenMessagesMs: group.DelayBetweenMessagesMs,
             MaxMessagesPerMinute: group.MaxMessagesPerMinute)));
+    }
+
+    /// <summary>
+    /// L2 — approved WhatsApp templates for the user's resolved sending group, for the compose picker.
+    /// Empty list when no group / no WhatsApp configured (UI just shows "no templates").
+    /// </summary>
+    [HttpGet("whatsapp-templates")]
+    public async Task<IActionResult> GetWhatsAppTemplates(CancellationToken ct)
+    {
+        var group = await _smtpGroups.ResolveForUserAsync(GetUserId(), ct);
+        if (group is null)
+            return Ok(ApiResponse<IEnumerable<WhatsAppTemplateDto>>.Ok(Array.Empty<WhatsAppTemplateDto>()));
+        var items = await _waTemplates.ListAsync(group.Id, approvedOnly: true, ct);
+        return Ok(ApiResponse<IEnumerable<WhatsAppTemplateDto>>.Ok(items));
     }
 
     [HttpGet("profile")]

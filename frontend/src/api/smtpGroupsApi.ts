@@ -113,4 +113,19 @@ export const smtpGroupsApi = {
   unassignUsers: (userIds: string[]) =>
     axiosInstance.post('/admin/smtp-groups/unassign-users', userIds),
   userAssignments: () => axiosInstance.get('/admin/smtp-groups/user-assignments'),
+  // L2 — WhatsApp approved templates (Meta Business)
+  syncWhatsAppTemplates: (id: string) => axiosInstance.post(`/admin/smtp-groups/${id}/whatsapp-templates/sync`),
+  listWhatsAppTemplates: (id: string) => axiosInstance.get(`/admin/smtp-groups/${id}/whatsapp-templates`),
 };
+
+export interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  language: string;
+  category: string;
+  status: string;
+  bodyText: string;
+  variableCount: number;
+  headerType?: string | null;
+  syncedAt: string;
+}

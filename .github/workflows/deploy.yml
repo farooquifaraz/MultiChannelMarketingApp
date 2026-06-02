@@ -1,17 +1,22 @@
 # =========================================================================
-# CI/CD — on push to master, build + deploy to the VPS
+# CI/CD — on push to master: build + verify on a GitHub runner, then deploy
+# ON the VPS itself via a self-hosted runner.
+#
+# Why self-hosted for deploy?
+#   GitHub-hosted runners couldn't reach the VPS over SSH (port 22 i/o timeout —
+#   the VPS firewall / fail2ban blocks inbound from GitHub's rotating IP ranges).
+#   A self-hosted runner flips the direction: the VPS makes an OUTBOUND long-poll
+#   to GitHub, picks up the job, and runs the deploy locally. No inbound SSH, no
+#   firewall changes, no key management. `git push` → live update, every time.
 #
 # Flow:
-#   1. ci   — restore + build .NET API and frontend, fail fast on errors
-#              (so a bad push is rejected BEFORE we touch the live server)
-#   2. deploy — SSH into the VPS, `git pull` + `docker compose up -d --build`
+#   1. ci     — GitHub-hosted: restore + build .NET API and frontend, typecheck.
+#               Fails fast so a bad push never reaches the server.
+#   2. deploy — self-hosted (runs ON the VPS): git pull + docker compose up.
+#               Only runs on master, only after ci passes.
 #
-# Required GitHub secrets (Settings → Secrets and variables → Actions):
-#   VPS_HOST         — VPS public IP or hostname
-#   VPS_USER         — SSH user (e.g. root or deploy)
-#   VPS_SSH_KEY      — full PRIVATE SSH key (matched to a public key in
-#                       /root/.ssh/authorized_keys on the VPS)
-#   VPS_DEPLOY_PATH  — absolute path on VPS, e.g. /opt/marketingapp
+# One-time VPS setup (install + register the runner as a service) is documented
+# in CONTRIBUTING.md §7. After that, this file needs no secrets.
 # =========================================================================
 
 name: CI/CD
@@ -57,55 +62,32 @@ jobs:
           npm run build
 
   deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
+    name: Deploy on VPS (self-hosted)
     needs: ci
     if: github.ref == 'refs/heads/master'
+    # Targets the runner installed on the VPS (labels set at registration time).
+    runs-on: [self-hosted, marketingapp]
     steps:
-      # First-time setup: secrets may not yet be configured. We don't want every
-      # push to show a red ✗ in that case — we want a clean green ✓ with a
-      # warning, and the deploy step is simply skipped. Once the user adds the
-      # 4 secrets (VPS_HOST/USER/SSH_KEY/DEPLOY_PATH), the next push auto-deploys.
-      - name: Check deployment secrets
-        id: secrets
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
+      - name: Pull latest + rebuild + restart
         run: |
-          if [ -z "${VPS_HOST:-}" ]; then
-            echo "::warning::VPS_HOST secret not configured — skipping deploy. Add Settings → Secrets and variables → Actions → VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_DEPLOY_PATH to enable auto-deploy."
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Deploy over SSH
-        if: steps.secrets.outputs.configured == 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host:     ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key:      ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
-          script: |
-            set -euo pipefail
-            cd ${{ secrets.VPS_DEPLOY_PATH }}
-            git fetch origin master
-            git reset --hard origin/master
-            # Rebuild + restart only the services that changed; --remove-orphans
-            # cleans up containers from deleted services.
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
-            # Prune dangling images so the disk doesn't fill up over time.
-            docker image prune -af --filter "until=168h"
-            # Verify the API is responding (5 retries, 5s apart).
-            for i in 1 2 3 4 5; do
-              if curl -fsS http://localhost:80/ >/dev/null 2>&1 \
-                 || docker exec marketingapp-api curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
-                echo "✅ deploy healthy"
-                exit 0
-              fi
-              echo "waiting for API to come up... ($i/5)"
-              sleep 5
-            done
-            echo "❌ API didn't become healthy in time"
-            docker compose -f docker-compose.prod.yml logs --tail 80 api
-            exit 1
+          set -euo pipefail
+          cd /opt/marketingapp
+          echo "▸ Fetching latest master…"
+          git fetch origin master
+          git reset --hard origin/master
+          echo "▸ Rebuilding + restarting containers…"
+          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          # Prune dangling images so the disk doesn't fill up over time (non-fatal).
+          docker image prune -af --filter "until=168h" || true
+          echo "▸ Waiting for API health…"
+          for i in 1 2 3 4 5; do
+            if docker exec marketingapp-api curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
+              echo "✅ deploy healthy"
+              exit 0
+            fi
+            echo "waiting for API to come up... ($i/5)"
+            sleep 5
+          done
+          echo "❌ API didn't become healthy in time"
+          docker compose -f docker-compose.prod.yml logs --tail 80 api
+          exit 1

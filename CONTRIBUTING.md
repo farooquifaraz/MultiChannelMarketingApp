@@ -209,23 +209,56 @@ For now, staging is treated as a code-review checkpoint only; the existing
 
 ---
 
-## 7. Deploying to production (master)
+## 7. Deploying to production (master) — fully automatic
 
-1. Approved staging branch is PR'd to `master`.
-2. User merges the PR (you are the gatekeeper here).
-3. GitHub Actions runs the build job → on success, runs the deploy job.
-4. Deploy job SSHes into the VPS (`195.35.23.193`) via `appleboy/ssh-action`,
-   pulls latest `master`, runs `bash deploy.sh`.
-5. Post-deploy verification (already inside `deploy.sh`): all 5 containers
-   healthy, frontend responds at the public URL.
-6. If you observe ANY regression in production within the first hour,
-   roll back immediately:
-   ```bash
-   ssh root@195.35.23.193
-   cd /opt/marketingapp
-   git reset --hard <previous-good-commit>
-   bash deploy.sh
-   ```
+**`git push` to master → live in ~1 minute. No SSH, no local deploy, no manual step.**
+
+1. Approved staging branch is PR'd to `master`; user merges (you're the gatekeeper).
+2. GitHub Actions `ci` job (ubuntu-hosted) builds + typechecks. A bad push is
+   rejected here, before it ever touches the server.
+3. On success, the `deploy` job runs **on a self-hosted runner installed on the
+   VPS** (`runs-on: [self-hosted, marketingapp]`). It pulls latest `master`,
+   runs `docker compose -f docker-compose.prod.yml up -d --build`, and health-checks.
+4. Nothing connects *into* the VPS — the VPS runner long-polls GitHub (outbound),
+   so there's no inbound SSH, no firewall exception, no fail2ban interaction.
+
+### Why self-hosted (the SSH-push approach is dead for this host)
+GitHub-hosted runners can't reach the VPS on port 22 — `dial tcp :22 i/o timeout`.
+The VPS firewall / fail2ban blocks GitHub's rotating IP ranges, and whitelisting
+is impractical because those IPs change every run. The self-hosted runner sidesteps
+all of it. The old `VPS_*` SSH secrets are no longer used by the workflow.
+
+### One-time runner setup (already done on the live VPS — for rebuilds/DR)
+```bash
+# On the VPS as root. Get a fresh token first (valid 1h):
+#   gh api -X POST repos/farooquifaraz/MultiChannelMarketingApp/actions/runners/registration-token -q .token
+bash scripts/setup-github-runner.sh <REGISTRATION_TOKEN>
+```
+The script downloads the runner, registers it with labels `self-hosted,marketingapp`,
+and installs it as a systemd service (`actions.runner.*`) that survives reboot.
+Verify: `gh api repos/.../actions/runners` should show it `online`.
+
+### Runner health / troubleshooting
+```bash
+# On the VPS:
+cd /opt/actions-runner && ./svc.sh status     # is the runner service up?
+journalctl -u 'actions.runner.*' -n 50        # recent runner logs
+```
+If a deploy job sits "Queued" forever, the runner is offline — restart it:
+`cd /opt/actions-runner && ./svc.sh start`.
+
+### Rollback (if you observe ANY regression within the first hour)
+Fastest path is a revert commit (keeps the auto-deploy flow):
+```bash
+git revert --no-edit <bad-commit> && git push origin master   # auto-redeploys
+```
+Or, in an emergency, directly on the VPS:
+```bash
+ssh root@195.35.23.193
+cd /opt/marketingapp
+git reset --hard <previous-good-commit>
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
 ---
 

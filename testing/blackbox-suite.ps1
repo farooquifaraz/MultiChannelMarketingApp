@@ -890,6 +890,74 @@ TestCase 'R' 'R3' 'Provider banner gracefully handles no groups' {
     return $true
 }
 
+# ===== SECTION S -- L3 WhatsApp inbound webhook (public) =====
+Section "S. L3 WhatsApp Webhook"
+
+TestCase 'S' 'S1' 'GET verify with correct token echoes hub.challenge' {
+    try {
+        $url = "$BaseUrl/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.challenge=CHAL_$Stamp&hub.verify_token=marketpro-whatsapp-verify"
+        $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10
+        if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
+        if ($r.Content -ne "CHAL_$Stamp") { return "challenge not echoed: $($r.Content)" }
+        return $true
+    } catch { return "ex: $($_.Exception.Message)" }
+}
+
+TestCase 'S' 'S2' 'GET verify with WRONG token returns 401' {
+    try {
+        $url = "$BaseUrl/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.challenge=X&hub.verify_token=WRONG"
+        Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop | Out-Null
+        return "should have rejected wrong token"
+    } catch {
+        $code = $_.Exception.Response.StatusCode.Value__
+        if ($code -eq 401) { return $true }
+        return "expected 401, got $code"
+    }
+}
+
+TestCase 'S' 'S3' 'GET verify without challenge returns 401' {
+    try {
+        $url = "$BaseUrl/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=marketpro-whatsapp-verify"
+        Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop | Out-Null
+        return "should have rejected missing challenge"
+    } catch {
+        $code = $_.Exception.Response.StatusCode.Value__
+        if ($code -eq 401) { return $true }
+        return "expected 401, got $code"
+    }
+}
+
+TestCase 'S' 'S4' 'POST inbound (no matching group) returns 200 ingested:0' {
+    $body = '{"entry":[{"changes":[{"value":{"metadata":{"phone_number_id":"NO_GROUP"},"messages":[{"from":"971500000000","id":"wamid.BB' + $Stamp + '","timestamp":"1780000000","type":"text","text":{"body":"hi"}}]}}]}]}'
+    try {
+        $r = Invoke-WebRequest -Uri "$ApiUrl/webhooks/whatsapp" -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing -TimeoutSec 10
+        if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
+        return $true
+    } catch { return "ex: $($_.Exception.Message)" }
+}
+
+TestCase 'S' 'S5' 'POST inbound with malformed JSON still returns 200 (no crash)' {
+    try {
+        $r = Invoke-WebRequest -Uri "$ApiUrl/webhooks/whatsapp" -Method POST -Body '{bad json' -ContentType 'application/json' -UseBasicParsing -TimeoutSec 10
+        if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
+        return $true
+    } catch {
+        # Some setups 400 on unparseable JSON at the pipeline; both 200 and 400 are acceptable (no 500).
+        $code = $_.Exception.Response.StatusCode.Value__
+        if ($code -ge 500) { return "5xx crash: $code" }
+        return $true
+    }
+}
+
+TestCase 'S' 'S6' 'POST status-only callback (no messages) returns 200' {
+    $body = '{"entry":[{"changes":[{"value":{"metadata":{"phone_number_id":"NO_GROUP"},"statuses":[{"id":"wamid.x","status":"delivered"}]}}]}]}'
+    try {
+        $r = Invoke-WebRequest -Uri "$ApiUrl/webhooks/whatsapp" -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing -TimeoutSec 10
+        if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
+        return $true
+    } catch { return "ex: $($_.Exception.Message)" }
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

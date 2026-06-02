@@ -3,6 +3,8 @@ namespace MarketingApp.Application.DTOs;
 public class InboxMessageListItemDto
 {
     public Guid Id { get; set; }
+    /// <summary>L3 — "email" or "whatsapp"; drives the channel badge in the inbox list.</summary>
+    public string Channel { get; set; } = "email";
     public string FromEmail { get; set; } = string.Empty;
     public string? FromName { get; set; }
     public string Subject { get; set; } = string.Empty;

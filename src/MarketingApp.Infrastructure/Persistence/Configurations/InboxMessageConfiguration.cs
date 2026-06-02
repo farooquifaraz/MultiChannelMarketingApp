@@ -19,6 +19,7 @@ public class InboxMessageConfiguration : IEntityTypeConfiguration<InboxMessage>
         b.Property(m => m.HtmlBody).HasColumnType("text");
         b.Property(m => m.TextBody).HasColumnType("text");
         b.Property(m => m.ImapFolder).HasMaxLength(100).HasDefaultValue("INBOX");
+        b.Property(m => m.Channel).HasMaxLength(20).HasDefaultValue("email");
         b.Property(m => m.MessageId).HasMaxLength(255);
         b.Property(m => m.InReplyToMessageId).HasMaxLength(255);
         b.Property(m => m.ReferencesHeader).HasMaxLength(2000);
@@ -40,8 +41,10 @@ public class InboxMessageConfiguration : IEntityTypeConfiguration<InboxMessage>
         b.HasIndex(m => m.OwnerUserId);
         // Unread badge query: WHERE OwnerUserId AND NOT IsRead.
         b.HasIndex(m => new { m.OwnerUserId, m.IsRead });
-        // IMAP dedup: same UID in the same folder must collide.
-        b.HasIndex(m => new { m.SmtpGroupId, m.ImapFolder, m.ImapUid }).IsUnique();
+        // IMAP dedup (email only): same UID in the same folder must collide.
+        b.HasIndex(m => new { m.SmtpGroupId, m.ImapFolder, m.ImapUid }).IsUnique().HasFilter("channel = 'email'");
+        // WhatsApp dedup: same Meta message id must collide.
+        b.HasIndex(m => new { m.SmtpGroupId, m.MessageId }).IsUnique().HasFilter("channel = 'whatsapp' AND message_id IS NOT NULL");
         // Reply lookup by thread.
         b.HasIndex(m => m.MatchedCampaignMessageId);
         b.HasIndex(m => m.InReplyToMessageId);

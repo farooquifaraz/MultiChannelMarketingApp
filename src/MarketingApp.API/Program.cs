@@ -182,6 +182,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppCloudService>();
 builder.Services.AddScoped<IWhatsAppTemplateService, WhatsAppTemplateService>();
+builder.Services.AddScoped<IWhatsAppInboundService, MarketingApp.Application.Jobs.WhatsAppInboundService>();
 builder.Services.AddScoped<ISmsService, SmsGatewayService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
@@ -540,6 +541,13 @@ app.MapHealthChecks("/health");
             created_at timestamp with time zone NOT NULL DEFAULT NOW()
           )",
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_whatsapp_templates_group_name_lang ON whatsapp_templates (smtp_group_id, name, language)",
+        // L3 — WhatsApp inbound messages share the unified inbox. Add a channel discriminator and
+        // split the dedup index: email dedups on IMAP UID, WhatsApp dedups on the Meta message id.
+        "ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS channel character varying(20) NOT NULL DEFAULT 'email'",
+        "DROP INDEX IF EXISTS ix_inbox_group_folder_uid",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_email_dedup ON inbox_messages (smtp_group_id, imap_folder, imap_uid) WHERE channel = 'email'",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_whatsapp_dedup ON inbox_messages (smtp_group_id, message_id) WHERE channel = 'whatsapp' AND message_id IS NOT NULL",
+        "CREATE INDEX IF NOT EXISTS ix_inbox_owner_channel ON inbox_messages (owner_user_id, channel)",
     };
     foreach (var sql in migrationSql)
     {

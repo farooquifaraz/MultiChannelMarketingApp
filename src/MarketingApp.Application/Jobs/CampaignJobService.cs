@@ -608,8 +608,19 @@ public class CampaignJobService : ICampaignJobService
                         message.ErrorMessage = "Contact has no WhatsApp number";
                         return false;
                     }
+                    // L1 — if the template carries media, send it as image/document/video with the
+                    // personalized body as caption. Falls back to plain text when no media is set.
+                    WhatsAppMedia? waMedia = !string.IsNullOrWhiteSpace(template.MediaUrl)
+                        ? new WhatsAppMedia
+                        {
+                            Type = string.IsNullOrWhiteSpace(template.MediaType) ? "image" : template.MediaType!,
+                            Url = template.MediaUrl!,
+                            Caption = string.IsNullOrWhiteSpace(body) ? null : body,
+                            FileName = template.MediaFileName,
+                        }
+                        : null;
                     success = smtpSettings is not null
-                        ? await _whatsAppService.SendWithUserSettingsAsync(contact.WhatsAppNumber, body, smtpSettings)
+                        ? await _whatsAppService.SendWithUserSettingsAsync(contact.WhatsAppNumber, body, smtpSettings, waMedia)
                         : await _whatsAppService.SendAsync(contact.WhatsAppNumber, body);
                     break;
 

@@ -77,6 +77,39 @@ export default function SendMessagePage() {
   const [scheduleMode, setScheduleMode] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
 
+  // L1 — WhatsApp media attachment (image/document/video). Uploaded once, attached to the template.
+  const [waMediaUrl, setWaMediaUrl] = useState<string | null>(null);
+  const [waMediaType, setWaMediaType] = useState<string | null>(null);
+  const [waMediaFileName, setWaMediaFileName] = useState<string | null>(null);
+  const [waMediaUploading, setWaMediaUploading] = useState(false);
+
+  const uploadWhatsAppMedia = async (file: File) => {
+    setWaMediaUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res: any = await axiosInstance.post('/me/whatsapp-media/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const data = res?.data;
+      if (!data?.url) throw new Error('No URL returned');
+      setWaMediaUrl(data.url);
+      setWaMediaType(data.mediaType);
+      setWaMediaFileName(data.fileName);
+      toast.success(`${data.mediaType} attached`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Media upload failed');
+    } finally {
+      setWaMediaUploading(false);
+    }
+  };
+
+  const clearWhatsAppMedia = () => {
+    setWaMediaUrl(null);
+    setWaMediaType(null);
+    setWaMediaFileName(null);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -300,7 +333,9 @@ export default function SendMessagePage() {
       const templateSubjectChanged = selectedTemplate && channel === 'email' && subject !== (selectedTemplate.subject || '');
       const composedFromScratch = !selectedTemplate;
 
-      if (composedFromScratch || templateBodyChanged || templateSubjectChanged) {
+      // L1 — a WhatsApp media attachment also requires a (new) template to carry it.
+      const whatsappMediaAttached = channel === 'whatsapp' && !!waMediaUrl;
+      if (composedFromScratch || templateBodyChanged || templateSubjectChanged || whatsappMediaAttached) {
         // Need to create a new template. Use a friendlier name when based on an existing one.
         const name = selectedTemplate
           ? `${selectedTemplate.name} (edited ${new Date().toLocaleDateString()})`
@@ -310,6 +345,10 @@ export default function SendMessagePage() {
           channel,
           subject: channel === 'email' ? subject : null,
           body: messageBody,
+          // L1 — WhatsApp media (null for email/sms or when no attachment)
+          mediaUrl: whatsappMediaAttached ? waMediaUrl : null,
+          mediaType: whatsappMediaAttached ? waMediaType : null,
+          mediaFileName: whatsappMediaAttached ? waMediaFileName : null,
         }, silentConfig);
         templateId = templateRes?.data?.id;
       }
@@ -885,6 +924,44 @@ export default function SendMessagePage() {
                       value={messageBody}
                       onChange={e => setMessageBody(e.target.value)}
                     />
+
+                    {/* L1 — WhatsApp media attachment (image / document / video) */}
+                    {channel === 'whatsapp' && (
+                      <div className="mt-3 border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50">
+                        {!waMediaUrl ? (
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-blue-600">
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".png,.jpg,.jpeg,.webp,.mp4,.3gp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                              disabled={waMediaUploading}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) uploadWhatsAppMedia(f); e.target.value = ''; }}
+                            />
+                            {waMediaUploading ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                            ) : (
+                              <><Code2 className="w-4 h-4" /> Attach media (image / PDF / video) — optional</>
+                            )}
+                          </label>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            {waMediaType === 'image' ? (
+                              <img src={waMediaUrl} alt="preview" className="w-16 h-16 object-cover rounded-md border" />
+                            ) : (
+                              <div className="w-16 h-16 rounded-md border bg-white flex items-center justify-center text-xs font-medium text-gray-500 uppercase">
+                                {waMediaType}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">{waMediaFileName || waMediaUrl}</p>
+                              <p className="text-xs text-gray-500">{waMediaType} • will send as caption with the message</p>
+                            </div>
+                            <button type="button" onClick={clearWhatsAppMedia} className="text-red-500 hover:text-red-700 text-sm font-medium">Remove</button>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">Max 16 MB. The message text becomes the media caption.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MessageSquare, Smartphone, Send, Users, User, Eye, Loader2, ChevronDown, Search, X, Sparkles, Edit3, Code2, Save, RefreshCw, Clock } from 'lucide-react';
+import { Mail, MessageSquare, Smartphone, Send, Users, User, Eye, Loader2, ChevronDown, Search, X, Sparkles, Edit3, Code2, Save, RefreshCw, Clock, FileText, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../api/axiosInstance';
 import SendProgressCard from '../../components/messages/SendProgressCard';
 import ActiveSenderBanner from '../../components/messages/ActiveSenderBanner';
+import WhatsAppPreview from '../../components/messages/WhatsAppPreview';
 import { buildAvatarUrl } from '../../config/brand';
 
 type Channel = 'email' | 'whatsapp' | 'sms';
@@ -81,6 +82,7 @@ export default function SendMessagePage() {
   const [waMediaUrl, setWaMediaUrl] = useState<string | null>(null);
   const [waMediaType, setWaMediaType] = useState<string | null>(null);
   const [waMediaFileName, setWaMediaFileName] = useState<string | null>(null);
+  const [waMediaSize, setWaMediaSize] = useState<number | null>(null);
   const [waMediaUploading, setWaMediaUploading] = useState(false);
 
   const uploadWhatsAppMedia = async (file: File) => {
@@ -96,6 +98,7 @@ export default function SendMessagePage() {
       setWaMediaUrl(data.url);
       setWaMediaType(data.mediaType);
       setWaMediaFileName(data.fileName);
+      setWaMediaSize(typeof data.sizeBytes === 'number' ? data.sizeBytes : null);
       toast.success(`${data.mediaType} attached`);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Media upload failed');
@@ -108,6 +111,15 @@ export default function SendMessagePage() {
     setWaMediaUrl(null);
     setWaMediaType(null);
     setWaMediaFileName(null);
+    setWaMediaSize(null);
+  };
+
+  // Human-readable file size for the media card / preview.
+  const formatBytes = (bytes: number | null): string => {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   useEffect(() => {
@@ -940,21 +952,30 @@ export default function SendMessagePage() {
                             {waMediaUploading ? (
                               <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
                             ) : (
-                              <><Code2 className="w-4 h-4" /> Attach media (image / PDF / video) — optional</>
+                              <><Paperclip className="w-4 h-4" /> Attach media (image / PDF / video) — optional</>
                             )}
                           </label>
                         ) : (
                           <div className="flex items-center gap-3">
                             {waMediaType === 'image' ? (
                               <img src={waMediaUrl} alt="preview" className="w-16 h-16 object-cover rounded-md border" />
+                            ) : waMediaType === 'video' ? (
+                              <div className="w-16 h-16 rounded-md border bg-gray-900 flex items-center justify-center text-white">
+                                <Smartphone className="w-6 h-6" />
+                              </div>
                             ) : (
-                              <div className="w-16 h-16 rounded-md border bg-white flex items-center justify-center text-xs font-medium text-gray-500 uppercase">
-                                {waMediaType}
+                              <div className="w-16 h-16 rounded-md border bg-red-50 flex flex-col items-center justify-center text-red-600">
+                                <FileText className="w-6 h-6" />
+                                <span className="text-[10px] font-semibold uppercase mt-0.5">
+                                  {(waMediaFileName?.split('.').pop() || 'doc').toUpperCase()}
+                                </span>
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-800 truncate">{waMediaFileName || waMediaUrl}</p>
-                              <p className="text-xs text-gray-500">{waMediaType} • will send as caption with the message</p>
+                              <p className="text-xs text-gray-500">
+                                {waMediaType}{waMediaSize ? ` • ${formatBytes(waMediaSize)}` : ''} • caption = message text
+                              </p>
                             </div>
                             <button type="button" onClick={clearWhatsAppMedia} className="text-red-500 hover:text-red-700 text-sm font-medium">Remove</button>
                           </div>
@@ -1142,6 +1163,18 @@ export default function SendMessagePage() {
               </div>
             )}
           </div>
+
+          {/* L1 polish — live WhatsApp preview (recipient's-eye view) */}
+          {channel === 'whatsapp' && (
+            <WhatsAppPreview
+              message={messageBody}
+              mediaUrl={waMediaUrl}
+              mediaType={waMediaType}
+              mediaFileName={waMediaFileName}
+              mediaSizeLabel={formatBytes(waMediaSize)}
+              sample={previewRecipient ? { name: previewRecipient.fullName, email: previewRecipient.email, phone: previewRecipient.whatsAppNumber || previewRecipient.phone } : null}
+            />
+          )}
         </div>
       </div>
 

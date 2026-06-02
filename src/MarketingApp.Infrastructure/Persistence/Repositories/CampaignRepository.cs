@@ -89,6 +89,14 @@ public class CampaignRepository : GenericRepository<Campaign>, ICampaignReposito
             .Where(m => m.CampaignId == campaignId && m.Status == status)
             .ToListAsync(ct);
 
+    public async Task<int> CountMessagesByStatusAsync(Guid campaignId, IEnumerable<string> statuses, CancellationToken ct)
+    {
+        var set = statuses.ToArray();
+        return await _context.CampaignMessages
+            .Where(m => m.CampaignId == campaignId && set.Contains(m.Status))
+            .CountAsync(ct);
+    }
+
     public async Task BulkUpdateMessageStatusAsync(IEnumerable<Guid> messageIds, string newStatus, CancellationToken ct)
     {
         // Single round-trip bulk update — avoids re-fetching the entities.

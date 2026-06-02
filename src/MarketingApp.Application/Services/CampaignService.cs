@@ -233,8 +233,21 @@ public class CampaignService : ICampaignService
         if (!requesterIsAdmin && campaign.UserId != requesterUserId)
             throw new ForbiddenException();
 
-        var messages = await _campaignRepo.GetPendingMessagesAsync(id, ct); // gets all messages actually
-        var allMessages = (await _campaignRepo.GetMessagesPagedAsync(id, 1, int.MaxValue, null, ct)).Items;
+        var allMessages = (await _campaignRepo.GetMessagesPagedAsync(id, 1, int.MaxValue, null, ct)).Items.ToList();
+
+        // M6 — compute every tally LIVE from the messages (the source of truth), not from the
+        // campaign's snapshot counters. Snapshots drift: a retry resets SentCount, an async bounce
+        // webhook flips a message after completion, a deleted contact removes messages. Counting the
+        // actual rows here keeps the Delivery Report correct in all of those cases.
+        //
+        // Status ladder (a message sits at exactly one): pending → sent → delivered → opened → clicked,
+        // with failed / bounced as terminal failure states. "Delivered or better" therefore means the
+        // message definitely reached the inbox, so delivered/opened/clicked all count as delivered.
+        static bool In(CampaignMessage m, params string[] s) => s.Contains(m.Status);
+        var reached    = allMessages.Count(m => In(m, "delivered", "opened", "clicked"));
+        var dispatched = allMessages.Count(m => In(m, "sent", "delivered", "opened", "clicked"));
+        var failed     = allMessages.Count(m => In(m, "failed", "bounced"));
+        var bounced    = allMessages.Count(m => In(m, "bounced"));
 
         return new CampaignReportDto
         {
@@ -242,16 +255,17 @@ public class CampaignService : ICampaignService
             CampaignName = campaign.Name,
             Channel = campaign.Channel,
             Status = campaign.Status,
-            TotalContacts = campaign.TotalContacts,
-            SentCount = campaign.SentCount,
-            FailedCount = campaign.FailedCount,
-            DeliveredCount = allMessages.Count(m => m.Status == "delivered"),
-            // OpenedAt / ClickedAt are set by the tracking endpoints regardless of status.
-            // Count by those fields, not the status string.
+            // Live total = the messages that actually exist (handles contacts deleted after send).
+            TotalContacts = allMessages.Count,
+            SentCount = dispatched,
+            FailedCount = failed,
+            DeliveredCount = reached,
+            // OpenedAt / ClickedAt are set by the tracking endpoints + webhooks regardless of status,
+            // so count by those fields, not the status string.
             OpenedCount = allMessages.Count(m => m.OpenedAt != null),
             ClickedCount = allMessages.Count(m => m.ClickedAt != null),
             TotalClicks = allMessages.Sum(m => m.ClickCount),
-            BouncedCount = allMessages.Count(m => m.Status == "bounced"),
+            BouncedCount = bounced,
             StartedAt = campaign.StartedAt,
             CompletedAt = campaign.CompletedAt
         };

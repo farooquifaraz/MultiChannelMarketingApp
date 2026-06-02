@@ -443,8 +443,15 @@ public class CampaignJobService : ICampaignJobService
         }
 
         campaign.CompletedAt = DateTime.UtcNow;
-        campaign.SentCount = sentCount;
-        campaign.FailedCount = failedCount;
+        // M6 — recompute the snapshot tallies from ALL of this campaign's messages, not just the
+        // counters accumulated in THIS run. On a "Retry failed" pass `sentCount` only reflects the
+        // re-sent messages, so writing it directly used to clobber the original success count
+        // (e.g. a 95-recipient campaign showed "Sent 43" after retrying 43). Counting the rows keeps
+        // it cumulative and correct.
+        campaign.SentCount = await _campaignRepo.CountMessagesByStatusAsync(
+            campaignId, new[] { "sent", "delivered", "opened", "clicked" }, default);
+        campaign.FailedCount = await _campaignRepo.CountMessagesByStatusAsync(
+            campaignId, new[] { "failed", "bounced" }, default);
         await _campaignRepo.UpdateAsync(campaign);
 
         // Send completion notification

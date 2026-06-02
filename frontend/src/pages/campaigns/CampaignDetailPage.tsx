@@ -97,9 +97,12 @@ export default function CampaignDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
           { label: 'Channel', value: c.channel, icon: ChannelIcon, color: getChannelColor(c.channel) },
-          { label: 'Total Contacts', value: formatNumber(c.totalContacts), icon: Users, color: 'bg-blue-50 text-blue-600' },
-          { label: 'Sent', value: formatNumber(c.sentCount), icon: CheckCircle, color: 'bg-green-50 text-green-600' },
-          { label: 'Failed', value: formatNumber(c.failedCount), icon: XCircle, color: 'bg-red-50 text-red-600' },
+          // M6 — prefer the report's LIVE tallies (counted from message rows) over the campaign's
+          // snapshot counters, which drift after retries, async bounce webhooks, or contact deletes.
+          // Falls back to the snapshot until the report finishes loading.
+          { label: 'Total Contacts', value: formatNumber(r?.totalContacts ?? c.totalContacts), icon: Users, color: 'bg-blue-50 text-blue-600' },
+          { label: 'Sent', value: formatNumber(r?.sentCount ?? c.sentCount), icon: CheckCircle, color: 'bg-green-50 text-green-600' },
+          { label: 'Failed', value: formatNumber(r?.failedCount ?? c.failedCount), icon: XCircle, color: 'bg-red-50 text-red-600' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">

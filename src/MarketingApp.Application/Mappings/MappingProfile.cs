@@ -37,8 +37,16 @@ public class MappingProfile : Profile
         CreateMap<UpdateCampaignDto, Campaign>();
 
         // Campaign Message
+        // M7 — ContactName falls back to the email's local-part when the stored name is blank or the
+        // import placeholder "Unknown" (CSV imports without a name column default to that). Shows
+        // "ahmaday1983" instead of a bare "Unknown" in the campaign Messages table.
         CreateMap<CampaignMessage, CampaignMessageDto>()
-            .ForMember(d => d.ContactName, opt => opt.MapFrom(s => s.Contact.FullName))
+            .ForMember(d => d.ContactName, opt => opt.MapFrom(s =>
+                (s.Contact.FullName != null && s.Contact.FullName != "" && s.Contact.FullName != "Unknown")
+                    ? s.Contact.FullName
+                    : (s.Contact.Email != null && s.Contact.Email.Contains("@")
+                        ? s.Contact.Email.Substring(0, s.Contact.Email.IndexOf("@"))
+                        : (s.Contact.FullName ?? ""))))
             .ForMember(d => d.ContactEmail, opt => opt.MapFrom(s => s.Contact.Email))
             .ForMember(d => d.ContactPhone, opt => opt.MapFrom(s => s.Contact.Phone));
 

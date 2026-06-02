@@ -8,6 +8,15 @@ public class MessageTemplate
     public string Channel { get; set; } = string.Empty; // email, whatsapp, sms
     public string? Subject { get; set; } // email only
     public string Body { get; set; } = string.Empty; // supports {{name}}, {{offer}} etc.
+
+    // === L1: WhatsApp media (optional) ===
+    // When set, a WhatsApp message sends this media with Body used as the caption.
+    // MediaType ∈ "image" | "document" | "video". MediaUrl must be a publicly reachable
+    // https URL (Meta fetches it). MediaFileName is shown to the recipient for documents.
+    public string? MediaUrl { get; set; }
+    public string? MediaType { get; set; }
+    public string? MediaFileName { get; set; }
+
     public bool IsActive { get; set; } = true;
     // Master switch — when false, only the owner can see this template (private).
     public bool IsShared { get; set; } = false;

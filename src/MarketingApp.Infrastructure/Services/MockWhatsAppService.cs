@@ -78,6 +78,73 @@ public class WhatsAppCloudService : IWhatsAppService
         }
     }
 
+    public async Task<bool> SendTemplateWithUserSettingsAsync(string phoneNumber, string templateName, string language, IReadOnlyList<string> bodyParams, UserSmtpSettings settings, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(settings.WhatsAppApiKey) || string.IsNullOrEmpty(settings.WhatsAppPhoneNumberId))
+        {
+            _logger.LogWarning("WhatsApp not configured, mock template send. To: {Phone} | Template: {Tpl}", phoneNumber, templateName);
+            return await SendAsync(phoneNumber, $"[template:{templateName}]", ct);
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.WhatsAppApiKey}");
+            var formattedPhone = phoneNumber.Replace("+", "").Replace(" ", "").Replace("-", "");
+
+            var payload = BuildTemplatePayload(formattedPhone, templateName, language, bodyParams);
+            var jsonContent = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync($"{META_API_URL}/{settings.WhatsAppPhoneNumberId}/messages", jsonContent, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("[META WHATSAPP] Sent template '{Tpl}' to: {Phone}", templateName, phoneNumber);
+                return true;
+            }
+            var errorBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("[META WHATSAPP] Template send failed to {Phone} | {Status} | {Error}", phoneNumber, response.StatusCode, errorBody);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[META WHATSAPP] Exception sending template to {Phone}", phoneNumber);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Builds the Meta Cloud API body for a template message: type "template" with the template
+    /// name, language code, and a BODY component whose parameters fill {{1}}, {{2}} … in order.
+    /// The body component is omitted when there are no variables. Pure + unit-tested.
+    /// </summary>
+    internal static Dictionary<string, object?> BuildTemplatePayload(string to, string templateName, string language, IReadOnlyList<string> bodyParams)
+    {
+        var template = new Dictionary<string, object?>
+        {
+            ["name"] = templateName,
+            ["language"] = new Dictionary<string, object?> { ["code"] = string.IsNullOrWhiteSpace(language) ? "en_US" : language },
+        };
+
+        if (bodyParams is { Count: > 0 })
+        {
+            var parameters = bodyParams
+                .Select(v => (object)new Dictionary<string, object?> { ["type"] = "text", ["text"] = v ?? string.Empty })
+                .ToList();
+            template["components"] = new[]
+            {
+                new Dictionary<string, object?> { ["type"] = "body", ["parameters"] = parameters },
+            };
+        }
+
+        return new Dictionary<string, object?>
+        {
+            ["messaging_product"] = "whatsapp",
+            ["to"] = to,
+            ["type"] = "template",
+            ["template"] = template,
+        };
+    }
+
     /// <summary>
     /// Builds the Meta Cloud API request body. Text-only when no media; otherwise an
     /// image/document/video object carrying the public link + caption (and filename for docs).

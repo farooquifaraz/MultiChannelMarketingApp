@@ -181,6 +181,7 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppCloudService>();
+builder.Services.AddScoped<IWhatsAppTemplateService, WhatsAppTemplateService>();
 builder.Services.AddScoped<ISmsService, SmsGatewayService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
@@ -523,6 +524,22 @@ app.MapHealthChecks("/health");
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_url character varying(1000)",
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_type character varying(20)",
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_file_name character varying(255)",
+        // L2 — cached WhatsApp approved templates synced from Meta Business Manager.
+        @"CREATE TABLE IF NOT EXISTS whatsapp_templates (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            smtp_group_id uuid NOT NULL REFERENCES smtp_groups(id) ON DELETE CASCADE,
+            name character varying(512) NOT NULL,
+            language character varying(20) NOT NULL DEFAULT 'en_US',
+            category character varying(40) NOT NULL DEFAULT 'MARKETING',
+            status character varying(20) NOT NULL DEFAULT 'PENDING',
+            body_text text NOT NULL DEFAULT '',
+            variable_count integer NOT NULL DEFAULT 0,
+            header_type character varying(20),
+            meta_template_id character varying(100),
+            synced_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            created_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_whatsapp_templates_group_name_lang ON whatsapp_templates (smtp_group_id, name, language)",
     };
     foreach (var sql in migrationSql)
     {

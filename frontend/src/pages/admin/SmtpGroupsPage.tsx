@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Edit2, Star, Users, Send, Loader2, X, Eye, EyeOff, CheckCircle2, Server, Sparkles, Copy } from 'lucide-react';
+import { Mail, Plus, Trash2, Edit2, Star, Users, Send, Loader2, X, Eye, EyeOff, CheckCircle2, Server, Sparkles, Copy, MessageSquare, RefreshCw } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { smtpGroupsApi, type SmtpGroup, type CreateSmtpGroup, type UserAssignment } from '../../api/smtpGroupsApi';
+import { smtpGroupsApi, type SmtpGroup, type CreateSmtpGroup, type UserAssignment, type WhatsAppTemplate } from '../../api/smtpGroupsApi';
 import { useAuthStore } from '../../store/authStore';
 
 const emptyGroup: CreateSmtpGroup = {
@@ -31,6 +31,41 @@ export default function SmtpGroupsPage() {
   const [testingGroupId, setTestingGroupId] = useState<string | null>(null);
   const [testEmail, setTestEmail] = useState('');
   const [showAssignFor, setShowAssignFor] = useState<SmtpGroup | null>(null);
+
+  // L2 — WhatsApp templates modal
+  const [waFor, setWaFor] = useState<SmtpGroup | null>(null);
+  const [waTemplates, setWaTemplates] = useState<WhatsAppTemplate[]>([]);
+  const [waLoading, setWaLoading] = useState(false);
+  const [waSyncing, setWaSyncing] = useState(false);
+
+  const openWaTemplates = async (g: SmtpGroup) => {
+    setWaFor(g);
+    setWaTemplates([]);
+    setWaLoading(true);
+    try {
+      const res: any = await smtpGroupsApi.listWhatsAppTemplates(g.id);
+      setWaTemplates(res.data || []);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to load templates');
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  const syncWaTemplates = async () => {
+    if (!waFor) return;
+    setWaSyncing(true);
+    try {
+      const res: any = await smtpGroupsApi.syncWhatsAppTemplates(waFor.id);
+      toast.success(res?.message || res?.data?.message || 'Synced');
+      const list: any = await smtpGroupsApi.listWhatsAppTemplates(waFor.id);
+      setWaTemplates(list.data || []);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Sync failed — check WhatsApp credentials on this group');
+    } finally {
+      setWaSyncing(false);
+    }
+  };
 
   // Admin-only page — block at the route boundary
   if (user && !isAdmin) return <Navigate to="/dashboard" replace />;
@@ -584,6 +619,9 @@ export default function SmtpGroupsPage() {
                 {testingGroupId === g.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                 Test Send
               </button>
+              <button onClick={() => openWaTemplates(g)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-green-50 text-green-700 rounded-lg hover:bg-green-100" title="WhatsApp approved templates (Meta Business)">
+                <MessageSquare className="w-3 h-3" /> WA Templates
+              </button>
               {!g.isDefault && (
                 <button onClick={() => makeDefault(g)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100">
                   <Star className="w-3 h-3" /> Make Default
@@ -612,6 +650,62 @@ export default function SmtpGroupsPage() {
           allAssignments={assignments}
           onClose={() => { setShowAssignFor(null); loadAll(); }}
         />
+      )}
+
+      {/* L2 — WhatsApp templates modal */}
+      {waFor && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setWaFor(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-green-600" /> WhatsApp Templates — {waFor.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Approved templates synced from Meta Business Manager</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={syncWaTemplates} disabled={waSyncing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                  {waSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {waSyncing ? 'Syncing…' : 'Sync from Meta'}
+                </button>
+                <button onClick={() => setWaFor(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              {waLoading ? (
+                <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+              ) : waTemplates.length === 0 ? (
+                <div className="text-center py-10 text-sm text-gray-500">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  No templates cached yet.<br />
+                  Click <strong>Sync from Meta</strong> to pull approved templates (needs WhatsApp Business Account ID + access token on this group).
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {waTemplates.map(t => (
+                    <div key={t.id} className="border border-gray-100 rounded-lg p-3">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-gray-900">{t.name}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{t.language}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">{t.category}</span>
+                          {t.headerType && <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 text-purple-600">{t.headerType}</span>}
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          t.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700'
+                          : t.status === 'REJECTED' ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'}`}>{t.status}</span>
+                      </div>
+                      {t.bodyText && <p className="text-xs text-gray-600 mt-1.5 whitespace-pre-wrap">{t.bodyText}</p>}
+                      {t.variableCount > 0 && <p className="text-[11px] text-gray-400 mt-1">{t.variableCount} variable(s): {'{{1}}'} … {`{{${t.variableCount}}}`}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

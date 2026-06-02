@@ -220,6 +220,9 @@ export default function InboxPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
+                        {(t as any).channel === 'whatsapp' && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold flex-shrink-0">WA</span>
+                        )}
                         <p className={`text-sm truncate ${t.unreadCount > 0 ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
                           {t.participantName || t.participantEmail}
                         </p>

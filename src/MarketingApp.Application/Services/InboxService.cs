@@ -98,6 +98,7 @@ public class InboxService : IInboxService
         var items = page.Select(m => new InboxMessageListItemDto
         {
             Id = m.Id,
+            Channel = m.Channel,
             FromEmail = m.FromEmail,
             FromName = m.FromName,
             Subject = m.Subject,
@@ -353,6 +354,7 @@ public class InboxService : IInboxService
             return new InboxThreadListItemDto
             {
                 ThreadId = g.Key,
+                Channel = latest.Channel,
                 ParticipantEmail = latest.FromEmail,
                 ParticipantName = latest.FromName,
                 Subject = msgs.First().Subject,

@@ -20,6 +20,13 @@ public sealed record NormalizedWebhookEvent
     public Guid? CampaignMessageId { get; init; }
 
     /// <summary>
+    /// Recipient email address from the provider payload. Used as a fallback correlation key when
+    /// CampaignMessageId can't be resolved (e.g. emails sent before tag-based correlation existed):
+    /// the processor maps the event to the most recent sent CampaignMessage for this address.
+    /// </summary>
+    public string? RecipientEmail { get; init; }
+
+    /// <summary>
     /// Normalized event type:
     ///   "delivered" | "bounced" | "dropped" | "deferred" | "opened" | "clicked" | "unsubscribed" | "spam_report"
     /// Unknown / future event types are passed through as-is so we don't drop signals.

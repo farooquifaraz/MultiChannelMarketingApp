@@ -62,14 +62,21 @@ public class WebhookProcessor : IWebhookProcessor
                     ReceivedAt = DateTime.UtcNow,
                 }, ct);
 
-                // --- Apply to CampaignMessage if we resolved one ---
-                if (evt.CampaignMessageId is not Guid msgId) { applied++; continue; }
-                var message = await _messageRepo.GetByIdAsync(msgId, ct);
+                // --- Resolve the target CampaignMessage ---
+                // Primary: explicit id the provider echoed back (tags / X-Mailin-custom / custom args).
+                // Fallback: recipient email → most recent SENT message for that address. The fallback is
+                // what lets webhooks land for emails sent before tag-based correlation existed, and for
+                // Brevo event types that drop the correlation id.
+                var message = await ResolveMessageAsync(evt, ct);
                 if (message is null)
                 {
-                    _logger.LogWarning("Webhook {Provider}/{EventType} references unknown CampaignMessageId {MsgId}", evt.Provider, evt.EventType, msgId);
+                    _logger.LogWarning(
+                        "Webhook {Provider}/{EventType} could not be correlated to a CampaignMessage (id={MsgId}, email={Email}) — logged only.",
+                        evt.Provider, evt.EventType, evt.CampaignMessageId, evt.RecipientEmail);
+                    applied++; // event is recorded in WebhookEventLog; there's just nothing to update
                     continue;
                 }
+                var msgId = message.Id;
 
                 ApplyEventToMessage(message, evt);
                 await _messageRepo.UpdateAsync(message, ct);
@@ -105,6 +112,35 @@ public class WebhookProcessor : IWebhookProcessor
             }
         }
         return applied;
+    }
+
+    /// <summary>
+    /// Resolve the CampaignMessage a webhook event belongs to. Explicit id wins; otherwise fall back to
+    /// the recipient email and pick the most recently SENT message to that address. The email fallback is
+    /// intentionally fuzzy (a contact could appear in several campaigns) but "most recent send" is the
+    /// right heuristic for delivery/open/click signals, and it's the only way to correlate events for
+    /// emails that went out before we started stamping correlation tags.
+    /// </summary>
+    private async Task<CampaignMessage?> ResolveMessageAsync(NormalizedWebhookEvent evt, CancellationToken ct)
+    {
+        if (evt.CampaignMessageId is Guid id)
+        {
+            var byId = await _messageRepo.GetByIdAsync(id, ct);
+            if (byId is not null) return byId;
+            _logger.LogWarning("Webhook references unknown CampaignMessageId {MsgId} — trying email fallback.", id);
+        }
+
+        if (string.IsNullOrWhiteSpace(evt.RecipientEmail)) return null;
+
+        var email = evt.RecipientEmail.Trim().ToLowerInvariant();
+        var candidates = await _messageRepo.FindAsync(
+            m => m.SentAt != null
+                 && m.Contact != null
+                 && m.Contact.Email != null
+                 && m.Contact.Email.ToLower() == email,
+            ct);
+
+        return candidates.OrderByDescending(m => m.SentAt).FirstOrDefault();
     }
 
     private static void ApplyEventToMessage(CampaignMessage message, NormalizedWebhookEvent evt)

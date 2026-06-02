@@ -18,6 +18,12 @@ public class InboxMessage
 
     public Guid SmtpGroupId { get; set; }
 
+    /// <summary>
+    /// L3 — source channel of this inbound message: "email" (IMAP) or "whatsapp" (Meta webhook).
+    /// Lets the unified inbox tag/filter by source. Defaults to "email" for all existing rows.
+    /// </summary>
+    public string Channel { get; set; } = "email";
+
     /// <summary>IMAP unique ID within the folder — combined with (SmtpGroupId, ImapFolder) for dedup.</summary>
     public uint ImapUid { get; set; }
     public string ImapFolder { get; set; } = "INBOX";

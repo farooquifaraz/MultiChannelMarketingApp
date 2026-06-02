@@ -1,13 +1,13 @@
 ﻿# Black Box Test Report
 
-Run at: 2026-06-02 01:04:21
-Stamp: 1780347857083
+Run at: 2026-06-03 00:34:20
+Stamp: 1780432456032
 Base URL: http://localhost:5211
 
 ## Summary
-- **PASS:** 96
+- **PASS:** 102
 - **FAIL:** 0
-- **TOTAL:** 96
+- **TOTAL:** 102
 - **PASS RATE:** 100%
 
 ## Results by Section
@@ -196,6 +196,17 @@ Base URL: http://localhost:5211
 | R1 | Admin sees Brevo group as default if marked | PASS |  |
 | R2 | /me/active-sender now reflects Brevo group + provider=brevo | PASS |  |
 | R3 | Provider banner gracefully handles no groups | PASS |  |
+
+### Section S
+
+| ID | Test | Result | Detail |
+|----|------|--------|--------|
+| S1 | GET verify with correct token echoes hub.challenge | PASS |  |
+| S2 | GET verify with WRONG token returns 401 | PASS |  |
+| S3 | GET verify without challenge returns 401 | PASS |  |
+| S4 | POST inbound (no matching group) returns 200 ingested:0 | PASS |  |
+| S5 | POST inbound with malformed JSON still returns 200 (no crash) | PASS |  |
+| S6 | POST status-only callback (no messages) returns 200 | PASS |  |
 
 ### Section Z
 

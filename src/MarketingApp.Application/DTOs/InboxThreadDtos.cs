@@ -4,6 +4,8 @@ namespace MarketingApp.Application.DTOs;
 public class InboxThreadListItemDto
 {
     public Guid ThreadId { get; set; }
+    /// <summary>L3 — "email" or "whatsapp"; drives the channel badge in the conversation list.</summary>
+    public string Channel { get; set; } = "email";
     /// <summary>The other party in the conversation (recipient).</summary>
     public string ParticipantEmail { get; set; } = string.Empty;
     public string? ParticipantName { get; set; }

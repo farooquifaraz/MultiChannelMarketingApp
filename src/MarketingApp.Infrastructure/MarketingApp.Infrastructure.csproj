@@ -27,4 +27,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Lets the test project exercise internal helpers like WhatsAppCloudService.BuildSendPayload. -->
+    <InternalsVisibleTo Include="MarketingApp.Tests" />
+  </ItemGroup>
+
 </Project>

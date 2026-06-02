@@ -7,6 +7,10 @@ public class TemplateDto
     public string Channel { get; set; } = string.Empty;
     public string? Subject { get; set; }
     public string Body { get; set; } = string.Empty;
+    // L1 — WhatsApp media (image/document/video). MediaType ∈ image|document|video.
+    public string? MediaUrl { get; set; }
+    public string? MediaType { get; set; }
+    public string? MediaFileName { get; set; }
     public bool IsActive { get; set; }
     public bool IsShared { get; set; }
     /// <summary>"global" | "groups" | "users" — only meaningful when IsShared = true.</summary>
@@ -33,6 +37,10 @@ public class CreateTemplateDto
     public string Channel { get; set; } = string.Empty;
     public string? Subject { get; set; }
     public string Body { get; set; } = string.Empty;
+    // L1 — optional WhatsApp media attachment.
+    public string? MediaUrl { get; set; }
+    public string? MediaType { get; set; }
+    public string? MediaFileName { get; set; }
 }
 
 public class UpdateTemplateDto
@@ -42,4 +50,8 @@ public class UpdateTemplateDto
     public string? Subject { get; set; }
     public string Body { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    // L1 — optional WhatsApp media attachment.
+    public string? MediaUrl { get; set; }
+    public string? MediaType { get; set; }
+    public string? MediaFileName { get; set; }
 }

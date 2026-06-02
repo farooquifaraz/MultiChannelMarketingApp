@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using MarketingApp.Application.DTOs;
 using MarketingApp.Application.Interfaces;
 using MarketingApp.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -26,11 +27,13 @@ public class WhatsAppCloudService : IWhatsAppService
         return true;
     }
 
-    public async Task<bool> SendWithUserSettingsAsync(string phoneNumber, string message, UserSmtpSettings settings, CancellationToken ct = default)
+    public async Task<bool> SendWithUserSettingsAsync(string phoneNumber, string message, UserSmtpSettings settings, WhatsAppMedia? media = null, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(settings.WhatsAppApiKey) || string.IsNullOrEmpty(settings.WhatsAppPhoneNumberId))
         {
             _logger.LogWarning("WhatsApp API credentials not configured, using mock. To: {Phone}", phoneNumber);
+            if (media is not null)
+                _logger.LogInformation("[MOCK WHATSAPP] Would send {Type} media: {Url}", media.Type, media.Url);
             return await SendAsync(phoneNumber, message, ct);
         }
 
@@ -42,13 +45,7 @@ public class WhatsAppCloudService : IWhatsAppService
             // Format phone number: remove + and spaces
             var formattedPhone = phoneNumber.Replace("+", "").Replace(" ", "").Replace("-", "");
 
-            var payload = new
-            {
-                messaging_product = "whatsapp",
-                to = formattedPhone,
-                type = "text",
-                text = new { body = message }
-            };
+            var payload = BuildSendPayload(formattedPhone, message, media);
 
             var jsonContent = new StringContent(
                 JsonSerializer.Serialize(payload),
@@ -63,8 +60,8 @@ public class WhatsAppCloudService : IWhatsAppService
             if (response.IsSuccessStatusCode)
             {
                 var responseBody = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogInformation("[META WHATSAPP] Sent to: {Phone} | Response: {Response}",
-                    phoneNumber, responseBody);
+                _logger.LogInformation("[META WHATSAPP] Sent {Type} to: {Phone} | Response: {Response}",
+                    media?.Type ?? "text", phoneNumber, responseBody);
                 return true;
             }
 
@@ -79,5 +76,47 @@ public class WhatsAppCloudService : IWhatsAppService
                 phoneNumber, ex.Message);
             return false;
         }
+    }
+
+    /// <summary>
+    /// Builds the Meta Cloud API request body. Text-only when no media; otherwise an
+    /// image/document/video object carrying the public link + caption (and filename for docs).
+    /// Pure + deterministic so it can be unit-tested without hitting the network.
+    /// </summary>
+    internal static Dictionary<string, object?> BuildSendPayload(string to, string message, WhatsAppMedia? media)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["messaging_product"] = "whatsapp",
+            ["to"] = to,
+        };
+
+        if (media is null || string.IsNullOrWhiteSpace(media.Url))
+        {
+            payload["type"] = "text";
+            payload["text"] = new Dictionary<string, object?> { ["body"] = message };
+            return payload;
+        }
+
+        var type = (media.Type ?? "").ToLowerInvariant() switch
+        {
+            "video" => "video",
+            "document" => "document",
+            _ => "image",
+        };
+
+        // Caption: explicit caption wins, else the message text, else omitted (Meta rejects empty captions).
+        var caption = !string.IsNullOrWhiteSpace(media.Caption) ? media.Caption
+                    : !string.IsNullOrWhiteSpace(message) ? message
+                    : null;
+
+        var mediaObj = new Dictionary<string, object?> { ["link"] = media.Url };
+        if (caption is not null) mediaObj["caption"] = caption;
+        if (type == "document")
+            mediaObj["filename"] = string.IsNullOrWhiteSpace(media.FileName) ? "document" : media.FileName;
+
+        payload["type"] = type;
+        payload[type] = mediaObj;
+        return payload;
     }
 }

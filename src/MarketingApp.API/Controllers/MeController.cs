@@ -211,4 +211,46 @@ public class MeController : ControllerBase
         var url = $"{Request.Scheme}://{Request.Host}/uploads/signatures/{fileName}";
         return Ok(ApiResponse<object>.Ok(new { url, sizeBytes = file.Length }, "Image uploaded."));
     }
+
+    /// <summary>
+    /// L1 — upload a WhatsApp media file (image / document / video). Returns a public URL plus the
+    /// resolved mediaType so the compose UI can attach it to a WhatsApp template. Meta fetches the
+    /// file from this URL at send time, so it must be publicly reachable (it is, via api.samdigital.ae).
+    /// </summary>
+    [HttpPost("whatsapp-media/upload")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadWhatsAppMedia(IFormFile file, [FromServices] IWebHostEnvironment env)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(ApiResponse<object>.Fail("No file uploaded."));
+        // Meta caps: image 5MB, video 16MB, document 100MB. Cap at 16MB to cover image+video safely.
+        if (file.Length > 16 * 1024 * 1024)
+            return BadRequest(ApiResponse<object>.Fail("Max size is 16 MB."));
+
+        // Map extension → Meta media type. Reject anything we don't recognize.
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        string? mediaType = ext switch
+        {
+            ".png" or ".jpg" or ".jpeg" or ".webp" => "image",
+            ".mp4" or ".3gp" => "video",
+            ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx" or ".txt" => "document",
+            _ => null,
+        };
+        if (mediaType is null)
+            return BadRequest(ApiResponse<object>.Fail($"Unsupported file type '{ext}'. Allowed: images, mp4, pdf/office docs."));
+
+        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        var dir = Path.Combine(webRoot, "uploads", "whatsapp-media");
+        Directory.CreateDirectory(dir);
+        var storedName = $"{GetUserId()}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{ext}";
+        var path = Path.Combine(dir, storedName);
+        await using (var stream = new FileStream(path, FileMode.Create))
+            await file.CopyToAsync(stream);
+
+        var url = $"{Request.Scheme}://{Request.Host}/uploads/whatsapp-media/{storedName}";
+        // Preserve the original filename for documents (shown to the WhatsApp recipient).
+        var originalName = Path.GetFileName(file.FileName);
+        _logger.LogInformation("User {UserId} uploaded WhatsApp {Type} media ({Size} bytes)", GetUserId(), mediaType, file.Length);
+        return Ok(ApiResponse<object>.Ok(new { url, mediaType, fileName = originalName, sizeBytes = file.Length }, "Media uploaded."));
+    }
 }

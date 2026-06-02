@@ -519,6 +519,10 @@ app.MapHealthChecks("/health");
           WHERE im.owner_user_id = grp.owner_user_id
             AND im.normalized_subject = grp.normalized_subject
             AND im.thread_id IS DISTINCT FROM grp.canonical_thread",
+        // L1 — WhatsApp media on templates (image/document/video sent with Body as caption).
+        "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_url character varying(1000)",
+        "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_type character varying(20)",
+        "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_file_name character varying(255)",
     };
     foreach (var sql in migrationSql)
     {

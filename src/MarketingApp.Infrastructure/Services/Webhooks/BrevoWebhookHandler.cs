@@ -48,13 +48,22 @@ public class BrevoWebhookHandler : IInboundWebhookHandler
             var root = doc.RootElement;
             var eventName = (TryGetString(root, "event") ?? "").ToLowerInvariant();
             var brevoMessageId = TryGetString(root, "message-id") ?? TryGetString(root, "messageId") ?? "";
+            var email = TryGetString(root, "email");
             var dateStr = TryGetString(root, "date") ?? "";
             var occurredAt = DateTime.TryParse(dateStr, out var d) ? d.ToUniversalTime() : DateTime.UtcNow;
 
-            // We attached X-Campaign-Message-Id as a custom header — Brevo echoes it under "X-Campaign-Message-Id".
-            var campaignMessageId = TryGetGuid(root, "X-Campaign-Message-Id");
+            // Resolve our CampaignMessage.Id. Brevo does NOT echo arbitrary custom headers in webhooks —
+            // only "X-Mailin-custom" and "tags" survive the round-trip. Try every channel we stamp on send,
+            // newest mechanism first, then the legacy header (harmless if absent). When all fail we leave it
+            // null and rely on the processor's recipient-email fallback.
+            var campaignMessageId =
+                TryGetGuid(root, "X-Mailin-custom")
+                ?? TryGetGuidFromTags(root)
+                ?? TryGetGuid(root, "X-Campaign-Message-Id");
 
-            var providerEventId = $"{brevoMessageId}:{eventName}:{occurredAt:O}";
+            // Dedup key. Include email because Brevo omits message-id on some event types, and a single
+            // message-id can legitimately emit the same event twice at different timestamps.
+            var providerEventId = $"{brevoMessageId}:{email}:{eventName}:{occurredAt:O}";
             var reason = TryGetString(root, "reason");
 
             results.Add(new NormalizedWebhookEvent
@@ -62,6 +71,7 @@ public class BrevoWebhookHandler : IInboundWebhookHandler
                 Provider = Provider,
                 ProviderEventId = providerEventId,
                 CampaignMessageId = campaignMessageId,
+                RecipientEmail = email,
                 EventType = NormalizeEventType(eventName),
                 OccurredAt = occurredAt,
                 Reason = reason,
@@ -88,6 +98,38 @@ public class BrevoWebhookHandler : IInboundWebhookHandler
         "complaint" or "spam" => "spam_report",
         _ => brevoEvent,
     };
+
+    /// <summary>
+    /// Pull our CampaignMessage.Id out of Brevo's tag echo. Brevo surfaces tags two ways depending on
+    /// the event type: a "tags" JSON array (["&lt;guid&gt;"]) on some events, and a "tag" string
+    /// (either a bare guid or a JSON-encoded array like "[\"&lt;guid&gt;\"]") on others. Handle both.
+    /// </summary>
+    private static Guid? TryGetGuidFromTags(JsonElement root)
+    {
+        if (root.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var t in tags.EnumerateArray())
+                if (t.ValueKind == JsonValueKind.String && Guid.TryParse(t.GetString(), out var g))
+                    return g;
+        }
+
+        var tag = TryGetString(root, "tag");
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            if (Guid.TryParse(tag, out var g2)) return g2;
+            // tag may itself be a JSON-encoded array string, e.g. ["<guid>"]
+            try
+            {
+                using var d = JsonDocument.Parse(tag);
+                if (d.RootElement.ValueKind == JsonValueKind.Array)
+                    foreach (var t in d.RootElement.EnumerateArray())
+                        if (t.ValueKind == JsonValueKind.String && Guid.TryParse(t.GetString(), out var g3))
+                            return g3;
+            }
+            catch { /* not JSON — ignore */ }
+        }
+        return null;
+    }
 
     private static string? TryGetString(JsonElement el, string prop) =>
         el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;

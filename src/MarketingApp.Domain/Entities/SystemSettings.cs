@@ -18,6 +18,12 @@ public class SystemSettings
     public bool AllowUsersToSeeSharedTemplates { get; set; } = true;
     public bool AllowUsersToSeeSharedContacts { get; set; } = false;
 
+    /// <summary>
+    /// Phase 2 — when false (default), plan quotas are tracked + shown but NEVER block a send.
+    /// Flip to true only after plans/usage are validated, so existing customers are never cut off.
+    /// </summary>
+    public bool EnableQuotas { get; set; } = false;
+
     // === Branding (admin-configurable, removes "MarketPro" hardcode everywhere) ===
     public string PlatformName { get; set; } = "MarketPro";
     public string? LogoUrl { get; set; }

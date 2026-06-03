@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Clock,
   Inbox,
+  CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBrand } from '../../hooks/useBrand';
@@ -26,6 +27,7 @@ const baseNav = [
   { to: '/admin/smtp-groups', icon: Server, label: 'SMTP Groups', adminOnly: true },
   { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },
   { to: '/admin/audit-logs', icon: ShieldAlert, label: 'Audit Logs', adminOnly: true },
+  { to: '/billing', icon: CreditCard, label: 'Plan & Usage', adminOnly: false },
   { to: '/settings', icon: Settings, label: 'Settings', adminOnly: false },
 ];
 

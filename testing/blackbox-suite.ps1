@@ -958,6 +958,66 @@ TestCase 'S' 'S6' 'POST status-only callback (no messages) returns 200' {
     } catch { return "ex: $($_.Exception.Message)" }
 }
 
+# ===== SECTION T -- Phase 2 Billing (plans + subscription + usage) =====
+Section "T. P2 Billing"
+
+TestCase 'T' 'T1' 'GET /billing/plans returns the 5 seeded tiers' {
+    $r = Call-Api -Method GET -Path '/billing/plans' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    $codes = @($r.Data.data | ForEach-Object { $_.code })
+    foreach ($c in @('free','starter','pro','business','agency')) {
+        if ($codes -notcontains $c) { return "missing plan: $c" }
+    }
+    return $true
+}
+
+TestCase 'T' 'T2' 'GET /billing/plans requires auth' {
+    $r = Call-Api -Method GET -Path '/billing/plans' -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'T' 'T3' 'GET /billing/subscription auto-provisions Free + returns usage' {
+    $r = Call-Api -Method GET -Path '/billing/subscription' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    $d = $r.Data.data
+    if (-not $d.planCode) { return "no planCode" }
+    foreach ($metric in @('contacts','emails','whatsApp','ai')) {
+        if (-not $d.PSObject.Properties[$metric]) { return "missing usage metric: $metric" }
+    }
+    return $true
+}
+
+TestCase 'T' 'T4' 'Subscription usage metrics have used + limit + remaining' {
+    $r = Call-Api -Method GET -Path '/billing/subscription' -Token $global:userToken
+    $em = $r.Data.data.emails
+    foreach ($f in @('used','limit','remaining','percent')) {
+        if (-not $em.PSObject.Properties[$f]) { return "emails metric missing $f" }
+    }
+    return $true
+}
+
+TestCase 'T' 'T5' 'POST /billing/subscription/change to pro switches plan' {
+    $r = Call-Api -Method POST -Path '/billing/subscription/change' -Token $global:userToken -Body @{ planCode = 'pro' }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.planCode -ne 'pro') { return "planCode=$($r.Data.data.planCode)" }
+    if ($r.Data.data.emails.limit -ne 50000) { return "pro email limit wrong: $($r.Data.data.emails.limit)" }
+    return $true
+}
+
+TestCase 'T' 'T6' 'POST change to invalid plan returns 4xx' {
+    $r = Call-Api -Method POST -Path '/billing/subscription/change' -Token $global:userToken -Body @{ planCode = 'enterprise-xyz' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'T' 'T7' 'Change back to free (cleanup)' {
+    $r = Call-Api -Method POST -Path '/billing/subscription/change' -Token $global:userToken -Body @{ planCode = 'free' }
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if ($r.Data.data.planCode -ne 'free') { return "planCode=$($r.Data.data.planCode)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

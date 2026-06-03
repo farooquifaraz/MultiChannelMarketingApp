@@ -27,6 +27,19 @@ public class CreativesController : ControllerBase
     public IActionResult Sizes() =>
         Ok(ApiResponse<IEnumerable<ImageSizeOptionDto>>.Ok(_service.SizeOptions()));
 
+    public record PromptPreset(string Title, string Prompt);
+
+    /// <summary>Starter prompt presets to seed the composer (P3.2).</summary>
+    [HttpGet("presets")]
+    public IActionResult Presets() => Ok(ApiResponse<IEnumerable<PromptPreset>>.Ok(new[]
+    {
+        new PromptPreset("Property listing", "A clean real-estate listing flyer for a modern 3-bedroom apartment, bright photography style, price and key features prominent"),
+        new PromptPreset("Festival greeting", "An elegant festive greeting banner with warm celebratory colors, subtle decorative motifs, and space for a short message"),
+        new PromptPreset("Cold-lead follow-up", "A professional, minimal follow-up banner for a B2B outreach email, trustworthy corporate look, single clear call-to-action"),
+        new PromptPreset("Product launch", "A bold product-launch announcement banner, high-energy gradient background, large headline space, social-media ready"),
+        new PromptPreset("Discount / sale", "An eye-catching limited-time sale banner with a big percentage-off badge and urgency, vibrant contrasting colors"),
+    }));
+
     /// <summary>Generate an image from a prompt + size.</summary>
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] GenerateImageDto dto, CancellationToken ct)

@@ -118,11 +118,12 @@ public class ImageGenerationTests
         repo = new Mock<IGenericRepository<GeneratedAsset>>();
         repo.Setup(r => r.AddAsync(It.IsAny<GeneratedAsset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((GeneratedAsset a, CancellationToken _) => a);
+        var brandRepo = new Mock<IGenericRepository<BrandKit>>();
         var audit = new Mock<IAuditService>();
         audit.Setup(a => a.LogAsync(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string?>(),
                 It.IsAny<Guid?>(), It.IsAny<object?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        return new ImageGenerationService(factory, settings.Object, repo.Object, audit.Object,
+        return new ImageGenerationService(factory, settings.Object, repo.Object, brandRepo.Object, audit.Object,
             NullLogger<ImageGenerationService>.Instance);
     }
 

@@ -23,7 +23,11 @@ public sealed record ImageGenerationRequest(
     string Model,
     string? ApiKey,
     string? BaseUrl,
-    int TimeoutSeconds);
+    int TimeoutSeconds,
+    // P3.2 — optional brand styling (mock provider renders these; real providers get them via the prompt).
+    string? BrandPrimary = null,
+    string? BrandSecondary = null,
+    string? BrandName = null);
 
 public sealed record ImageGenerationResult(
     bool IsSuccess,

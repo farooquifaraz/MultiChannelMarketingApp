@@ -29,6 +29,9 @@ public class GeneratedAsset
     /// <summary>Data-URI (mock) or remote/hosted URL (real providers). Null until completed.</summary>
     public string? ImageUrl { get; set; }
 
+    /// <summary>Optional brand kit applied to this generation (P3.2).</summary>
+    public Guid? BrandKitId { get; set; }
+
     /// <summary>Credits this generation cost (1 = 1 generation). Tracked now, billed later.</summary>
     public int CreditCost { get; set; } = 1;
 

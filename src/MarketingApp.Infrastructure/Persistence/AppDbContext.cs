@@ -37,6 +37,8 @@ public class AppDbContext : DbContext
     public DbSet<Organization> Organizations => Set<Organization>();
     // Phase 3 — AI image generation
     public DbSet<GeneratedAsset> GeneratedAssets => Set<GeneratedAsset>();
+    // P3.2 — brand kits
+    public DbSet<BrandKit> BrandKits => Set<BrandKit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

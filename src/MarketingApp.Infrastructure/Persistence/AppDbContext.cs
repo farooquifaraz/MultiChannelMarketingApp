@@ -35,6 +35,8 @@ public class AppDbContext : DbContext
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     // P2.4 — multi-tenancy
     public DbSet<Organization> Organizations => Set<Organization>();
+    // Phase 3 — AI image generation
+    public DbSet<GeneratedAsset> GeneratedAssets => Set<GeneratedAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

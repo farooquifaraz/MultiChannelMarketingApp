@@ -1,0 +1,137 @@
+import { useState, useEffect } from 'react';
+import { Image as ImageIcon, Loader2, Sparkles, AlertCircle, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { creativesApi, type GeneratedAsset, type ImageSizeOption } from '../../api/creativesApi';
+
+export default function BannerStudioPage() {
+  const [prompt, setPrompt] = useState('');
+  const [size, setSize] = useState('1024x1024');
+  const [sizes, setSizes] = useState<ImageSizeOption[]>([]);
+  const [assets, setAssets] = useState<GeneratedAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  const load = async () => {
+    try {
+      const [s, a]: any[] = await Promise.all([creativesApi.sizes(), creativesApi.assets()]);
+      setSizes(s.data || []);
+      setAssets(a.data || []);
+      if (s.data?.length && !s.data.find((o: ImageSizeOption) => o.token === size)) {
+        setSize(s.data[0].token);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to load studio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const generate = async () => {
+    if (!prompt.trim()) {
+      toast.error('Describe the banner you want');
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res: any = await creativesApi.generate(prompt.trim(), size);
+      const asset: GeneratedAsset = res.data;
+      if (asset.status === 'failed') {
+        toast.error(asset.errorMessage || 'Generation failed');
+      } else {
+        toast.success('Banner generated');
+      }
+      setAssets((prev) => [asset, ...prev]);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+          <ImageIcon className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Banner Studio</h1>
+          <p className="text-gray-500 text-sm">Generate AI banners &amp; flyers from a text prompt.</p>
+        </div>
+      </div>
+
+      {/* Composer */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          maxLength={1000}
+          rows={3}
+          placeholder="e.g. A modern Dubai real-estate flyer for a luxury 3-bedroom apartment, gold and navy, elegant"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y"
+        />
+        <div className="flex gap-2 flex-wrap items-center">
+          <select
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
+          >
+            {sizes.map((o) => (
+              <option key={o.token} value={o.token}>{o.label} ({o.token})</option>
+            ))}
+          </select>
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2"
+          >
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {generating ? 'Generating…' : 'Generate'}
+          </button>
+          <span className="text-xs text-gray-400 ml-auto">{prompt.length}/1000</span>
+        </div>
+      </div>
+
+      {/* Gallery */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {assets.map((a) => (
+          <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {a.status === 'completed' && a.imageUrl ? (
+              <a href={a.imageUrl} download={`banner-${a.id}.svg`} title="Open / download">
+                <img src={a.imageUrl} alt={a.prompt} className="w-full aspect-square object-cover bg-gray-50" />
+              </a>
+            ) : (
+              <div className="w-full aspect-square flex flex-col items-center justify-center bg-rose-50 text-rose-500 gap-2 p-4 text-center">
+                <AlertCircle className="w-6 h-6" />
+                <span className="text-xs">{a.errorMessage || 'Failed'}</span>
+              </div>
+            )}
+            <div className="p-3">
+              <p className="text-sm text-gray-700 line-clamp-2">{a.prompt}</p>
+              <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
+                <span>{a.size} · {a.provider}</span>
+                {a.status === 'completed' && a.imageUrl && (
+                  <a href={a.imageUrl} download={`banner-${a.id}.svg`} className="inline-flex items-center gap-1 text-indigo-500 hover:text-indigo-700">
+                    <Download className="w-3.5 h-3.5" /> Save
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {assets.length === 0 && (
+          <div className="col-span-full text-center text-gray-400 py-12">No banners yet — generate your first above.</div>
+        )}
+      </div>
+    </div>
+  );
+}

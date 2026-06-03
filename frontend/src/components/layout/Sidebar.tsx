@@ -13,6 +13,7 @@ import {
   Inbox,
   CreditCard,
   Building2,
+  Image,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBrand } from '../../hooks/useBrand';
@@ -24,6 +25,7 @@ const baseNav = [
   { to: '/inbox', icon: Inbox, label: 'Inbox', adminOnly: false },
   { to: '/contacts', icon: Users, label: 'Contacts', adminOnly: false },
   { to: '/templates', icon: FileText, label: 'Templates', adminOnly: false },
+  { to: '/creatives', icon: Image, label: 'Banner Studio', adminOnly: false },
   { to: '/admin/users', icon: Users, label: 'Users', adminOnly: true },
   { to: '/admin/smtp-groups', icon: Server, label: 'SMTP Groups', adminOnly: true },
   { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },

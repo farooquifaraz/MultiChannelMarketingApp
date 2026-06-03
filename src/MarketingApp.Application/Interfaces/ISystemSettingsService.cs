@@ -18,4 +18,7 @@ public interface ISystemSettingsService
 
     /// <summary>Raw (unmasked) fallback-provider API key for the auto-failover path (Day 10).</summary>
     Task<string?> GetRawAiFallbackApiKeyAsync(CancellationToken ct = default);
+
+    /// <summary>Raw (unmasked) image-generation API key (Phase 3).</summary>
+    Task<string?> GetRawImageApiKeyAsync(CancellationToken ct = default);
 }

@@ -90,6 +90,12 @@ public class SystemSettingsService : ISystemSettingsService
         s.AiFallbackBaseUrl = string.IsNullOrWhiteSpace(dto.AiFallbackBaseUrl) ? null : dto.AiFallbackBaseUrl;
         if (!string.IsNullOrWhiteSpace(dto.AiFallbackModel)) s.AiFallbackModel = dto.AiFallbackModel;
 
+        // === Phase 3: image generation ===
+        if (!string.IsNullOrWhiteSpace(dto.ImageProvider)) s.ImageProvider = dto.ImageProvider;
+        if (dto.ImageApiKey is not null) s.ImageApiKey = string.IsNullOrEmpty(dto.ImageApiKey) ? null : dto.ImageApiKey;
+        s.ImageBaseUrl = string.IsNullOrWhiteSpace(dto.ImageBaseUrl) ? null : dto.ImageBaseUrl;
+        if (!string.IsNullOrWhiteSpace(dto.ImageModel)) s.ImageModel = dto.ImageModel;
+
         s.UpdatedByUserId = updatedByUserId;
         s.UpdatedAt = DateTime.UtcNow;
         await _repo.UpdateAsync(s, ct);
@@ -107,6 +113,12 @@ public class SystemSettingsService : ISystemSettingsService
     {
         var s = await GetOrSeedAsync(ct);
         return s.AiFallbackApiKey;
+    }
+
+    public async Task<string?> GetRawImageApiKeyAsync(CancellationToken ct = default)
+    {
+        var s = await GetOrSeedAsync(ct);
+        return s.ImageApiKey;
     }
 
     public async Task<CampaignSettings> GetCampaignSettingsAsync(CancellationToken ct = default)
@@ -155,6 +167,10 @@ public class SystemSettingsService : ISystemSettingsService
         AiFallbackApiKeyMasked = MaskKey(s.AiFallbackApiKey),
         AiFallbackBaseUrl = s.AiFallbackBaseUrl,
         AiFallbackModel = s.AiFallbackModel,
+        ImageProvider = s.ImageProvider,
+        ImageApiKeyMasked = MaskKey(s.ImageApiKey),
+        ImageBaseUrl = s.ImageBaseUrl,
+        ImageModel = s.ImageModel,
         UpdatedAt = s.UpdatedAt,
     };
 

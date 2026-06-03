@@ -232,6 +232,15 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClient,
     MarketingApp.Infrastructure.Services.AI.OpenAiCompatibleAiClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClientFactory,
     MarketingApp.Infrastructure.Services.AI.AiClientFactory>();
+// Phase 3 — AI image generation (mock works keyless; DALL·E activates when configured).
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.MockImageGenerationClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.DalleImageClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClientFactory,
+    MarketingApp.Infrastructure.Services.Media.ImageGenerationClientFactory>();
+builder.Services.AddScoped<IImageGenerationService,
+    MarketingApp.Application.Services.ImageGenerationService>();
 // G6 — AI reply orchestrator (Hangfire-enqueued from InboxPollingService)
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiReplyService,
     MarketingApp.Application.Services.AI.AiReplyService>();
@@ -619,6 +628,28 @@ app.MapHealthChecks("/health");
         // Backfill every pre-existing user to the Legacy org (idempotent — only touches NULLs).
         "UPDATE users SET organization_id = '00000000-0000-0000-0000-00000000ace0' WHERE organization_id IS NULL",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS enable_multi_tenancy boolean NOT NULL DEFAULT false",
+        // Phase 3 — AI image / banner generation. Additive: generated_assets table + image provider
+        // settings. Default provider is 'mock' (offline SVG placeholder) so the Banner Studio works
+        // with no keys; switching to 'dalle' + a key enables real OpenAI Images generation.
+        @"CREATE TABLE IF NOT EXISTS generated_assets (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id uuid NOT NULL,
+            prompt character varying(1000) NOT NULL,
+            provider character varying(40) NOT NULL DEFAULT 'mock',
+            size character varying(20) NOT NULL,
+            width integer NOT NULL DEFAULT 0,
+            height integer NOT NULL DEFAULT 0,
+            status character varying(20) NOT NULL DEFAULT 'pending',
+            image_url text,
+            credit_cost integer NOT NULL DEFAULT 1,
+            error_message text,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE INDEX IF NOT EXISTS ix_generated_assets_user_created ON generated_assets (user_id, created_at)",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_provider character varying(40) NOT NULL DEFAULT 'mock'",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_api_key text",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_base_url text",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_model character varying(60) NOT NULL DEFAULT 'dall-e-3'",
     };
     foreach (var sql in migrationSql)
     {

@@ -48,6 +48,12 @@ public record SystemSettingsDto
     public string? AiFallbackBaseUrl { get; init; }
     public string AiFallbackModel { get; init; } = "llama-3.3-70b-versatile";
 
+    // Phase 3 — image generation (key masked on read)
+    public string ImageProvider { get; init; } = "mock";
+    public string? ImageApiKeyMasked { get; init; }
+    public string? ImageBaseUrl { get; init; }
+    public string ImageModel { get; init; } = "dall-e-3";
+
     public DateTime UpdatedAt { get; init; }
 }
 
@@ -91,4 +97,10 @@ public record UpdateSystemSettingsDto
     public string? AiFallbackApiKey { get; init; }
     public string? AiFallbackBaseUrl { get; init; }
     public string AiFallbackModel { get; init; } = "llama-3.3-70b-versatile";
+
+    // Phase 3 — image generation (raw key on update; null = keep existing)
+    public string ImageProvider { get; init; } = "mock";
+    public string? ImageApiKey { get; init; }
+    public string? ImageBaseUrl { get; init; }
+    public string ImageModel { get; init; } = "dall-e-3";
 }

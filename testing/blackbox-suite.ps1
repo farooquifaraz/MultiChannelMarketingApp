@@ -1092,6 +1092,58 @@ TestCase 'U' 'U9' 'Regression: existing users were backfilled to a non-null org'
     return $true
 }
 
+# ===== SECTION V -- P3.1 Banner Studio (AI image generation, mock provider) =====
+Section "V. P3.1 Banner Studio"
+
+TestCase 'V' 'V1' 'GET /creatives/sizes returns the allowed size options' {
+    $r = Call-Api -Method GET -Path '/creatives/sizes' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if (@($r.Data.data).Count -lt 5) { return "expected >=5 sizes, got $(@($r.Data.data).Count)" }
+    return $true
+}
+
+TestCase 'V' 'V2' 'GET /creatives/sizes requires auth' {
+    $r = Call-Api -Method GET -Path '/creatives/sizes' -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V3' 'POST /creatives/generate (mock) returns a completed asset with data-URI' {
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "BlackBox Dubai villa flyer"; size = '1200x628' }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    $d = $r.Data.data
+    if ($d.status -ne 'completed') { return "status=$($d.status)" }
+    if ($d.width -ne 1200 -or $d.height -ne 628) { return "dims=$($d.width)x$($d.height)" }
+    if ($d.imageUrl -notmatch '^data:image/svg\+xml;base64,') { return "imageUrl not a data-uri" }
+    return $true
+}
+
+TestCase 'V' 'V4' 'POST /creatives/generate blank prompt returns 4xx' {
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = '   '; size = '1024x1024' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V5' 'POST /creatives/generate unknown size falls back to 1024x1024' {
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "fallback size test"; size = '999x999' }
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if ($r.Data.data.width -ne 1024 -or $r.Data.data.height -ne 1024) { return "dims=$($r.Data.data.width)x$($r.Data.data.height)" }
+    return $true
+}
+
+TestCase 'V' 'V6' 'GET /creatives/assets lists the user''s generated assets' {
+    $r = Call-Api -Method GET -Path '/creatives/assets' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if (@($r.Data.data).Count -lt 1) { return "expected >=1 asset after generating" }
+    return $true
+}
+
+TestCase 'V' 'V7' 'POST /creatives/generate requires auth' {
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Body @{ prompt = "x"; size = '1024x1024' } -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

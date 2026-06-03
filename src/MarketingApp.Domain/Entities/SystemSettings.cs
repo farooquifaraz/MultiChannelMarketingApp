@@ -75,6 +75,14 @@ public class SystemSettings
     public string? AiFallbackBaseUrl { get; set; }
     public string AiFallbackModel { get; set; } = "llama-3.3-70b-versatile";
 
+    // === Phase 3: AI image / banner generation ===
+    // "mock" (default) generates an offline SVG placeholder so the Banner Studio works keyless.
+    // Switch to "dalle" (+ ImageApiKey) for real OpenAI Images generation. "disabled" turns it off.
+    public string ImageProvider { get; set; } = "mock";
+    public string? ImageApiKey { get; set; }
+    public string? ImageBaseUrl { get; set; }
+    public string ImageModel { get; set; } = "dall-e-3";
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public Guid? UpdatedByUserId { get; set; }
 

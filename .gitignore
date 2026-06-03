@@ -81,3 +81,6 @@ frontend/public/email_preview.html
 frontend/public/izylrn_*.html
 *_contacts.csv
 *_outreach.csv
+
+# Office temp/lock files
+~$*

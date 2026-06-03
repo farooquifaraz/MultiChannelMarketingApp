@@ -9,6 +9,7 @@ public record SystemSettingsDto
     public int MaxMessagesPerMinute { get; init; }
     public bool AllowUsersToSeeSharedTemplates { get; init; }
     public bool AllowUsersToSeeSharedContacts { get; init; }
+    public bool EnableQuotas { get; init; }
 
     // Branding
     public string PlatformName { get; init; } = "MarketPro";

@@ -1,13 +1,13 @@
 ﻿# Black Box Test Report
 
-Run at: 2026-06-03 00:34:20
-Stamp: 1780432456032
+Run at: 2026-06-03 14:09:47
+Stamp: 1780481377373
 Base URL: http://localhost:5211
 
 ## Summary
-- **PASS:** 102
+- **PASS:** 109
 - **FAIL:** 0
-- **TOTAL:** 102
+- **TOTAL:** 109
 - **PASS RATE:** 100%
 
 ## Results by Section
@@ -207,6 +207,18 @@ Base URL: http://localhost:5211
 | S4 | POST inbound (no matching group) returns 200 ingested:0 | PASS |  |
 | S5 | POST inbound with malformed JSON still returns 200 (no crash) | PASS |  |
 | S6 | POST status-only callback (no messages) returns 200 | PASS |  |
+
+### Section T
+
+| ID | Test | Result | Detail |
+|----|------|--------|--------|
+| T1 | GET /billing/plans returns the 5 seeded tiers | PASS |  |
+| T2 | GET /billing/plans requires auth | PASS |  |
+| T3 | GET /billing/subscription auto-provisions Free + returns usage | PASS |  |
+| T4 | Subscription usage metrics have used + limit + remaining | PASS |  |
+| T5 | POST /billing/subscription/change to pro switches plan | PASS |  |
+| T6 | POST change to invalid plan returns 4xx | PASS |  |
+| T7 | Change back to free (cleanup) | PASS |  |
 
 ### Section Z
 

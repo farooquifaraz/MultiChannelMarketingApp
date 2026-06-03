@@ -28,9 +28,29 @@ export default function BillingPage() {
     if (code === sub?.planCode) return;
     setChanging(code);
     try {
-      const res: any = await billingApi.changePlan(code);
-      setSub(res.data);
-      toast.success(res?.message || `Switched to ${code}`);
+      if (code === 'free') {
+        // Downgrade to Free needs no payment.
+        const res: any = await billingApi.changePlan(code);
+        setSub(res.data);
+        toast.success(res?.message || 'Switched to Free');
+      } else {
+        // Paid plan → checkout. Mock provider activates immediately; real providers redirect.
+        const origin = window.location.origin;
+        const res: any = await billingApi.checkout(
+          code,
+          `${origin}/billing?checkout=success`,
+          `${origin}/billing?checkout=cancel`,
+        );
+        if (res.data?.activated) {
+          toast.success(`Upgraded to ${code}`);
+          await load();
+        } else if (res.data?.checkoutUrl) {
+          window.location.href = res.data.checkoutUrl;
+          return;
+        } else {
+          toast.error('Checkout could not be started');
+        }
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Plan change failed');
     } finally {

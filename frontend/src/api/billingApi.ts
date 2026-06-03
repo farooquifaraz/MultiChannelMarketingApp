@@ -35,8 +35,17 @@ export interface Subscription {
   ai: UsageMetric;
 }
 
+export interface CheckoutResult {
+  provider: string;
+  planCode: string;
+  activated: boolean;
+  checkoutUrl?: string | null;
+}
+
 export const billingApi = {
   plans: () => axiosInstance.get('/billing/plans'),
   subscription: () => axiosInstance.get('/billing/subscription'),
   changePlan: (planCode: string) => axiosInstance.post('/billing/subscription/change', { planCode }),
+  checkout: (planCode: string, successUrl: string, cancelUrl: string) =>
+    axiosInstance.post('/billing/checkout', { planCode, successUrl, cancelUrl }),
 };

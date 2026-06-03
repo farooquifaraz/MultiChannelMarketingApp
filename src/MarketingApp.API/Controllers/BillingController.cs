@@ -16,11 +16,25 @@ namespace MarketingApp.API.Controllers;
 public class BillingController : ControllerBase
 {
     private readonly IBillingService _billing;
-    public BillingController(IBillingService billing) { _billing = billing; }
+    private readonly ICheckoutService _checkout;
+    public BillingController(IBillingService billing, ICheckoutService checkout)
+    {
+        _billing = billing;
+        _checkout = checkout;
+    }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     public record ChangePlanDto(string PlanCode);
+
+    /// <summary>Start a checkout to upgrade to a paid plan. Mock provider activates immediately;
+    /// real providers return a hosted checkout URL to redirect to.</summary>
+    [HttpPost("checkout")]
+    public async Task<IActionResult> Checkout([FromBody] StartCheckoutDto dto, CancellationToken ct)
+    {
+        var result = await _checkout.StartCheckoutAsync(GetUserId(), dto, ct);
+        return Ok(ApiResponse<CheckoutResultDto>.Ok(result));
+    }
 
     /// <summary>All active pricing tiers.</summary>
     [HttpGet("plans")]

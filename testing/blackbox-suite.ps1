@@ -1144,6 +1144,56 @@ TestCase 'V' 'V7' 'POST /creatives/generate requires auth' {
     return $true
 }
 
+# ===== SECTION W -- P2.2 Payments (checkout + webhook, mock provider) =====
+Section "W. P2.2 Payments"
+
+TestCase 'W' 'W1' 'POST /billing/checkout (mock) activates the paid plan immediately' {
+    $r = Call-Api -Method POST -Path '/billing/checkout' -Token $global:userToken -Body @{ planCode = 'pro'; successUrl = 'http://x/ok'; cancelUrl = 'http://x/no' }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if (-not $r.Data.data.activated) { return "expected activated=true (mock)" }
+    if ($r.Data.data.planCode -ne 'pro') { return "planCode=$($r.Data.data.planCode)" }
+    $s = Call-Api -Method GET -Path '/billing/subscription' -Token $global:userToken
+    if ($s.Data.data.planCode -ne 'pro') { return "subscription not pro after checkout: $($s.Data.data.planCode)" }
+    return $true
+}
+
+TestCase 'W' 'W2' 'POST /billing/checkout for free returns 4xx' {
+    $r = Call-Api -Method POST -Path '/billing/checkout' -Token $global:userToken -Body @{ planCode = 'free' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'W' 'W3' 'POST /billing/checkout unknown plan returns 4xx' {
+    $r = Call-Api -Method POST -Path '/billing/checkout' -Token $global:userToken -Body @{ planCode = 'enterprise-xyz' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'W' 'W4' 'POST /billing/checkout requires auth' {
+    $r = Call-Api -Method POST -Path '/billing/checkout' -Body @{ planCode = 'pro' } -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'W' 'W5' 'POST /webhooks/payments/mock returns 200 handled' {
+    $r = Call-Api -Method POST -Path '/webhooks/payments/mock' -Body @{ test = $true } -ExpectStatus @(200)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'W' 'W6' 'POST /webhooks/payments/unknown returns 200 handled=false (no retry-storm)' {
+    $r = Call-Api -Method POST -Path '/webhooks/payments/paypal' -Body @{ test = $true } -ExpectStatus @(200)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if ($r.Data.handled -ne $false) { return "expected handled=false" }
+    return $true
+}
+
+TestCase 'W' 'W7' 'Revert user to free (cleanup)' {
+    $r = Call-Api -Method POST -Path '/billing/subscription/change' -Token $global:userToken -Body @{ planCode = 'free' }
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

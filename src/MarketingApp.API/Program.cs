@@ -241,6 +241,14 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGener
     MarketingApp.Infrastructure.Services.Media.ImageGenerationClientFactory>();
 builder.Services.AddScoped<IImageGenerationService,
     MarketingApp.Application.Services.ImageGenerationService>();
+// P2.2 — payment providers (mock activates immediately keyless; Stripe activates when configured).
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProvider,
+    MarketingApp.Infrastructure.Services.Billing.MockBillingProvider>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProvider,
+    MarketingApp.Infrastructure.Services.Billing.StripeBillingProvider>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProviderFactory,
+    MarketingApp.Infrastructure.Services.Billing.BillingProviderFactory>();
+builder.Services.AddScoped<ICheckoutService, MarketingApp.Application.Services.CheckoutService>();
 // G6 — AI reply orchestrator (Hangfire-enqueued from InboxPollingService)
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiReplyService,
     MarketingApp.Application.Services.AI.AiReplyService>();
@@ -650,6 +658,12 @@ app.MapHealthChecks("/health");
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_api_key text",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_base_url text",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS image_model character varying(60) NOT NULL DEFAULT 'dall-e-3'",
+        // P2.2 — payment provider settings. Additive; default 'mock' activates plans immediately so the
+        // upgrade loop works keyless. Switch to 'stripe' + keys for real hosted checkout.
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_provider character varying(40) NOT NULL DEFAULT 'mock'",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_api_key text",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_webhook_secret text",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_base_url text",
     };
     foreach (var sql in migrationSql)
     {

@@ -96,6 +96,12 @@ public class SystemSettingsService : ISystemSettingsService
         s.ImageBaseUrl = string.IsNullOrWhiteSpace(dto.ImageBaseUrl) ? null : dto.ImageBaseUrl;
         if (!string.IsNullOrWhiteSpace(dto.ImageModel)) s.ImageModel = dto.ImageModel;
 
+        // === P2.2: payment provider ===
+        if (!string.IsNullOrWhiteSpace(dto.PaymentProvider)) s.PaymentProvider = dto.PaymentProvider;
+        if (dto.PaymentApiKey is not null) s.PaymentApiKey = string.IsNullOrEmpty(dto.PaymentApiKey) ? null : dto.PaymentApiKey;
+        if (dto.PaymentWebhookSecret is not null) s.PaymentWebhookSecret = string.IsNullOrEmpty(dto.PaymentWebhookSecret) ? null : dto.PaymentWebhookSecret;
+        s.PaymentBaseUrl = string.IsNullOrWhiteSpace(dto.PaymentBaseUrl) ? null : dto.PaymentBaseUrl;
+
         s.UpdatedByUserId = updatedByUserId;
         s.UpdatedAt = DateTime.UtcNow;
         await _repo.UpdateAsync(s, ct);
@@ -119,6 +125,12 @@ public class SystemSettingsService : ISystemSettingsService
     {
         var s = await GetOrSeedAsync(ct);
         return s.ImageApiKey;
+    }
+
+    public async Task<(string? ApiKey, string? WebhookSecret)> GetRawPaymentSecretsAsync(CancellationToken ct = default)
+    {
+        var s = await GetOrSeedAsync(ct);
+        return (s.PaymentApiKey, s.PaymentWebhookSecret);
     }
 
     public async Task<CampaignSettings> GetCampaignSettingsAsync(CancellationToken ct = default)
@@ -171,6 +183,10 @@ public class SystemSettingsService : ISystemSettingsService
         ImageApiKeyMasked = MaskKey(s.ImageApiKey),
         ImageBaseUrl = s.ImageBaseUrl,
         ImageModel = s.ImageModel,
+        PaymentProvider = s.PaymentProvider,
+        PaymentApiKeyMasked = MaskKey(s.PaymentApiKey),
+        PaymentWebhookSecretSet = !string.IsNullOrEmpty(s.PaymentWebhookSecret),
+        PaymentBaseUrl = s.PaymentBaseUrl,
         UpdatedAt = s.UpdatedAt,
     };
 

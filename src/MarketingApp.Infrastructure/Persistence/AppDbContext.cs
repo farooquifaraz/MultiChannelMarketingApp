@@ -30,6 +30,9 @@ public class AppDbContext : DbContext
     public DbSet<InboxAiChat> InboxAiChats => Set<InboxAiChat>();
     // L2 — cached WhatsApp approved templates
     public DbSet<WhatsAppTemplate> WhatsAppTemplates => Set<WhatsAppTemplate>();
+    // Phase 2 — billing
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

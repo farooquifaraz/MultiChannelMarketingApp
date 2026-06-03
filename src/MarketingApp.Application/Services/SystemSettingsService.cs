@@ -129,6 +129,7 @@ public class SystemSettingsService : ISystemSettingsService
         MaxMessagesPerMinute = s.MaxMessagesPerMinute,
         AllowUsersToSeeSharedTemplates = s.AllowUsersToSeeSharedTemplates,
         AllowUsersToSeeSharedContacts = s.AllowUsersToSeeSharedContacts,
+        EnableQuotas = s.EnableQuotas,
         PlatformName = s.PlatformName,
         LogoUrl = s.LogoUrl,
         PrimaryColor = s.PrimaryColor,

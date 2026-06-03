@@ -183,6 +183,7 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppCloudService>();
 builder.Services.AddScoped<IWhatsAppTemplateService, WhatsAppTemplateService>();
 builder.Services.AddScoped<IWhatsAppInboundService, MarketingApp.Application.Jobs.WhatsAppInboundService>();
+builder.Services.AddScoped<IBillingService, MarketingApp.Application.Services.BillingService>();
 builder.Services.AddScoped<ISmsService, SmsGatewayService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
@@ -548,6 +549,49 @@ app.MapHealthChecks("/health");
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_email_dedup ON inbox_messages (smtp_group_id, imap_folder, imap_uid) WHERE channel = 'email'",
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_whatsapp_dedup ON inbox_messages (smtp_group_id, message_id) WHERE channel = 'whatsapp' AND message_id IS NOT NULL",
         "CREATE INDEX IF NOT EXISTS ix_inbox_owner_channel ON inbox_messages (owner_user_id, channel)",
+        // Phase 2 — billing: plans + subscriptions. Additive; quota enforcement is OFF by default
+        // (system_settings.enable_quotas) so existing sends are never blocked.
+        @"CREATE TABLE IF NOT EXISTS plans (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            code character varying(40) NOT NULL,
+            name character varying(100) NOT NULL,
+            price_aed_monthly numeric(10,2) NOT NULL DEFAULT 0,
+            max_contacts integer NOT NULL DEFAULT 0,
+            max_emails_per_month integer NOT NULL DEFAULT 0,
+            max_whats_app_per_month integer NOT NULL DEFAULT 0,
+            max_ai_per_month integer NOT NULL DEFAULT 0,
+            max_users integer NOT NULL DEFAULT 1,
+            is_active boolean NOT NULL DEFAULT true,
+            sort_order integer NOT NULL DEFAULT 0,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_plans_code ON plans (code)",
+        @"CREATE TABLE IF NOT EXISTS subscriptions (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id uuid NOT NULL,
+            plan_code character varying(40) NOT NULL DEFAULT 'free',
+            status character varying(20) NOT NULL DEFAULT 'active',
+            current_period_start timestamp with time zone NOT NULL DEFAULT NOW(),
+            current_period_end timestamp with time zone NOT NULL DEFAULT (NOW() + interval '1 month'),
+            external_customer_id character varying(255),
+            external_subscription_id character varying(255),
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            updated_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_subscriptions_user ON subscriptions (user_id)",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS enable_quotas boolean NOT NULL DEFAULT false",
+        // Seed the roadmap pricing tiers (idempotent — ON CONFLICT on the unique code).
+        @"INSERT INTO plans (code, name, price_aed_monthly, max_contacts, max_emails_per_month, max_whats_app_per_month, max_ai_per_month, max_users, sort_order) VALUES
+            ('free',     'Free',     0,     100,    500,     50,     50,     1, 1),
+            ('starter',  'Starter',  69,    2500,   10000,   1000,   500,    1, 2),
+            ('pro',      'Pro',      179,   10000,  50000,   5000,   2500,   3, 3),
+            ('business', 'Business', 479,   50000,  250000,  25000,  10000,  10, 4),
+            ('agency',   'Agency',   1099,  -1,     1000000, 100000, 50000,  -1, 5)
+          ON CONFLICT (code) DO UPDATE SET
+            name = EXCLUDED.name, price_aed_monthly = EXCLUDED.price_aed_monthly,
+            max_contacts = EXCLUDED.max_contacts, max_emails_per_month = EXCLUDED.max_emails_per_month,
+            max_whats_app_per_month = EXCLUDED.max_whats_app_per_month, max_ai_per_month = EXCLUDED.max_ai_per_month,
+            max_users = EXCLUDED.max_users, sort_order = EXCLUDED.sort_order",
     };
     foreach (var sql in migrationSql)
     {

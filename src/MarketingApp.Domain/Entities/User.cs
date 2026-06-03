@@ -16,6 +16,11 @@ public class User
     public Guid? SmtpGroupId { get; set; }
     public SmtpGroup? SmtpGroup { get; set; }
 
+    // P2.4 — tenant boundary. Nullable + backfilled to the seeded "Legacy Organization" so existing
+    // data and queries are unaffected. Query-level isolation is deferred (gated by EnableMultiTenancy).
+    public Guid? OrganizationId { get; set; }
+    public Organization? Organization { get; set; }
+
     // === Personal email signature (per-user override over SmtpGroup defaults) ===
     // sender_name comes from FullName above.
     public string? SignatureDesignation { get; set; }

@@ -130,6 +130,7 @@ public class SystemSettingsService : ISystemSettingsService
         AllowUsersToSeeSharedTemplates = s.AllowUsersToSeeSharedTemplates,
         AllowUsersToSeeSharedContacts = s.AllowUsersToSeeSharedContacts,
         EnableQuotas = s.EnableQuotas,
+        EnableMultiTenancy = s.EnableMultiTenancy,
         PlatformName = s.PlatformName,
         LogoUrl = s.LogoUrl,
         PrimaryColor = s.PrimaryColor,

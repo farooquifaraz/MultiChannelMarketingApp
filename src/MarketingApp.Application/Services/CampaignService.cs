@@ -17,6 +17,7 @@ public class CampaignService : ICampaignService
     private readonly ICacheService _cache;
     private readonly IAuditService _audit;
     private readonly IMapper _mapper;
+    private readonly IQuotaService _quota;
     private readonly ILogger<CampaignService> _logger;
 
     public CampaignService(
@@ -27,6 +28,7 @@ public class CampaignService : ICampaignService
         ICacheService cache,
         IAuditService audit,
         IMapper mapper,
+        IQuotaService quota,
         ILogger<CampaignService> logger)
     {
         _campaignRepo = campaignRepo;
@@ -36,6 +38,7 @@ public class CampaignService : ICampaignService
         _cache = cache;
         _audit = audit;
         _mapper = mapper;
+        _quota = quota;
         _logger = logger;
     }
 
@@ -138,6 +141,21 @@ public class CampaignService : ICampaignService
         var contactList = contacts.Where(c => c.IsActive && !c.IsBounced).ToList();
         if (!contactList.Any())
             throw new AppValidationException("Campaign group has no deliverable contacts (after excluding bounced and inactive).");
+
+        // P2.3 — plan quota check (gated by enable_quotas; a no-op when the flag is off, so existing
+        // sends are unaffected). Blocks BEFORE inserting/queuing if the send would exceed the limit.
+        var quotaKind = campaign.Channel?.ToLowerInvariant() switch
+        {
+            "whatsapp" => (QuotaKind?)QuotaKind.WhatsApp,
+            "email" => QuotaKind.Email,
+            _ => null,
+        };
+        if (quotaKind is QuotaKind qk)
+        {
+            var quota = await _quota.CheckAsync(userId, qk, contactList.Count, ct);
+            if (!quota.Allowed)
+                throw new AppValidationException(quota.Reason ?? "Plan limit reached. Upgrade your plan to send more.");
+        }
 
         var messages = contactList.Select(c => new CampaignMessage
         {

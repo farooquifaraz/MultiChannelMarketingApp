@@ -184,6 +184,7 @@ builder.Services.AddScoped<IWhatsAppService, WhatsAppCloudService>();
 builder.Services.AddScoped<IWhatsAppTemplateService, WhatsAppTemplateService>();
 builder.Services.AddScoped<IWhatsAppInboundService, MarketingApp.Application.Jobs.WhatsAppInboundService>();
 builder.Services.AddScoped<IBillingService, MarketingApp.Application.Services.BillingService>();
+builder.Services.AddScoped<IQuotaService, MarketingApp.Application.Services.QuotaService>();
 builder.Services.AddScoped<ISmsService, SmsGatewayService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IAuditService, AuditService>();

@@ -10,6 +10,7 @@ public record SystemSettingsDto
     public bool AllowUsersToSeeSharedTemplates { get; init; }
     public bool AllowUsersToSeeSharedContacts { get; init; }
     public bool EnableQuotas { get; init; }
+    public bool EnableMultiTenancy { get; init; }
 
     // Branding
     public string PlatformName { get; init; } = "MarketPro";

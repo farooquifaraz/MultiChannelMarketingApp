@@ -33,6 +33,8 @@ public class AppDbContext : DbContext
     // Phase 2 — billing
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    // P2.4 — multi-tenancy
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

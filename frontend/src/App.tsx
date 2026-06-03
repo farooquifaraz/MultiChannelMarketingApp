@@ -19,6 +19,7 @@ const AuditLogsPage = lazy(() => import('./pages/admin/AuditLogsPage'));
 const ScheduledCampaignsPage = lazy(() => import('./pages/campaigns/ScheduledCampaignsPage'));
 const InboxPage = lazy(() => import('./pages/inbox/InboxPage'));
 const BillingPage = lazy(() => import('./pages/billing/BillingPage'));
+const OrganizationsPage = lazy(() => import('./pages/admin/OrganizationsPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="admin/users" element={<AdminUsersPage />} />
           <Route path="profile" element={<UserProfilePage />} />
           <Route path="admin/audit-logs" element={<AuditLogsPage />} />
+          <Route path="admin/organizations" element={<OrganizationsPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="billing" element={<BillingPage />} />
         </Route>

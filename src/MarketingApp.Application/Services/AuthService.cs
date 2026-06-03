@@ -49,7 +49,10 @@ public class AuthService : IAuthService
             FullName = dto.FullName,
             Email = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password, workFactor: 12),
-            Role = role
+            Role = role,
+            // P2.4 — every new user joins the seeded Legacy org by default so org_id is never null.
+            // (Self-serve "new org per signup" is a later slice; this keeps behaviour identical today.)
+            OrganizationId = Organization.LegacyOrgId
         };
 
         await _userRepo.AddAsync(user, ct);

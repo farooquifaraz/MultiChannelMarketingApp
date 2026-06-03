@@ -1018,6 +1018,80 @@ TestCase 'T' 'T7' 'Change back to free (cleanup)' {
     return $true
 }
 
+# ===== SECTION U -- P2.4 Organizations (multi-tenancy foundation) =====
+Section "U. P2.4 Organizations"
+
+$global:createdOrgId = $null
+$orgName = "BB Org $Stamp"
+
+TestCase 'U' 'U1' 'GET /admin/organizations lists orgs incl. seeded Legacy (admin)' {
+    $r = Call-Api -Method GET -Path '/admin/organizations' -Token $global:adminToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    $legacy = @($r.Data.data | Where-Object { $_.isLegacy -eq $true })
+    if ($legacy.Count -lt 1) { return "no Legacy org present" }
+    if ($legacy[0].slug -ne 'legacy') { return "legacy slug=$($legacy[0].slug)" }
+    return $true
+}
+
+TestCase 'U' 'U2' 'GET /admin/organizations requires admin (user -> 403)' {
+    $r = Call-Api -Method GET -Path '/admin/organizations' -Token $global:userToken -ExpectStatus @(403)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U3' 'POST /admin/organizations creates org + derives slug' {
+    $r = Call-Api -Method POST -Path '/admin/organizations' -Token $global:adminToken -Body @{ name = $orgName }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    $global:createdOrgId = $r.Data.data.id
+    if (-not $global:createdOrgId) { return "no org id" }
+    if ($r.Data.data.slug -notmatch '^bb-org-') { return "slug=$($r.Data.data.slug)" }
+    if ($r.Data.data.planCode -ne 'free') { return "planCode=$($r.Data.data.planCode)" }
+    return $true
+}
+
+TestCase 'U' 'U4' 'POST duplicate slug returns 409' {
+    $r = Call-Api -Method POST -Path '/admin/organizations' -Token $global:adminToken -Body @{ name = $orgName } -ExpectStatus @(409)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U5' 'POST blank name returns 4xx' {
+    $r = Call-Api -Method POST -Path '/admin/organizations' -Token $global:adminToken -Body @{ name = '   ' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U6' 'POST create as non-admin returns 403' {
+    $r = Call-Api -Method POST -Path '/admin/organizations' -Token $global:userToken -Body @{ name = "Hacker $Stamp" } -ExpectStatus @(403)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U7' 'POST assign-user moves user into org + bumps userCount' {
+    if (-not $global:createdOrgId) { return "no org id from U3" }
+    $r = Call-Api -Method POST -Path '/admin/organizations/assign-user' -Token $global:adminToken -Body @{ userId = $global:normalUserId; organizationId = $global:createdOrgId }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.userCount -lt 1) { return "userCount=$($r.Data.data.userCount)" }
+    return $true
+}
+
+TestCase 'U' 'U8' 'assign-user with bad org id returns 404' {
+    $r = Call-Api -Method POST -Path '/admin/organizations/assign-user' -Token $global:adminToken -Body @{ userId = $global:normalUserId; organizationId = '11111111-1111-1111-1111-111111111111' } -ExpectStatus @(404)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U9' 'Regression: existing users were backfilled to a non-null org' {
+    # Every user (including the freshly-registered black-box ones) must have a non-null org_id:
+    # backfill covers pre-existing rows, AuthService assigns Legacy on new registration.
+    $cfg = Get-Content "D:\MultiChannelMarkettingApp\src\MarketingApp.API\appsettings.json" -Raw | ConvertFrom-Json
+    if ($cfg.ConnectionStrings.DefaultConnection -match 'Password=([^;]+)') { $env:PGPASSWORD = $matches[1] }
+    $psql = 'C:\Program Files\PostgreSQL\17\bin\psql.exe'
+    $nulls = (& $psql -h localhost -U postgres -d marketingapp -t -A -c "SELECT COUNT(*) FROM users WHERE organization_id IS NULL" 2>&1).Trim()
+    if ($nulls -ne '0') { return "users with null org_id: $nulls" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

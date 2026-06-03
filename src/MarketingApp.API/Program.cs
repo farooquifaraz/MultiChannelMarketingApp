@@ -185,6 +185,7 @@ builder.Services.AddScoped<IWhatsAppTemplateService, WhatsAppTemplateService>();
 builder.Services.AddScoped<IWhatsAppInboundService, MarketingApp.Application.Jobs.WhatsAppInboundService>();
 builder.Services.AddScoped<IBillingService, MarketingApp.Application.Services.BillingService>();
 builder.Services.AddScoped<IQuotaService, MarketingApp.Application.Services.QuotaService>();
+builder.Services.AddScoped<IOrganizationService, MarketingApp.Application.Services.OrganizationService>();
 builder.Services.AddScoped<ISmsService, SmsGatewayService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
@@ -593,6 +594,31 @@ app.MapHealthChecks("/health");
             max_contacts = EXCLUDED.max_contacts, max_emails_per_month = EXCLUDED.max_emails_per_month,
             max_whats_app_per_month = EXCLUDED.max_whats_app_per_month, max_ai_per_month = EXCLUDED.max_ai_per_month,
             max_users = EXCLUDED.max_users, sort_order = EXCLUDED.sort_order",
+        // P2.4 — multi-tenancy foundation. ADDITIVE + zero-regression: introduces an Organization
+        // grouping and a nullable users.organization_id, backfills every existing user to a single
+        // seeded "Legacy Organization". Query-level tenant isolation is NOT enabled here — it is
+        // gated behind system_settings.enable_multi_tenancy (default false), so behaviour is
+        // identical to today (data still scoped by user_id) until that flag is switched on.
+        @"CREATE TABLE IF NOT EXISTS organizations (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            name character varying(150) NOT NULL,
+            slug character varying(80) NOT NULL,
+            owner_user_id uuid NULL,
+            plan_code character varying(40) NOT NULL DEFAULT 'free',
+            is_active boolean NOT NULL DEFAULT true,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            updated_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_organizations_slug ON organizations (slug)",
+        // Seed the Legacy org with the fixed id referenced by Organization.LegacyOrgId.
+        @"INSERT INTO organizations (id, name, slug, plan_code) VALUES
+            ('00000000-0000-0000-0000-00000000ace0', 'Legacy Organization', 'legacy', 'free')
+          ON CONFLICT (slug) DO NOTHING",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id uuid NULL",
+        "CREATE INDEX IF NOT EXISTS ix_users_organization_id ON users (organization_id)",
+        // Backfill every pre-existing user to the Legacy org (idempotent — only touches NULLs).
+        "UPDATE users SET organization_id = '00000000-0000-0000-0000-00000000ace0' WHERE organization_id IS NULL",
+        "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS enable_multi_tenancy boolean NOT NULL DEFAULT false",
     };
     foreach (var sql in migrationSql)
     {

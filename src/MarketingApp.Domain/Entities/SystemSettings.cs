@@ -24,6 +24,12 @@ public class SystemSettings
     /// </summary>
     public bool EnableQuotas { get; set; } = false;
 
+    /// <summary>
+    /// P2.4 — when false (default), Organization is a pure grouping layer and data is still scoped by
+    /// UserId exactly as before. Flip to true only after per-org isolation is validated in staging.
+    /// </summary>
+    public bool EnableMultiTenancy { get; set; } = false;
+
     // === Branding (admin-configurable, removes "MarketPro" hardcode everywhere) ===
     public string PlatformName { get; set; } = "MarketPro";
     public string? LogoUrl { get; set; }

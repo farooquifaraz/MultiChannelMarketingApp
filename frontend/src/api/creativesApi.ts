@@ -21,9 +21,15 @@ export interface ImageSizeOption {
   label: string;
 }
 
+export interface PromptPreset {
+  title: string;
+  prompt: string;
+}
+
 export const creativesApi = {
   sizes: () => axiosInstance.get('/creatives/sizes'),
-  generate: (prompt: string, size: string) =>
-    axiosInstance.post('/creatives/generate', { prompt, size }),
+  presets: () => axiosInstance.get('/creatives/presets'),
+  generate: (prompt: string, size: string, brandKitId?: string | null) =>
+    axiosInstance.post('/creatives/generate', { prompt, size, brandKitId: brandKitId || null }),
   assets: (take = 50) => axiosInstance.get('/creatives/assets', { params: { take } }),
 };

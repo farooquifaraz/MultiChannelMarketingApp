@@ -241,6 +241,7 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGener
     MarketingApp.Infrastructure.Services.Media.ImageGenerationClientFactory>();
 builder.Services.AddScoped<IImageGenerationService,
     MarketingApp.Application.Services.ImageGenerationService>();
+builder.Services.AddScoped<IBrandKitService, MarketingApp.Application.Services.BrandKitService>();
 // P2.2 — payment providers (mock activates immediately keyless; Stripe activates when configured).
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProvider,
     MarketingApp.Infrastructure.Services.Billing.MockBillingProvider>();
@@ -664,6 +665,23 @@ app.MapHealthChecks("/health");
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_api_key text",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_webhook_secret text",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS payment_base_url text",
+        // P3.2 — brand kits. Additive: a brand_kits table + an optional brand_kit_id on generated
+        // assets (nullable, so generation without a kit is unaffected).
+        @"CREATE TABLE IF NOT EXISTS brand_kits (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id uuid NOT NULL,
+            name character varying(100) NOT NULL,
+            logo_url text,
+            primary_color character varying(9) NOT NULL DEFAULT '#4f46e5',
+            secondary_color character varying(9),
+            accent_color character varying(9),
+            font_family character varying(60) NOT NULL DEFAULT 'Inter',
+            is_default boolean NOT NULL DEFAULT false,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            updated_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE INDEX IF NOT EXISTS ix_brand_kits_user ON brand_kits (user_id)",
+        "ALTER TABLE generated_assets ADD COLUMN IF NOT EXISTS brand_kit_id uuid NULL",
     };
     foreach (var sql in migrationSql)
     {

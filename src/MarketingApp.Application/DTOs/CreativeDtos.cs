@@ -6,6 +6,8 @@ public class GenerateImageDto
     public string Prompt { get; set; } = string.Empty;
     /// <summary>Size token, e.g. "1024x1024". Must be one of the allowed options.</summary>
     public string Size { get; set; } = "1024x1024";
+    /// <summary>Optional brand kit to apply (P3.2).</summary>
+    public Guid? BrandKitId { get; set; }
 }
 
 /// <summary>A generated image asset (read shape).</summary>
@@ -20,6 +22,7 @@ public class GeneratedAssetDto
     public string Status { get; set; } = "pending";
     public string? ImageUrl { get; set; }
     public int CreditCost { get; set; }
+    public Guid? BrandKitId { get; set; }
     public string? ErrorMessage { get; set; }
     public DateTime CreatedAt { get; set; }
 }

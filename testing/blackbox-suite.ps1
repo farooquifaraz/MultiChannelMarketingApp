@@ -1194,6 +1194,62 @@ TestCase 'W' 'W7' 'Revert user to free (cleanup)' {
     return $true
 }
 
+# ===== SECTION X -- P3.2 Brand Kits + presets =====
+Section "X. P3.2 Brand Kits"
+
+$global:createdKitId = $null
+
+TestCase 'X' 'X1' 'GET /creatives/presets returns starter presets' {
+    $r = Call-Api -Method GET -Path '/creatives/presets' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if (@($r.Data.data).Count -lt 5) { return "expected >=5 presets" }
+    return $true
+}
+
+TestCase 'X' 'X2' 'POST /brand-kits creates a kit' {
+    $r = Call-Api -Method POST -Path '/brand-kits' -Token $global:userToken -Body @{ name = "BB Kit $Stamp"; primaryColor = '#ff8800'; secondaryColor = '#0088ff'; fontFamily = 'Inter'; isDefault = $true }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    $global:createdKitId = $r.Data.data.id
+    if (-not $global:createdKitId) { return "no kit id" }
+    if ($r.Data.data.primaryColor -ne '#ff8800') { return "primaryColor=$($r.Data.data.primaryColor)" }
+    return $true
+}
+
+TestCase 'X' 'X3' 'POST /brand-kits invalid color returns 4xx' {
+    $r = Call-Api -Method POST -Path '/brand-kits' -Token $global:userToken -Body @{ name = 'Bad'; primaryColor = 'red' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'X' 'X4' 'GET /brand-kits lists the created kit (default first)' {
+    $r = Call-Api -Method GET -Path '/brand-kits' -Token $global:userToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if (@($r.Data.data | Where-Object { $_.id -eq $global:createdKitId }).Count -lt 1) { return "created kit not in list" }
+    return $true
+}
+
+TestCase 'X' 'X5' 'POST /creatives/generate with brand kit applies + records it' {
+    if (-not $global:createdKitId) { return "no kit id from X2" }
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "branded banner"; size = '1024x1024'; brandKitId = $global:createdKitId }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.status -ne 'completed') { return "status=$($r.Data.data.status)" }
+    if ($r.Data.data.brandKitId -ne $global:createdKitId) { return "brandKitId not recorded" }
+    return $true
+}
+
+TestCase 'X' 'X6' 'POST /creatives/generate with unknown brand kit returns 4xx' {
+    $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "x"; size = '1024x1024'; brandKitId = '99999999-9999-9999-9999-999999999999' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'X' 'X7' 'DELETE /brand-kits/{id} removes it (cleanup)' {
+    if (-not $global:createdKitId) { return "no kit id" }
+    $r = Call-Api -Method DELETE -Path "/brand-kits/$($global:createdKitId)" -Token $global:userToken -ExpectStatus @(200, 204)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

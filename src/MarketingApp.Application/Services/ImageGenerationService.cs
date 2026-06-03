@@ -17,6 +17,7 @@ public class ImageGenerationService : IImageGenerationService
     private readonly IImageGenerationClientFactory _factory;
     private readonly ISystemSettingsService _settings;
     private readonly IGenericRepository<GeneratedAsset> _repo;
+    private readonly IGenericRepository<BrandKit> _brandKitRepo;
     private readonly IAuditService _audit;
     private readonly ILogger<ImageGenerationService> _logger;
 
@@ -26,12 +27,14 @@ public class ImageGenerationService : IImageGenerationService
         IImageGenerationClientFactory factory,
         ISystemSettingsService settings,
         IGenericRepository<GeneratedAsset> repo,
+        IGenericRepository<BrandKit> brandKitRepo,
         IAuditService audit,
         ILogger<ImageGenerationService> logger)
     {
         _factory = factory;
         _settings = settings;
         _repo = repo;
+        _brandKitRepo = brandKitRepo;
         _audit = audit;
         _logger = logger;
     }
@@ -72,6 +75,18 @@ public class ImageGenerationService : IImageGenerationService
             ? null
             : await _settings.GetRawImageApiKeyAsync(ct);
 
+        // P3.2 — optionally apply a brand kit (must belong to the requesting user).
+        BrandKit? kit = null;
+        if (dto.BrandKitId is Guid kitId)
+        {
+            kit = await _brandKitRepo.GetByIdAsync(kitId, ct);
+            if (kit is null || kit.UserId != userId)
+                throw new AppValidationException("Brand kit not found.");
+        }
+
+        // Real providers can't take colors directly → fold brand context into the prompt.
+        var effectivePrompt = BuildEffectivePrompt(prompt, kit);
+
         var asset = new GeneratedAsset
         {
             UserId = userId,
@@ -82,9 +97,11 @@ public class ImageGenerationService : IImageGenerationService
             Height = h,
             Status = "pending",
             CreditCost = 1,
+            BrandKitId = kit?.Id,
         };
 
-        var request = new ImageGenerationRequest(prompt, w, h, settings.ImageModel, apiKey, settings.ImageBaseUrl, 60);
+        var request = new ImageGenerationRequest(effectivePrompt, w, h, settings.ImageModel, apiKey, settings.ImageBaseUrl, 60,
+            BrandPrimary: kit?.PrimaryColor, BrandSecondary: kit?.SecondaryColor, BrandName: kit?.Name);
         try
         {
             var result = await client.GenerateAsync(request, ct);
@@ -135,6 +152,20 @@ public class ImageGenerationService : IImageGenerationService
         return (1024, 1024);
     }
 
+    /// <summary>
+    /// Folds brand-kit context into the prompt so real image providers (which take no color params)
+    /// still honor the brand. Returns the prompt unchanged when no kit is applied. Pure → testable.
+    /// </summary>
+    internal static string BuildEffectivePrompt(string prompt, BrandKit? kit)
+    {
+        if (kit is null) return prompt;
+        var parts = new List<string> { $"brand \"{kit.Name}\"", $"primary color {kit.PrimaryColor}" };
+        if (!string.IsNullOrWhiteSpace(kit.SecondaryColor)) parts.Add($"secondary color {kit.SecondaryColor}");
+        if (!string.IsNullOrWhiteSpace(kit.AccentColor)) parts.Add($"accent color {kit.AccentColor}");
+        if (!string.IsNullOrWhiteSpace(kit.FontFamily)) parts.Add($"{kit.FontFamily} typography");
+        return $"{prompt}. Brand style: {string.Join(", ", parts)}.";
+    }
+
     private static GeneratedAssetDto ToDto(GeneratedAsset a) => new()
     {
         Id = a.Id,
@@ -146,6 +177,7 @@ public class ImageGenerationService : IImageGenerationService
         Status = a.Status,
         ImageUrl = a.ImageUrl,
         CreditCost = a.CreditCost,
+        BrandKitId = a.BrandKitId,
         ErrorMessage = a.ErrorMessage,
         CreatedAt = a.CreatedAt,
     };

@@ -54,6 +54,12 @@ public record SystemSettingsDto
     public string? ImageBaseUrl { get; init; }
     public string ImageModel { get; init; } = "dall-e-3";
 
+    // P2.2 — payment provider (secrets masked on read)
+    public string PaymentProvider { get; init; } = "mock";
+    public string? PaymentApiKeyMasked { get; init; }
+    public bool PaymentWebhookSecretSet { get; init; }
+    public string? PaymentBaseUrl { get; init; }
+
     public DateTime UpdatedAt { get; init; }
 }
 
@@ -103,4 +109,10 @@ public record UpdateSystemSettingsDto
     public string? ImageApiKey { get; init; }
     public string? ImageBaseUrl { get; init; }
     public string ImageModel { get; init; } = "dall-e-3";
+
+    // P2.2 — payment provider (raw secrets on update; null = keep existing)
+    public string PaymentProvider { get; init; } = "mock";
+    public string? PaymentApiKey { get; init; }
+    public string? PaymentWebhookSecret { get; init; }
+    public string? PaymentBaseUrl { get; init; }
 }

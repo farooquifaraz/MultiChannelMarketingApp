@@ -83,6 +83,14 @@ public class SystemSettings
     public string? ImageBaseUrl { get; set; }
     public string ImageModel { get; set; } = "dall-e-3";
 
+    // === Phase 2 / P2.2: payment provider ===
+    // "mock" (default) activates the chosen plan immediately so the upgrade loop works keyless.
+    // Switch to "stripe" (+ PaymentApiKey + PaymentWebhookSecret) for real hosted checkout.
+    public string PaymentProvider { get; set; } = "mock";
+    public string? PaymentApiKey { get; set; }
+    public string? PaymentWebhookSecret { get; set; }
+    public string? PaymentBaseUrl { get; set; }
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public Guid? UpdatedByUserId { get; set; }
 

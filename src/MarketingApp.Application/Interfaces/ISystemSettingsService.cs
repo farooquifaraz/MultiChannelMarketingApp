@@ -21,4 +21,7 @@ public interface ISystemSettingsService
 
     /// <summary>Raw (unmasked) image-generation API key (Phase 3).</summary>
     Task<string?> GetRawImageApiKeyAsync(CancellationToken ct = default);
+
+    /// <summary>Raw (unmasked) payment provider secret key + webhook signing secret (P2.2).</summary>
+    Task<(string? ApiKey, string? WebhookSecret)> GetRawPaymentSecretsAsync(CancellationToken ct = default);
 }

@@ -19,4 +19,14 @@ public interface IBillingService
     /// Throws if the plan code doesn't exist.
     /// </summary>
     Task<SubscriptionDto> ChangePlanAsync(Guid userId, string planCode, CancellationToken ct = default);
+
+    /// <summary>A single plan by code (or null). Used by the checkout flow for price/name.</summary>
+    Task<PlanDto?> GetPlanAsync(string code, CancellationToken ct = default);
+
+    /// <summary>
+    /// Activate a paid plan after a confirmed payment, recording the provider's external ids
+    /// (P2.2). Idempotent — safe to call again from a retried webhook.
+    /// </summary>
+    Task<SubscriptionDto> ActivatePaidPlanAsync(Guid userId, string planCode,
+        string? externalCustomerId, string? externalSubscriptionId, CancellationToken ct = default);
 }

@@ -74,6 +74,34 @@ public class BillingService : IBillingService
         return await BuildDtoAsync(userId, sub, plan, enforced, ct);
     }
 
+    public async Task<PlanDto?> GetPlanAsync(string code, CancellationToken ct = default)
+    {
+        var plan = await GetPlanByCodeAsync(code, ct);
+        return plan is null ? null : ToPlanDto(plan);
+    }
+
+    public async Task<SubscriptionDto> ActivatePaidPlanAsync(Guid userId, string planCode,
+        string? externalCustomerId, string? externalSubscriptionId, CancellationToken ct = default)
+    {
+        var plan = await GetPlanByCodeAsync(planCode, ct)
+            ?? throw new AppValidationException($"Unknown plan '{planCode}'.");
+
+        var sub = await GetOrCreateSubscriptionAsync(userId, ct);
+        sub.PlanCode = plan.Code;
+        sub.Status = "active";
+        sub.CurrentPeriodStart = DateTime.UtcNow;
+        sub.CurrentPeriodEnd = DateTime.UtcNow.AddMonths(1);
+        if (!string.IsNullOrWhiteSpace(externalCustomerId)) sub.ExternalCustomerId = externalCustomerId;
+        if (!string.IsNullOrWhiteSpace(externalSubscriptionId)) sub.ExternalSubscriptionId = externalSubscriptionId;
+        sub.UpdatedAt = DateTime.UtcNow;
+        await _subRepo.UpdateAsync(sub, ct);
+        _logger.LogInformation("Paid plan {Plan} activated for user {UserId} (cust={Cust}, sub={Sub})",
+            plan.Code, userId, externalCustomerId, externalSubscriptionId);
+
+        var enforced = (await _settings.GetAsync(ct)).EnableQuotas;
+        return await BuildDtoAsync(userId, sub, plan, enforced, ct);
+    }
+
     // === helpers ===
 
     private async Task<Subscription> GetOrCreateSubscriptionAsync(Guid userId, CancellationToken ct)

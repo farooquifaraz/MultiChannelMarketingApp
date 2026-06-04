@@ -1250,6 +1250,46 @@ TestCase 'X' 'X7' 'DELETE /brand-kits/{id} removes it (cleanup)' {
     return $true
 }
 
+# ===== SECTION Y -- P3.3 Integrations (image provider switch via settings round-trip) =====
+Section "Y. P3.3 Integrations"
+
+TestCase 'Y' 'Y1' 'GET /admin/system-settings exposes image + payment provider fields' {
+    $r = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    $d = $r.Data.data
+    foreach ($f in @('imageProvider','paymentProvider','aiProvider')) {
+        if (-not $d.PSObject.Properties[$f]) { return "missing field: $f" }
+    }
+    return $true
+}
+
+TestCase 'Y' 'Y2' 'Switch image provider to pollinations (free) -> generate returns its URL' {
+    # Full round-trip so we don't wipe other settings: GET, mutate, PUT.
+    $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if (-not $g.Ok) { return "GET status=$($g.Status)" }
+    $settings = $g.Data.data
+    $settings.imageProvider = 'pollinations'
+    $put = Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $settings
+    if (-not $put.Ok) { return "PUT status=$($put.Status) body=$($put.Raw)" }
+
+    $gen = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "free provider test"; size = '1024x1024' }
+    if (-not $gen.Ok) { return "generate status=$($gen.Status) body=$($gen.Raw)" }
+    if ($gen.Data.data.provider -ne 'pollinations') { return "provider=$($gen.Data.data.provider)" }
+    if ($gen.Data.data.imageUrl -notmatch 'pollinations\.ai') { return "imageUrl not pollinations" }
+    return $true
+}
+
+TestCase 'Y' 'Y3' 'Restore image provider to mock (cleanup)' {
+    $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    $settings = $g.Data.data
+    $settings.imageProvider = 'mock'
+    $put = Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $settings
+    if (-not $put.Ok) { return "PUT status=$($put.Status)" }
+    $chk = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "back to mock"; size = '1024x1024' }
+    if ($chk.Data.data.provider -ne 'mock') { return "provider=$($chk.Data.data.provider)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

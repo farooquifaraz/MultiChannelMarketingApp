@@ -237,6 +237,15 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGener
     MarketingApp.Infrastructure.Services.Media.MockImageGenerationClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
     MarketingApp.Infrastructure.Services.Media.DalleImageClient>();
+// P3.3 — more image providers: Pollinations (FREE, no key), Gemini (free tier), Stability, HuggingFace (free tier).
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.PollinationsImageClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.GeminiImageClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.StabilityImageClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.HuggingFaceImageClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClientFactory,
     MarketingApp.Infrastructure.Services.Media.ImageGenerationClientFactory>();
 builder.Services.AddScoped<IImageGenerationService,

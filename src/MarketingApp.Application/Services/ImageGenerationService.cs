@@ -102,25 +102,32 @@ public class ImageGenerationService : IImageGenerationService
 
         var request = new ImageGenerationRequest(effectivePrompt, w, h, settings.ImageModel, apiKey, settings.ImageBaseUrl, 60,
             BrandPrimary: kit?.PrimaryColor, BrandSecondary: kit?.SecondaryColor, BrandName: kit?.Name);
-        try
+
+        var result = await TryGenerateAsync(client, request, userId, ct);
+        if (result.IsSuccess && !string.IsNullOrEmpty(result.ImageUrl))
         {
-            var result = await client.GenerateAsync(request, ct);
-            if (result.IsSuccess && !string.IsNullOrEmpty(result.ImageUrl))
-            {
-                asset.Status = "completed";
-                asset.ImageUrl = result.ImageUrl;
-            }
-            else
-            {
-                asset.Status = "failed";
-                asset.ErrorMessage = result.Error ?? "Generation failed.";
-            }
+            asset.Status = "completed";
+            asset.ImageUrl = result.ImageUrl;
+            asset.Provider = result.Provider;
         }
-        catch (Exception ex)
+        else if (!string.Equals(client.Provider, "mock", StringComparison.OrdinalIgnoreCase)
+                 && _factory.Resolve("mock") is { } mock)
         {
-            _logger.LogError(ex, "Image generation threw for user {UserId}", userId);
+            // Graceful fallback: the configured real provider failed (verification / quota / billing /
+            // outage). Rather than a hard error, produce a branded placeholder so the studio always
+            // works — and keep the real reason as a note so the user knows how to enable real images.
+            _logger.LogWarning("Image provider '{Provider}' failed for user {UserId}; falling back to placeholder. Reason: {Reason}",
+                client.Provider, userId, result.Error);
+            var fb = await TryGenerateAsync(mock, request, userId, ct);
+            asset.Status = "completed";
+            asset.ImageUrl = fb.ImageUrl;
+            asset.Provider = "mock";
+            asset.ErrorMessage = $"Showing a placeholder — your '{client.Provider}' provider was unavailable: {result.Error}";
+        }
+        else
+        {
             asset.Status = "failed";
-            asset.ErrorMessage = ex.Message;
+            asset.ErrorMessage = result.Error ?? "Generation failed.";
         }
 
         await _repo.AddAsync(asset, ct);
@@ -136,6 +143,23 @@ public class ImageGenerationService : IImageGenerationService
             .Take(take <= 0 ? 50 : Math.Min(take, 200))
             .Select(ToDto)
             .ToList();
+    }
+
+    /// <summary>Runs one provider, converting a thrown exception into a failed result.</summary>
+    private async Task<ImageGenerationResult> TryGenerateAsync(
+        Application.Interfaces.Media.IImageGenerationClient client,
+        Application.Interfaces.Media.ImageGenerationRequest request, Guid userId, CancellationToken ct)
+    {
+        try
+        {
+            return await client.GenerateAsync(request, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Image provider {Provider} threw for user {UserId}", client.Provider, userId);
+            return new Application.Interfaces.Media.ImageGenerationResult(
+                false, null, request.Width, request.Height, client.Provider, TimeSpan.Zero, ex.Message);
+        }
     }
 
     public async Task DeleteAsync(Guid userId, Guid id, CancellationToken ct = default)

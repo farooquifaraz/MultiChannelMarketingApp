@@ -13,6 +13,14 @@ using System.Text;
 
 namespace MarketingApp.Tests.Services;
 
+/// <summary>A provider that always fails — to exercise the graceful placeholder fallback.</summary>
+file sealed class FailingImageClient : IImageGenerationClient
+{
+    public string Provider => "dalle";
+    public Task<ImageGenerationResult> GenerateAsync(ImageGenerationRequest r, CancellationToken ct)
+        => Task.FromResult(new ImageGenerationResult(false, null, r.Width, r.Height, Provider, TimeSpan.Zero, "401: Not authorized"));
+}
+
 /// <summary>
 /// Phase 3 (P3.1) — AI image generation foundation. Covers the pure helpers (ParseSize, placeholder
 /// SVG, response parsing), the provider factory, the mock client, and the service generate/validate
@@ -165,6 +173,39 @@ public class ImageGenerationTests
         var svc = BuildService(out _, provider: "disabled");
         var act = () => svc.GenerateAsync(Guid.NewGuid(), new GenerateImageDto { Prompt = "hi" });
         await act.Should().ThrowAsync<AppValidationException>();
+    }
+
+    [Fact]
+    public async Task GenerateAsync_falls_back_to_placeholder_when_real_provider_fails()
+    {
+        // Configured provider 'dalle' fails (e.g. 401 not-authorized) → app must still produce a
+        // placeholder so the studio never hard-errors, with the real reason noted.
+        var factory = new ImageGenerationClientFactory(new IImageGenerationClient[]
+        {
+            new FailingImageClient(),          // provider "dalle" — always fails
+            new MockImageGenerationClient(),   // provider "mock" — always works
+        });
+        var settings = new Mock<ISystemSettingsService>();
+        settings.Setup(s => s.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SystemSettingsDto { ImageProvider = "dalle", ImageModel = "gpt-image-1" });
+        settings.Setup(s => s.GetRawImageApiKeyAsync(It.IsAny<CancellationToken>())).ReturnsAsync("sk-test");
+        var repo = new Mock<IGenericRepository<GeneratedAsset>>();
+        repo.Setup(r => r.AddAsync(It.IsAny<GeneratedAsset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GeneratedAsset a, CancellationToken _) => a);
+        var brandRepo = new Mock<IGenericRepository<BrandKit>>();
+        var audit = new Mock<IAuditService>();
+        audit.Setup(a => a.LogAsync(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string?>(),
+                It.IsAny<Guid?>(), It.IsAny<object?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var svc = new ImageGenerationService(factory, settings.Object, repo.Object, brandRepo.Object, audit.Object,
+            NullLogger<ImageGenerationService>.Instance);
+
+        var dto = await svc.GenerateAsync(Guid.NewGuid(), new GenerateImageDto { Prompt = "test", Size = "1024x1024" });
+
+        dto.Status.Should().Be("completed");          // never a hard failure
+        dto.Provider.Should().Be("mock");             // fell back to placeholder
+        dto.ImageUrl.Should().StartWith("data:image/svg+xml;base64,");
+        dto.ErrorMessage.Should().Contain("401");     // real reason preserved
     }
 
     [Fact]

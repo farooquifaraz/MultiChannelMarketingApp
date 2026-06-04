@@ -1308,17 +1308,16 @@ TestCase 'Y' 'Y2' 'Switch image provider to pollinations (free) -> generates or 
     $put = Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $settings
     if (-not $put.Ok) { return "PUT status=$($put.Status) body=$($put.Raw)" }
 
-    # Pollinations fetches server-side: success => embedded data-URI; rate-limited => clean 'failed'
-    # with a message (never a broken/dead URL). Both outcomes are acceptable here.
+    # Robust behavior: Pollinations success => embedded data-URI (provider=pollinations); if it's
+    # rate-limited the service gracefully falls back to the placeholder (provider=mock, completed,
+    # with a note). Either way the result is ALWAYS a usable completed image — never a hard error.
     $gen = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "free provider test"; size = '1024x1024' }
     if (-not $gen.Ok) { return "generate status=$($gen.Status) body=$($gen.Raw)" }
     $d = $gen.Data.data
-    if ($d.provider -ne 'pollinations') { return "provider=$($d.provider)" }
-    if ($d.status -eq 'completed') {
-        if ($d.imageUrl -notmatch '^data:image/') { return "completed but imageUrl not embedded data-URI" }
-    } elseif ($d.status -eq 'failed') {
-        if (-not $d.errorMessage) { return "failed without an error message" }
-    } else { return "unexpected status=$($d.status)" }
+    if ($d.status -ne 'completed') { return "expected completed (graceful), got status=$($d.status)" }
+    if ($d.imageUrl -notmatch '^data:image/') { return "imageUrl not an embedded data-URI" }
+    if ($d.provider -eq 'mock' -and -not $d.errorMessage) { return "fell back to mock without a note" }
+    if ($d.provider -ne 'pollinations' -and $d.provider -ne 'mock') { return "unexpected provider=$($d.provider)" }
     return $true
 }
 

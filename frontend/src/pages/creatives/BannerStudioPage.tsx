@@ -229,6 +229,9 @@ export default function BannerStudioPage() {
             )}
             <div className="p-3">
               <p className="text-sm text-gray-700 line-clamp-2">{a.prompt}</p>
+              {a.status === 'completed' && a.errorMessage && (
+                <p className="mt-1 text-[11px] text-amber-600 line-clamp-2" title={a.errorMessage}>⚠ {a.errorMessage}</p>
+              )}
               <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
                 <span>{a.size} · {a.provider}</span>
                 {a.status === 'completed' && a.imageUrl && (

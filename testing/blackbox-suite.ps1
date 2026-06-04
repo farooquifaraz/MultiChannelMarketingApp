@@ -1109,6 +1109,12 @@ TestCase 'V' 'V2' 'GET /creatives/sizes requires auth' {
 }
 
 TestCase 'V' 'V3' 'POST /creatives/generate (mock) returns a completed asset with data-URI' {
+    # Self-contained: ensure the image provider is 'mock' (admin may have switched it).
+    $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if ($g.Ok -and $g.Data.data.imageProvider -ne 'mock') {
+        $st = $g.Data.data; $st.imageProvider = 'mock'
+        Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $st | Out-Null
+    }
     $r = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "BlackBox Dubai villa flyer"; size = '1200x628' }
     if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
     $d = $r.Data.data
@@ -1140,6 +1146,29 @@ TestCase 'V' 'V6' 'GET /creatives/assets lists the user''s generated assets' {
 
 TestCase 'V' 'V7' 'POST /creatives/generate requires auth' {
     $r = Call-Api -Method POST -Path '/creatives/generate' -Body @{ prompt = "x"; size = '1024x1024' } -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V8' 'DELETE /creatives/assets/{id} removes own banner' {
+    # Ensure provider is mock so generate succeeds, then create + delete.
+    $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if ($g.Ok -and $g.Data.data.imageProvider -ne 'mock') {
+        $st = $g.Data.data; $st.imageProvider = 'mock'
+        Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $st | Out-Null
+    }
+    $gen = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "to be deleted"; size = '1024x1024' }
+    if (-not $gen.Ok) { return "generate status=$($gen.Status)" }
+    $id = $gen.Data.data.id
+    $del = Call-Api -Method DELETE -Path "/creatives/assets/$id" -Token $global:userToken -ExpectStatus @(200, 204)
+    if (-not $del.Ok) { return "delete status=$($del.Status)" }
+    $list = Call-Api -Method GET -Path '/creatives/assets' -Token $global:userToken
+    if (@($list.Data.data | Where-Object { $_.id -eq $id }).Count -ne 0) { return "asset still present after delete" }
+    return $true
+}
+
+TestCase 'V' 'V9' 'DELETE /creatives/assets/{unknown} returns 404' {
+    $r = Call-Api -Method DELETE -Path '/creatives/assets/99999999-9999-9999-9999-999999999999' -Token $global:userToken -ExpectStatus @(404)
     if (-not $r.Ok) { return "status=$($r.Status)" }
     return $true
 }

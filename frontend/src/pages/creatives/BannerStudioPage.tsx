@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Image as ImageIcon, Loader2, Sparkles, AlertCircle, Download, Palette, Plus, Trash2, Star } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Sparkles, AlertCircle, Download, Palette, Plus, Trash2, Star, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { creativesApi, type GeneratedAsset, type ImageSizeOption, type PromptPreset } from '../../api/creativesApi';
 import { brandKitsApi, type BrandKit } from '../../api/brandKitsApi';
@@ -81,6 +81,18 @@ export default function BannerStudioPage() {
       if (brandKitId === id) setBrandKitId('');
       await load();
     } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Delete failed');
+    }
+  };
+
+  const deleteAsset = async (id: string) => {
+    // optimistic remove
+    const prev = assets;
+    setAssets((a) => a.filter((x) => x.id !== id));
+    try {
+      await creativesApi.deleteAsset(id);
+    } catch (err: any) {
+      setAssets(prev); // restore on failure
       toast.error(err?.response?.data?.message || 'Delete failed');
     }
   };
@@ -192,7 +204,14 @@ export default function BannerStudioPage() {
       {/* Gallery */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {assets.map((a) => (
-          <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
+            <button
+              onClick={() => deleteAsset(a.id)}
+              title="Delete banner"
+              className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/90 text-gray-500 hover:text-rose-600 hover:bg-white shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
             {a.status === 'completed' && a.imageUrl && !broken.has(a.id) ? (
               <a href={a.imageUrl} download={`banner-${a.id}`} title="Open / download">
                 <img

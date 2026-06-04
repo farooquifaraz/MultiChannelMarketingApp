@@ -39,6 +39,8 @@ public class AppDbContext : DbContext
     public DbSet<GeneratedAsset> GeneratedAssets => Set<GeneratedAsset>();
     // P3.2 — brand kits
     public DbSet<BrandKit> BrandKits => Set<BrandKit>();
+    // P3.5 — per-provider credential vault
+    public DbSet<IntegrationCredential> IntegrationCredentials => Set<IntegrationCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

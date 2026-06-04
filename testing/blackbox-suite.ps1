@@ -1332,6 +1332,63 @@ TestCase 'Y' 'Y3' 'Restore image provider to mock (cleanup)' {
     return $true
 }
 
+# ===== SECTION AA -- P3.5 Credential vault (per-provider keys + active selector) =====
+Section "AA. P3.5 Credential Vault"
+
+TestCase 'AA' 'AA1' 'GET /admin/integrations/ai returns category + active + credentials' {
+    $r = Call-Api -Method GET -Path '/admin/integrations/ai' -Token $global:adminToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    if ($r.Data.data.category -ne 'ai') { return "category=$($r.Data.data.category)" }
+    if (-not $r.Data.data.PSObject.Properties['activeProvider']) { return "no activeProvider" }
+    return $true
+}
+
+TestCase 'AA' 'AA2' 'GET /admin/integrations requires admin (user -> 403)' {
+    $r = Call-Api -Method GET -Path '/admin/integrations/ai' -Token $global:userToken -ExpectStatus @(403)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'AA' 'AA3' 'PUT saves a provider key into the vault (masked on read)' {
+    $r = Call-Api -Method PUT -Path '/admin/integrations/ai/openai' -Token $global:adminToken -Body @{ apiKey = 'sk-blackbox-testkey-1234'; model = 'gpt-4o' }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    $row = @($r.Data.data.credentials | Where-Object { $_.provider -eq 'openai' })
+    if ($row.Count -lt 1) { return "openai cred not saved" }
+    if (-not $row[0].hasKey) { return "hasKey false" }
+    if ($row[0].keyMasked -match '1234' -and $row[0].keyMasked -match 'blackbox') { return "key not masked" }
+    return $true
+}
+
+TestCase 'AA' 'AA4' 'Two providers keep independent keys (no cross loss)' {
+    Call-Api -Method PUT -Path '/admin/integrations/ai/gemini' -Token $global:adminToken -Body @{ apiKey = 'AIza-blackbox-gem' } | Out-Null
+    $r = Call-Api -Method GET -Path '/admin/integrations/ai' -Token $global:adminToken
+    $providers = @($r.Data.data.credentials | Where-Object { $_.hasKey -eq $true } | ForEach-Object { $_.provider })
+    if ($providers -notcontains 'openai') { return "openai key lost" }
+    if ($providers -notcontains 'gemini') { return "gemini key missing" }
+    return $true
+}
+
+TestCase 'AA' 'AA5' 'POST activate sets the active provider' {
+    $r = Call-Api -Method POST -Path '/admin/integrations/ai/openai/activate' -Token $global:adminToken
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.activeProvider -ne 'openai') { return "activeProvider=$($r.Data.data.activeProvider)" }
+    $active = @($r.Data.data.credentials | Where-Object { $_.isActive -eq $true })
+    if ($active.Count -ne 1 -or $active[0].provider -ne 'openai') { return "isActive flag wrong" }
+    return $true
+}
+
+TestCase 'AA' 'AA6' 'Active provider syncs into system-settings (existing AI path)' {
+    $s = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if ($s.Data.data.aiProvider -ne 'openai') { return "system aiProvider=$($s.Data.data.aiProvider)" }
+    return $true
+}
+
+TestCase 'AA' 'AA7' 'Restore AI provider to disabled (cleanup)' {
+    $r = Call-Api -Method POST -Path '/admin/integrations/ai/disabled/activate' -Token $global:adminToken
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
 # ===== Cleanup =====
 Section "Z. Cleanup"
 

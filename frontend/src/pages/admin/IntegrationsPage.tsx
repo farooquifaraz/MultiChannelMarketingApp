@@ -1,57 +1,57 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Plug, Loader2, Sparkles, Image as ImageIcon, CreditCard, Check, KeyRound, Save, ExternalLink,
-} from 'lucide-react';
+import { Plug, Loader2, Sparkles, Image as ImageIcon, CreditCard, Check, KeyRound, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { adminApi } from '../../api/settingsApi';
+import { integrationsApi, type CategoryCredentials, type CredentialRow } from '../../api/integrationsApi';
 import { useAuthStore } from '../../store/authStore';
 
-/** Provider catalogues per category (label, free?, key needed?, default model, docs). */
-const AI_PROVIDERS = [
-  { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
-  { key: 'anthropic', label: 'Anthropic (Claude)', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
-  { key: 'openai', label: 'OpenAI (GPT)', free: false, needsKey: true, model: 'gpt-4o' },
-  { key: 'gemini', label: 'Google Gemini', free: true, needsKey: true, model: 'gemini-1.5-flash', note: 'Free tier on AI Studio' },
-  { key: 'grok', label: 'xAI (Grok)', free: false, needsKey: true, model: 'grok-2' },
-  { key: 'openai-compatible', label: 'OpenAI-compatible (Groq/Ollama/OpenRouter)', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Groq/Ollama have free tiers' },
-];
+/** Provider catalogue per category. needsKey=false → keyless (works with no key). */
+interface ProviderDef { key: string; label: string; free: boolean; needsKey: boolean; model?: string; note?: string; secondary?: string; }
 
-const IMAGE_PROVIDERS = [
-  { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
-  { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Works offline, no key' },
-  { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, optionalKey: true, note: 'FREE · no key needed (optional token raises rate limit)' },
-  { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free tier · free token' },
-  { key: 'gemini', label: 'Google Nano Banana (Gemini 2.5 Flash Image)', free: true, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Real photos · free tier on AI Studio' },
-  { key: 'dalle', label: 'OpenAI (gpt-image-1)', free: false, needsKey: true, model: 'gpt-image-1', note: 'Paid · needs OpenAI API credits + verified org' },
-  { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core' },
-];
-
-const PAYMENT_PROVIDERS = [
-  { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
-  { key: 'mock', label: 'Test mode (instant activate)', free: true, needsKey: false, note: 'No real charge — for testing' },
-  { key: 'stripe', label: 'Stripe', free: false, needsKey: true, note: 'Cards + Apple/Google Pay (AED)' },
-];
-
-function StatusBadge({ active, configured }: { active: boolean; configured: boolean }) {
-  if (active && configured) return <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1"><Check className="w-3 h-3" /> Active</span>;
-  if (active) return <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Selected · key needed</span>;
-  return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>;
-}
+const CATALOG: Record<string, { title: string; icon: any; hint: string; providers: ProviderDef[] }> = {
+  ai: {
+    title: 'AI Text (inbox replies + chat)', icon: Sparkles,
+    hint: 'Pick which AI is enabled. Each provider keeps its own key.',
+    providers: [
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+      { key: 'openai', label: 'OpenAI (GPT)', free: false, needsKey: true, model: 'gpt-4o' },
+      { key: 'anthropic', label: 'Anthropic (Claude)', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
+      { key: 'gemini', label: 'Google Gemini', free: true, needsKey: true, model: 'gemini-1.5-flash', note: 'Free tier' },
+      { key: 'grok', label: 'xAI (Grok)', free: false, needsKey: true, model: 'grok-2' },
+      { key: 'openai-compatible', label: 'OpenAI-compatible (Groq/Ollama/OpenRouter)', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Groq/Ollama free tiers' },
+    ],
+  },
+  image: {
+    title: 'Image Generation (Banner Studio)', icon: ImageIcon,
+    hint: 'Pick which image engine is enabled. Each keeps its own key.',
+    providers: [
+      { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Always works · no key' },
+      { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, note: 'Free · optional token' },
+      { key: 'gemini', label: 'Google Nano Banana (Gemini 2.5 Flash Image)', free: false, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Real photos · needs Google billing' },
+      { key: 'dalle', label: 'OpenAI (gpt-image-1)', free: false, needsKey: true, model: 'gpt-image-1', note: 'Needs verified org + credits' },
+      { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core' },
+      { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free token' },
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+    ],
+  },
+  payment: {
+    title: 'Payments (plan upgrades)', icon: CreditCard,
+    hint: 'Pick the payment provider. Stripe needs a secret key + webhook secret.',
+    providers: [
+      { key: 'mock', label: 'Test mode (instant activate)', free: true, needsKey: false, note: 'No real charge' },
+      { key: 'stripe', label: 'Stripe', free: false, needsKey: true, secondary: 'Webhook signing secret', note: 'Cards + Apple/Google Pay' },
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+    ],
+  },
+};
 
 export default function IntegrationsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role?.toLowerCase() === 'admin';
 
-  const [s, setS] = useState<any>(null);
+  const [data, setData] = useState<Record<string, CategoryCredentials>>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  // New-key inputs (kept separate so we only send a key when the admin actually types one).
-  const [aiKey, setAiKey] = useState('');
-  const [imgKey, setImgKey] = useState('');
-  const [payKey, setPayKey] = useState('');
-  const [paySecret, setPaySecret] = useState('');
 
   useEffect(() => {
     if (!isAdmin) { toast.error('Admin access required'); navigate('/dashboard'); }
@@ -59,162 +59,127 @@ export default function IntegrationsPage() {
 
   const load = async () => {
     try {
-      const res: any = await adminApi.getSystemSettings();
-      setS(res.data);
+      const cats = ['ai', 'image', 'payment'];
+      const res = await Promise.all(cats.map((c) => integrationsApi.get(c)));
+      const map: Record<string, CategoryCredentials> = {};
+      cats.forEach((c, i) => { map[c] = (res[i] as any).data; });
+      setData(map);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to load settings');
+      toast.error(err?.response?.data?.message || 'Failed to load integrations');
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => { if (isAdmin) load(); /* eslint-disable-next-line */ }, [isAdmin]);
 
-  const save = async () => {
-    setSaving(true);
-    try {
-      // Send the full settings object; only include a key when the admin entered a new one
-      // (blank → null → backend keeps the existing key).
-      const payload: any = { ...s };
-      payload.aiApiKey = aiKey.trim() ? aiKey.trim() : null;
-      payload.imageApiKey = imgKey.trim() ? imgKey.trim() : null;
-      payload.paymentApiKey = payKey.trim() ? payKey.trim() : null;
-      payload.paymentWebhookSecret = paySecret.trim() ? paySecret.trim() : null;
-      // Don't accidentally clear the AI fallback key.
-      payload.aiFallbackApiKey = payload.aiFallbackApiKey?.trim?.() ? payload.aiFallbackApiKey : null;
-
-      const res: any = await adminApi.updateSystemSettings(payload);
-      toast.success('Integrations saved');
-      setAiKey(''); setImgKey(''); setPayKey(''); setPaySecret('');
-      setS(res.data);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Save failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (!isAdmin) return null;
-  if (loading || !s) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
-
-  const aiActive = s.aiProvider && s.aiProvider !== 'disabled';
-  const imgActive = s.imageProvider && s.imageProvider !== 'disabled';
-  const payActive = s.paymentProvider && s.paymentProvider !== 'disabled';
-  const aiSel = AI_PROVIDERS.find((p) => p.key === s.aiProvider);
-  const imgSel = IMAGE_PROVIDERS.find((p) => p.key === s.imageProvider);
-  const paySel = PAYMENT_PROVIDERS.find((p) => p.key === s.paymentProvider);
-
-  const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none';
-  const labelCls = 'block text-xs font-medium text-gray-500 mb-1';
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-          <Plug className="w-6 h-6 text-white" />
-        </div>
+        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><Plug className="w-6 h-6 text-white" /></div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-          <p className="text-gray-500 text-sm">Connect &amp; enable your AI, image, and payment providers in one place.</p>
+          <p className="text-gray-500 text-sm">Save each provider's key once, then choose which one is enabled — like switching accounts.</p>
         </div>
       </div>
 
-      {/* AI TEXT */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /><h2 className="font-semibold text-gray-900">AI Text (inbox replies + chat)</h2></div>
-          <StatusBadge active={!!aiActive} configured={!!s.aiApiKeyMasked} />
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Provider</label>
-            <select value={s.aiProvider || 'disabled'} onChange={(e) => setS({ ...s, aiProvider: e.target.value, aiModel: AI_PROVIDERS.find(p=>p.key===e.target.value)?.model || s.aiModel })} className={inputCls}>
-              {AI_PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}{p.free ? ' · free' : ''}</option>)}
-            </select>
-            {aiSel?.note && <p className="text-xs text-emerald-600 mt-1">{aiSel.note}</p>}
-          </div>
-          <div>
-            <label className={labelCls}>Model</label>
-            <input value={s.aiModel || ''} onChange={(e) => setS({ ...s, aiModel: e.target.value })} className={inputCls} />
-          </div>
-          {aiSel?.needsKey && (
-            <div className="sm:col-span-2">
-              <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />API Key {s.aiApiKeyMasked && <span className="text-emerald-600">(saved: {s.aiApiKeyMasked} — leave blank to keep)</span>}</label>
-              <input type="password" value={aiKey} onChange={(e) => setAiKey(e.target.value)} placeholder={s.aiApiKeyMasked ? '•••• keep existing' : 'Paste API key'} className={inputCls} />
-            </div>
-          )}
-        </div>
-      </section>
+      {(['ai', 'image', 'payment'] as const).map((cat) => (
+        <CategoryCard key={cat} category={cat} state={data[cat]} onChanged={load} />
+      ))}
+    </div>
+  );
+}
 
-      {/* IMAGE */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2"><ImageIcon className="w-5 h-5 text-indigo-500" /><h2 className="font-semibold text-gray-900">Image Generation (Banner Studio)</h2></div>
-          <StatusBadge active={!!imgActive} configured={!imgSel?.needsKey || !!s.imageApiKeyMasked} />
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Provider</label>
-            <select value={s.imageProvider || 'mock'} onChange={(e) => setS({ ...s, imageProvider: e.target.value, imageModel: IMAGE_PROVIDERS.find(p=>p.key===e.target.value)?.model || s.imageModel })} className={inputCls}>
-              {IMAGE_PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}{p.free ? ' · free' : ''}</option>)}
-            </select>
-            {imgSel?.note && <p className="text-xs text-emerald-600 mt-1">{imgSel.note}</p>}
-          </div>
-          {!['mock', 'pollinations'].includes(s.imageProvider) ? (
-            <div>
-              <label className={labelCls}>Model</label>
-              <input value={s.imageModel || ''} onChange={(e) => setS({ ...s, imageModel: e.target.value })} className={inputCls} placeholder="(provider default)" />
-            </div>
-          ) : (
-            <div className="flex items-end"><p className="text-xs text-gray-400 pb-2">No model needed for this provider.</p></div>
-          )}
-          {(imgSel?.needsKey || imgSel?.optionalKey) && (
-            <div className="sm:col-span-2">
-              <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />API Key{imgSel?.optionalKey ? ' / token (optional)' : ''} {s.imageApiKeyMasked && <span className="text-emerald-600">(saved: {s.imageApiKeyMasked} — leave blank to keep)</span>}</label>
-              <input type="password" value={imgKey} onChange={(e) => setImgKey(e.target.value)} placeholder={s.imageApiKeyMasked ? '•••• keep existing' : (imgSel?.optionalKey ? 'Optional — paste token to raise limit' : 'Paste API key / token')} className={inputCls} />
-            </div>
-          )}
-        </div>
-      </section>
+function CategoryCard({ category, state, onChanged }: { category: string; state?: CategoryCredentials; onChanged: () => void }) {
+  const cfg = CATALOG[category];
+  const Icon = cfg.icon;
+  const active = state?.activeProvider || 'disabled';
+  const byProvider: Record<string, CredentialRow> = {};
+  (state?.credentials || []).forEach((c) => { byProvider[c.provider] = c; });
 
-      {/* PAYMENTS */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-indigo-500" /><h2 className="font-semibold text-gray-900">Payments (plan upgrades)</h2></div>
-          <StatusBadge active={!!payActive} configured={!paySel?.needsKey || !!s.paymentApiKeyMasked} />
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Provider</label>
-            <select value={s.paymentProvider || 'mock'} onChange={(e) => setS({ ...s, paymentProvider: e.target.value })} className={inputCls}>
-              {PAYMENT_PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}{p.free ? ' · free' : ''}</option>)}
-            </select>
-            {paySel?.note && <p className="text-xs text-emerald-600 mt-1">{paySel.note}</p>}
-          </div>
-          {paySel?.needsKey && (
-            <>
-              <div>
-                <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />Secret Key {s.paymentApiKeyMasked && <span className="text-emerald-600">(saved — blank=keep)</span>}</label>
-                <input type="password" value={payKey} onChange={(e) => setPayKey(e.target.value)} placeholder={s.paymentApiKeyMasked ? '•••• keep existing' : 'sk_live_…'} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Webhook signing secret {s.paymentWebhookSecretSet && <span className="text-emerald-600">(saved — blank=keep)</span>}</label>
-                <input type="password" value={paySecret} onChange={(e) => setPaySecret(e.target.value)} placeholder={s.paymentWebhookSecretSet ? '•••• keep existing' : 'whsec_…'} className={inputCls} />
-              </div>
-              <p className="sm:col-span-2 text-xs text-gray-500 flex items-center gap-1">
-                <ExternalLink className="w-3 h-3" /> Point your Stripe webhook to <code className="bg-gray-100 px-1 rounded">/api/v1/webhooks/payments/stripe</code>
-              </p>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* sticky save */}
-      <div className="fixed bottom-0 left-0 right-0 sm:left-64 bg-white/90 backdrop-blur border-t border-gray-200 px-6 py-3 flex justify-end">
-        <button onClick={save} disabled={saving} className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Saving…' : 'Save integrations'}
-        </button>
+  return (
+    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div className="flex items-center gap-2 mb-1"><Icon className="w-5 h-5 text-indigo-500" /><h2 className="font-semibold text-gray-900">{cfg.title}</h2></div>
+      <p className="text-xs text-gray-500 mb-4">{cfg.hint}</p>
+      <div className="space-y-2">
+        {cfg.providers.map((p) => (
+          <ProviderRow key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} onChanged={onChanged} />
+        ))}
       </div>
+    </section>
+  );
+}
+
+function ProviderRow({ category, def, saved, isActive, onChanged }:
+  { category: string; def: ProviderDef; saved?: CredentialRow; isActive: boolean; onChanged: () => void }) {
+  const [key, setKey] = useState('');
+  const [secondary, setSecondary] = useState('');
+  const [model, setModel] = useState(saved?.model || def.model || '');
+  const [busy, setBusy] = useState(false);
+
+  const activate = async () => {
+    setBusy(true);
+    try { await integrationsApi.activate(category, def.key); toast.success(`${def.label} enabled`); onChanged(); }
+    catch (e: any) { toast.error(e?.response?.data?.message || 'Could not enable'); }
+    finally { setBusy(false); }
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await integrationsApi.saveKey(category, def.key, {
+        apiKey: key.trim() || null,
+        model: model.trim() || null,
+        secondarySecret: secondary.trim() || null,
+      });
+      toast.success(`${def.label} saved`);
+      setKey(''); setSecondary('');
+      onChanged();
+    } catch (e: any) { toast.error(e?.response?.data?.message || 'Save failed'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 ${isActive ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200'}`}>
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="radio" checked={isActive} onChange={activate} disabled={busy} className="accent-indigo-600 w-4 h-4" />
+          <span className="text-sm font-medium text-gray-800">{def.label}</span>
+        </label>
+        {def.free && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">free</span>}
+        {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white inline-flex items-center gap-1"><Check className="w-3 h-3" />enabled</span>}
+        {saved?.hasKey && <span className="text-[10px] text-gray-400">key saved {saved.keyMasked}</span>}
+        {def.note && <span className="text-[11px] text-gray-400 ml-auto">{def.note}</span>}
+      </div>
+
+      {def.needsKey && (
+        <div className="mt-2 grid sm:grid-cols-2 gap-2">
+          <div className="sm:col-span-2 flex items-center gap-2">
+            <KeyRound className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
+              placeholder={saved?.hasKey ? '•••• keep existing — paste to replace' : 'Paste API key / token'}
+              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+          </div>
+          {def.secondary && (
+            <div className="sm:col-span-2 flex items-center gap-2">
+              <KeyRound className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <input type="password" value={secondary} onChange={(e) => setSecondary(e.target.value)}
+                placeholder={saved?.secondarySecretSet ? `•••• ${def.secondary} (keep)` : def.secondary}
+                className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+            </div>
+          )}
+          {def.model && (
+            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model"
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+          )}
+          <button onClick={save} disabled={busy}
+            className="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 disabled:opacity-50 inline-flex items-center justify-center gap-1">
+            <Save className="w-3.5 h-3.5" /> Save key
+          </button>
+        </div>
+      )}
     </div>
   );
 }

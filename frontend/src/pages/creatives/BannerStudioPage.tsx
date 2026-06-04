@@ -15,6 +15,7 @@ export default function BannerStudioPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showKits, setShowKits] = useState(false);
+  const [broken, setBroken] = useState<Set<string>>(new Set());
 
   // New brand kit form
   const [kName, setKName] = useState('');
@@ -192,14 +193,19 @@ export default function BannerStudioPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {assets.map((a) => (
           <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {a.status === 'completed' && a.imageUrl ? (
-              <a href={a.imageUrl} download={`banner-${a.id}.svg`} title="Open / download">
-                <img src={a.imageUrl} alt={a.prompt} className="w-full aspect-square object-cover bg-gray-50" />
+            {a.status === 'completed' && a.imageUrl && !broken.has(a.id) ? (
+              <a href={a.imageUrl} download={`banner-${a.id}`} title="Open / download">
+                <img
+                  src={a.imageUrl}
+                  alt={a.prompt}
+                  className="w-full aspect-square object-cover bg-gray-50"
+                  onError={() => setBroken((prev) => new Set(prev).add(a.id))}
+                />
               </a>
             ) : (
               <div className="w-full aspect-square flex flex-col items-center justify-center bg-rose-50 text-rose-500 gap-2 p-4 text-center">
                 <AlertCircle className="w-6 h-6" />
-                <span className="text-xs">{a.errorMessage || 'Failed'}</span>
+                <span className="text-xs">{broken.has(a.id) ? 'Image could not load (provider rate-limited?). Try again or switch provider.' : (a.errorMessage || 'Failed')}</span>
               </div>
             )}
             <div className="p-3">

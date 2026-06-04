@@ -20,7 +20,7 @@ const AI_PROVIDERS = [
 const IMAGE_PROVIDERS = [
   { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
   { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Works offline, no key' },
-  { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, note: '100% FREE · no key needed' },
+  { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, optionalKey: true, note: 'FREE · no key needed (optional token raises rate limit)' },
   { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free tier · free token' },
   { key: 'gemini', label: 'Google Gemini (Imagen)', free: true, needsKey: true, model: 'gemini-2.0-flash-preview-image-generation', note: 'Free tier on AI Studio' },
   { key: 'dalle', label: 'OpenAI DALL·E 3', free: false, needsKey: true, model: 'dall-e-3' },
@@ -163,10 +163,10 @@ export default function IntegrationsPage() {
             <label className={labelCls}>Model</label>
             <input value={s.imageModel || ''} onChange={(e) => setS({ ...s, imageModel: e.target.value })} className={inputCls} placeholder="(provider default)" />
           </div>
-          {imgSel?.needsKey && (
+          {(imgSel?.needsKey || imgSel?.optionalKey) && (
             <div className="sm:col-span-2">
-              <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />API Key {s.imageApiKeyMasked && <span className="text-emerald-600">(saved: {s.imageApiKeyMasked} — leave blank to keep)</span>}</label>
-              <input type="password" value={imgKey} onChange={(e) => setImgKey(e.target.value)} placeholder={s.imageApiKeyMasked ? '•••• keep existing' : 'Paste API key / token'} className={inputCls} />
+              <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />API Key{imgSel?.optionalKey ? ' / token (optional)' : ''} {s.imageApiKeyMasked && <span className="text-emerald-600">(saved: {s.imageApiKeyMasked} — leave blank to keep)</span>}</label>
+              <input type="password" value={imgKey} onChange={(e) => setImgKey(e.target.value)} placeholder={s.imageApiKeyMasked ? '•••• keep existing' : (imgSel?.optionalKey ? 'Optional — paste token to raise limit' : 'Paste API key / token')} className={inputCls} />
             </div>
           )}
         </div>

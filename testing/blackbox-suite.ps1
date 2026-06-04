@@ -1148,6 +1148,13 @@ TestCase 'V' 'V7' 'POST /creatives/generate requires auth' {
 Section "W. P2.2 Payments"
 
 TestCase 'W' 'W1' 'POST /billing/checkout (mock) activates the paid plan immediately' {
+    # Self-contained: ensure the payment provider is 'mock' (admin may have set it to disabled/stripe).
+    $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
+    if ($g.Ok -and $g.Data.data.paymentProvider -ne 'mock') {
+        $settings = $g.Data.data
+        $settings.paymentProvider = 'mock'
+        Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $settings | Out-Null
+    }
     $r = Call-Api -Method POST -Path '/billing/checkout' -Token $global:userToken -Body @{ planCode = 'pro'; successUrl = 'http://x/ok'; cancelUrl = 'http://x/no' }
     if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
     if (-not $r.Data.data.activated) { return "expected activated=true (mock)" }
@@ -1263,7 +1270,7 @@ TestCase 'Y' 'Y1' 'GET /admin/system-settings exposes image + payment provider f
     return $true
 }
 
-TestCase 'Y' 'Y2' 'Switch image provider to pollinations (free) -> generate returns its URL' {
+TestCase 'Y' 'Y2' 'Switch image provider to pollinations (free) -> generates or fails cleanly' {
     # Full round-trip so we don't wipe other settings: GET, mutate, PUT.
     $g = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
     if (-not $g.Ok) { return "GET status=$($g.Status)" }
@@ -1272,10 +1279,17 @@ TestCase 'Y' 'Y2' 'Switch image provider to pollinations (free) -> generate retu
     $put = Call-Api -Method PUT -Path '/admin/system-settings' -Token $global:adminToken -Body $settings
     if (-not $put.Ok) { return "PUT status=$($put.Status) body=$($put.Raw)" }
 
+    # Pollinations fetches server-side: success => embedded data-URI; rate-limited => clean 'failed'
+    # with a message (never a broken/dead URL). Both outcomes are acceptable here.
     $gen = Call-Api -Method POST -Path '/creatives/generate' -Token $global:userToken -Body @{ prompt = "free provider test"; size = '1024x1024' }
     if (-not $gen.Ok) { return "generate status=$($gen.Status) body=$($gen.Raw)" }
-    if ($gen.Data.data.provider -ne 'pollinations') { return "provider=$($gen.Data.data.provider)" }
-    if ($gen.Data.data.imageUrl -notmatch 'pollinations\.ai') { return "imageUrl not pollinations" }
+    $d = $gen.Data.data
+    if ($d.provider -ne 'pollinations') { return "provider=$($d.provider)" }
+    if ($d.status -eq 'completed') {
+        if ($d.imageUrl -notmatch '^data:image/') { return "completed but imageUrl not embedded data-URI" }
+    } elseif ($d.status -eq 'failed') {
+        if (-not $d.errorMessage) { return "failed without an error message" }
+    } else { return "unexpected status=$($d.status)" }
     return $true
 }
 

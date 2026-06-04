@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using FluentAssertions;
 using MarketingApp.Application.Interfaces.Media;
 using MarketingApp.Infrastructure.Services.Media;
@@ -5,6 +7,38 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace MarketingApp.Tests.Services;
+
+/// <summary>A canned HTTP handler + factory for testing HTTP-backed clients without a network.</summary>
+file sealed class StubHandler : HttpMessageHandler
+{
+    private readonly HttpResponseMessage _response;
+    public StubHandler(HttpResponseMessage response) => _response = response;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        => Task.FromResult(_response);
+}
+
+file static class HttpStub
+{
+    public static IHttpClientFactory Factory(HttpResponseMessage response)
+    {
+        var f = new Mock<IHttpClientFactory>();
+        f.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient(new StubHandler(response)));
+        return f.Object;
+    }
+
+    public static HttpResponseMessage Image(byte[] bytes, string mediaType = "image/png")
+    {
+        var resp = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+        resp.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType);
+        return resp;
+    }
+
+    public static HttpResponseMessage Json(string body, HttpStatusCode code = HttpStatusCode.OK)
+    {
+        var resp = new HttpResponseMessage(code) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+        return resp;
+    }
+}
 
 /// <summary>
 /// P3.3 — additional image providers. Covers the Pollinations URL builder (free, no key), Gemini +
@@ -25,13 +59,31 @@ public class ImageProvidersTests
     }
 
     [Fact]
-    public async Task Pollinations_returns_url_without_key()
+    public void Pollinations_url_includes_optional_token()
+        => PollinationsImageClient.BuildUrl("x", 100, 100, null, "tok123").Should().Contain("token=tok123");
+
+    [Fact]
+    public async Task Pollinations_embeds_image_as_data_uri_on_success()
     {
-        var r = await new PollinationsImageClient().GenerateAsync(
-            new ImageGenerationRequest("hi", 512, 512, "", null, null, 30), CancellationToken.None);
+        var client = new PollinationsImageClient(
+            HttpStub.Factory(HttpStub.Image(new byte[] { 1, 2, 3 }, "image/jpeg")),
+            NullLogger<PollinationsImageClient>.Instance);
+        var r = await client.GenerateAsync(new ImageGenerationRequest("hi", 512, 512, "", null, null, 30), CancellationToken.None);
         r.IsSuccess.Should().BeTrue();
-        r.ImageUrl.Should().Contain("pollinations.ai");
+        r.ImageUrl.Should().StartWith("data:image/jpeg;base64,");
         r.Provider.Should().Be("pollinations");
+    }
+
+    [Fact]
+    public async Task Pollinations_fails_cleanly_when_rate_limited()
+    {
+        // Free endpoint returns a JSON error (x402 "Queue full") instead of an image.
+        var client = new PollinationsImageClient(
+            HttpStub.Factory(HttpStub.Json("{\"error\":\"Queue full for IP\"}")),
+            NullLogger<PollinationsImageClient>.Instance);
+        var r = await client.GenerateAsync(new ImageGenerationRequest("hi", 512, 512, "", null, null, 5), CancellationToken.None);
+        r.IsSuccess.Should().BeFalse();
+        r.Error.Should().Contain("rate-limited");
     }
 
     // ---- Gemini parser ----
@@ -113,7 +165,7 @@ public class ImageProvidersTests
         {
             new MockImageGenerationClient(),
             new DalleImageClient(http, NullLogger<DalleImageClient>.Instance),
-            new PollinationsImageClient(),
+            new PollinationsImageClient(http, NullLogger<PollinationsImageClient>.Instance),
             new GeminiImageClient(http, NullLogger<GeminiImageClient>.Instance),
             new StabilityImageClient(http, NullLogger<StabilityImageClient>.Instance),
             new HuggingFaceImageClient(http, NullLogger<HuggingFaceImageClient>.Instance),

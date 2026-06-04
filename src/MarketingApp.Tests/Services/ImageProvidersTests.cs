@@ -114,6 +114,30 @@ public class ImageProvidersTests
     public void Gemini_returns_null_for_bad_bodies(string body)
         => GeminiImageClient.ParseInlineImage(body).Should().BeNull();
 
+    // ---- Gemini friendly errors (billing/quota surfacing) ----
+
+    [Fact]
+    public void Gemini_429_explains_billing_requirement()
+    {
+        var body = "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, limit: 0\",\"status\":\"RESOURCE_EXHAUSTED\"}}";
+        var msg = GeminiImageClient.FriendlyError(429, body);
+        msg.Should().Contain("billing");
+        msg.Should().Contain("Hugging Face");
+    }
+
+    [Fact]
+    public void Gemini_404_mentions_model_not_found()
+        => GeminiImageClient.FriendlyError(404, "{\"error\":{\"message\":\"models/x is not found\"}}")
+            .Should().Contain("model not found");
+
+    [Fact]
+    public void Gemini_ExtractApiError_reads_message()
+        => GeminiImageClient.ExtractApiError("{\"error\":{\"message\":\"boom\"}}").Should().Be("boom");
+
+    [Fact]
+    public void Gemini_ExtractApiError_handles_non_json()
+        => GeminiImageClient.ExtractApiError("not json").Should().Contain("not json");
+
     // ---- Stability parser + aspect ratio ----
 
     [Fact]

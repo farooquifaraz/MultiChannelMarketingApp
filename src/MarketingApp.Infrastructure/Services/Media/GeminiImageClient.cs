@@ -51,7 +51,7 @@ public class GeminiImageClient : IImageGenerationClient
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Gemini image failed: {Status} {Body}", resp.StatusCode, body);
-                return Fail($"Provider returned {(int)resp.StatusCode}.", request, sw);
+                return Fail(FriendlyError((int)resp.StatusCode, body), request, sw);
             }
 
             var dataUri = ParseInlineImage(body);
@@ -91,6 +91,38 @@ public class GeminiImageClient : IImageGenerationClient
         }
         catch { /* fall through */ }
         return null;
+    }
+
+    /// <summary>
+    /// Turns a Gemini API error into a clear, actionable message. Image generation needs billing on
+    /// the Google project (free-tier quota is 0), so a 429/403 gets an explicit hint. Pure → testable.
+    /// </summary>
+    internal static string FriendlyError(int statusCode, string body)
+    {
+        var apiMsg = ExtractApiError(body);
+        return statusCode switch
+        {
+            429 or 403 => $"Gemini image generation needs billing enabled on your Google Cloud project — the free tier limit for image models is 0. Enable billing in Google AI Studio, or switch to Hugging Face (free) / the built-in placeholder. (Provider said: {apiMsg})",
+            404 => $"Gemini image model not found for this key/API version — check the model name in Integrations. (Provider said: {apiMsg})",
+            401 => "Gemini rejected the API key (401). Re-check the key in Integrations.",
+            _ => $"Gemini error {statusCode}: {apiMsg}",
+        };
+    }
+
+    /// <summary>Extracts error.message from a Google API error body (trimmed). Pure → testable.</summary>
+    internal static string ExtractApiError(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("error", out var err) && err.TryGetProperty("message", out var m))
+            {
+                var s = m.GetString() ?? "";
+                return s.Length > 200 ? s[..200] + "…" : s;
+            }
+        }
+        catch { /* not json */ }
+        return body.Length > 120 ? body[..120] + "…" : body;
     }
 
     private ImageGenerationResult Fail(string error, ImageGenerationRequest req, Stopwatch sw)

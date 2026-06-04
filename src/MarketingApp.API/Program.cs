@@ -251,6 +251,7 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGener
 builder.Services.AddScoped<IImageGenerationService,
     MarketingApp.Application.Services.ImageGenerationService>();
 builder.Services.AddScoped<IBrandKitService, MarketingApp.Application.Services.BrandKitService>();
+builder.Services.AddScoped<IIntegrationCredentialService, MarketingApp.Application.Services.IntegrationCredentialService>();
 // P2.2 — payment providers (mock activates immediately keyless; Stripe activates when configured).
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProvider,
     MarketingApp.Infrastructure.Services.Billing.MockBillingProvider>();
@@ -691,6 +692,34 @@ app.MapHealthChecks("/health");
           )",
         "CREATE INDEX IF NOT EXISTS ix_brand_kits_user ON brand_kits (user_id)",
         "ALTER TABLE generated_assets ADD COLUMN IF NOT EXISTS brand_kit_id uuid NULL",
+        // P3.5 — per-provider credential vault. Additive: remembers each provider's key so switching
+        // the active provider never loses another's key. The active provider per category still lives
+        // in system_settings, so existing code paths are unchanged.
+        @"CREATE TABLE IF NOT EXISTS integration_credentials (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            category character varying(20) NOT NULL,
+            provider character varying(40) NOT NULL,
+            api_key text,
+            model character varying(120),
+            base_url text,
+            secondary_secret text,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            updated_at timestamp with time zone NOT NULL DEFAULT NOW()
+          )",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_integration_credentials_cat_prov ON integration_credentials (category, provider)",
+        // Backfill the vault from whatever is currently configured in system_settings (idempotent).
+        @"INSERT INTO integration_credentials (category, provider, api_key, model, base_url)
+            SELECT 'ai', ai_provider, ai_api_key, ai_model, ai_base_url FROM system_settings
+            WHERE ai_provider IS NOT NULL AND ai_provider <> 'disabled' AND ai_api_key IS NOT NULL
+          ON CONFLICT (category, provider) DO NOTHING",
+        @"INSERT INTO integration_credentials (category, provider, api_key, model, base_url)
+            SELECT 'image', image_provider, image_api_key, image_model, image_base_url FROM system_settings
+            WHERE image_provider IS NOT NULL AND image_api_key IS NOT NULL
+          ON CONFLICT (category, provider) DO NOTHING",
+        @"INSERT INTO integration_credentials (category, provider, api_key, base_url, secondary_secret)
+            SELECT 'payment', payment_provider, payment_api_key, payment_base_url, payment_webhook_secret FROM system_settings
+            WHERE payment_provider IS NOT NULL AND payment_api_key IS NOT NULL
+          ON CONFLICT (category, provider) DO NOTHING",
     };
     foreach (var sql in migrationSql)
     {

@@ -15,6 +15,9 @@ public interface IImageGenerationService
     /// <summary>The user's most recent generated assets (newest first).</summary>
     Task<IEnumerable<GeneratedAssetDto>> ListMineAsync(Guid userId, int take = 50, CancellationToken ct = default);
 
+    /// <summary>Delete one of the user's generated assets. Throws if not found / not owned.</summary>
+    Task DeleteAsync(Guid userId, Guid id, CancellationToken ct = default);
+
     /// <summary>Allowed size tokens for the UI picker.</summary>
     IEnumerable<ImageSizeOptionDto> SizeOptions();
 }

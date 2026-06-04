@@ -22,7 +22,7 @@ const IMAGE_PROVIDERS = [
   { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Works offline, no key' },
   { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, optionalKey: true, note: 'FREE · no key needed (optional token raises rate limit)' },
   { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free tier · free token' },
-  { key: 'gemini', label: 'Google Gemini (Imagen)', free: true, needsKey: true, model: 'gemini-2.0-flash-preview-image-generation', note: 'Free tier on AI Studio' },
+  { key: 'gemini', label: 'Google Nano Banana (Gemini 2.5 Flash Image)', free: true, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Real photos · free tier on AI Studio' },
   { key: 'dalle', label: 'OpenAI DALL·E 3', free: false, needsKey: true, model: 'dall-e-3' },
   { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core' },
 ];
@@ -159,10 +159,14 @@ export default function IntegrationsPage() {
             </select>
             {imgSel?.note && <p className="text-xs text-emerald-600 mt-1">{imgSel.note}</p>}
           </div>
-          <div>
-            <label className={labelCls}>Model</label>
-            <input value={s.imageModel || ''} onChange={(e) => setS({ ...s, imageModel: e.target.value })} className={inputCls} placeholder="(provider default)" />
-          </div>
+          {!['mock', 'pollinations'].includes(s.imageProvider) ? (
+            <div>
+              <label className={labelCls}>Model</label>
+              <input value={s.imageModel || ''} onChange={(e) => setS({ ...s, imageModel: e.target.value })} className={inputCls} placeholder="(provider default)" />
+            </div>
+          ) : (
+            <div className="flex items-end"><p className="text-xs text-gray-400 pb-2">No model needed for this provider.</p></div>
+          )}
           {(imgSel?.needsKey || imgSel?.optionalKey) && (
             <div className="sm:col-span-2">
               <label className={labelCls}><KeyRound className="w-3 h-3 inline mr-1" />API Key{imgSel?.optionalKey ? ' / token (optional)' : ''} {s.imageApiKeyMasked && <span className="text-emerald-600">(saved: {s.imageApiKeyMasked} — leave blank to keep)</span>}</label>

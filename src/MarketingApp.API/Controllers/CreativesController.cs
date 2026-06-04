@@ -55,4 +55,12 @@ public class CreativesController : ControllerBase
         var assets = await _service.ListMineAsync(GetUserId(), take, ct);
         return Ok(ApiResponse<IEnumerable<GeneratedAssetDto>>.Ok(assets));
     }
+
+    /// <summary>Delete one of the current user's generated banners.</summary>
+    [HttpDelete("assets/{id:guid}")]
+    public async Task<IActionResult> DeleteAsset(Guid id, CancellationToken ct)
+    {
+        await _service.DeleteAsync(GetUserId(), id, ct);
+        return Ok(ApiResponse<object>.Ok(new { deleted = true }));
+    }
 }

@@ -32,4 +32,5 @@ export const creativesApi = {
   generate: (prompt: string, size: string, brandKitId?: string | null) =>
     axiosInstance.post('/creatives/generate', { prompt, size, brandKitId: brandKitId || null }),
   assets: (take = 50) => axiosInstance.get('/creatives/assets', { params: { take } }),
+  deleteAsset: (id: string) => axiosInstance.delete(`/creatives/assets/${id}`),
 };

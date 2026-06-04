@@ -138,6 +138,16 @@ public class ImageGenerationService : IImageGenerationService
             .ToList();
     }
 
+    public async Task DeleteAsync(Guid userId, Guid id, CancellationToken ct = default)
+    {
+        var asset = await _repo.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException("GeneratedAsset", id);
+        if (asset.UserId != userId)
+            throw new ForbiddenException();
+        await _repo.DeleteAsync(asset, ct);
+        await _audit.LogAsync(userId, "ImageDeleted", "GeneratedAsset", id, ct: ct);
+    }
+
     /// <summary>
     /// Parses a "WxH" size token against the allowed set. Unknown tokens fall back to 1024x1024.
     /// Pure + deterministic → unit-testable.

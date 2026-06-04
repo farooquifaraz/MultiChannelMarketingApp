@@ -173,4 +173,36 @@ public class ImageGenerationTests
         var svc = BuildService(out _);
         svc.SizeOptions().Should().HaveCount(5);
     }
+
+    [Fact]
+    public async Task DeleteAsync_removes_own_asset()
+    {
+        var userId = Guid.NewGuid();
+        var asset = new GeneratedAsset { Id = Guid.NewGuid(), UserId = userId, Prompt = "x", Size = "1024x1024" };
+        var svc = BuildService(out var repo);
+        repo.Setup(r => r.GetByIdAsync(asset.Id, It.IsAny<CancellationToken>())).ReturnsAsync(asset);
+
+        await svc.DeleteAsync(userId, asset.Id);
+
+        repo.Verify(r => r.DeleteAsync(asset, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_rejects_other_users_asset()
+    {
+        var asset = new GeneratedAsset { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), Prompt = "x", Size = "1024x1024" };
+        var svc = BuildService(out var repo);
+        repo.Setup(r => r.GetByIdAsync(asset.Id, It.IsAny<CancellationToken>())).ReturnsAsync(asset);
+        var act = () => svc.DeleteAsync(Guid.NewGuid(), asset.Id);
+        await act.Should().ThrowAsync<MarketingApp.Domain.Exceptions.ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_throws_when_missing()
+    {
+        var svc = BuildService(out var repo);
+        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((GeneratedAsset?)null);
+        var act = () => svc.DeleteAsync(Guid.NewGuid(), Guid.NewGuid());
+        await act.Should().ThrowAsync<MarketingApp.Domain.Exceptions.NotFoundException>();
+    }
 }

@@ -7,9 +7,10 @@ using Microsoft.Extensions.Logging;
 namespace MarketingApp.Infrastructure.Services.Media;
 
 /// <summary>
-/// Google Gemini image generation (Phase 3 / P3.3). Uses the Generative Language API
-/// (generateContent with an IMAGE response modality). Has a **generous free tier** on Google AI
-/// Studio. Returns the inline base64 image as a data-URI. Activates when ImageProvider="gemini" + key.
+/// Google Gemini image generation (Phase 3 / P3.3 + P3.4). Uses the Generative Language API
+/// (generateContent with an IMAGE response modality). Default model is **Nano Banana**
+/// (gemini-2.5-flash-image) — Google's image model with a generous free tier on AI Studio. Returns
+/// the inline base64 image as a data-URI. Activates when ImageProvider="gemini" + key.
 /// </summary>
 public class GeminiImageClient : IImageGenerationClient
 {
@@ -36,7 +37,8 @@ public class GeminiImageClient : IImageGenerationClient
             client.Timeout = TimeSpan.FromSeconds(request.TimeoutSeconds <= 0 ? 60 : request.TimeoutSeconds);
             var baseUrl = string.IsNullOrWhiteSpace(request.BaseUrl)
                 ? "https://generativelanguage.googleapis.com" : request.BaseUrl!.TrimEnd('/');
-            var model = string.IsNullOrWhiteSpace(request.Model) ? "gemini-2.0-flash-preview-image-generation" : request.Model;
+            // "Nano Banana" = gemini-2.5-flash-image (current default image model).
+            var model = string.IsNullOrWhiteSpace(request.Model) ? "gemini-2.5-flash-image" : request.Model;
 
             var payload = new
             {

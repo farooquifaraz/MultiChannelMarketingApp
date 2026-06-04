@@ -14,6 +14,7 @@ import {
   CreditCard,
   Building2,
   Image,
+  Plug,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBrand } from '../../hooks/useBrand';
@@ -31,6 +32,7 @@ const baseNav = [
   { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },
   { to: '/admin/audit-logs', icon: ShieldAlert, label: 'Audit Logs', adminOnly: true },
   { to: '/admin/organizations', icon: Building2, label: 'Organizations', adminOnly: true },
+  { to: '/admin/integrations', icon: Plug, label: 'Integrations', adminOnly: true },
   { to: '/billing', icon: CreditCard, label: 'Plan & Usage', adminOnly: false },
   { to: '/settings', icon: Settings, label: 'Settings', adminOnly: false },
 ];

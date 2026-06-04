@@ -38,9 +38,11 @@ public class DalleImageClient : IImageGenerationClient
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", request.ApiKey);
 
             var baseUrl = string.IsNullOrWhiteSpace(request.BaseUrl) ? "https://api.openai.com/v1" : request.BaseUrl!.TrimEnd('/');
+            // OpenAI's current image model is gpt-image-1 (dall-e-3 is unavailable on many newer
+            // accounts → "model does not exist"). Default to gpt-image-1; still configurable.
             var payload = new
             {
-                model = string.IsNullOrWhiteSpace(request.Model) ? "dall-e-3" : request.Model,
+                model = string.IsNullOrWhiteSpace(request.Model) ? "gpt-image-1" : request.Model,
                 prompt = request.Prompt,
                 n = 1,
                 size = $"{request.Width}x{request.Height}",
@@ -50,8 +52,8 @@ public class DalleImageClient : IImageGenerationClient
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                _logger.LogWarning("DALL·E generation failed: {Status} {Body}", resp.StatusCode, body);
-                return Fail($"Provider returned {(int)resp.StatusCode}.", request, sw);
+                _logger.LogWarning("OpenAI image generation failed: {Status} {Body}", resp.StatusCode, body);
+                return Fail($"OpenAI: {MediaErrorHelper.Extract(body)}", request, sw);
             }
 
             var url = ParseImageUrl(body);

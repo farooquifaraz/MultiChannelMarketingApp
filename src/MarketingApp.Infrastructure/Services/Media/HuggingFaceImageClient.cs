@@ -44,11 +44,12 @@ public class HuggingFaceImageClient : IImageGenerationClient
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             var resp = await client.PostAsync($"{baseUrl}/models/{model}", content, ct);
 
-            if (!resp.IsSuccessStatusCode)
+            var mediaTypeResp = resp.Content.Headers.ContentType?.MediaType ?? "";
+            if (!resp.IsSuccessStatusCode || !mediaTypeResp.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
             {
                 var err = await resp.Content.ReadAsStringAsync(ct);
                 _logger.LogWarning("HuggingFace image failed: {Status} {Body}", resp.StatusCode, err);
-                return Fail($"Provider returned {(int)resp.StatusCode}.", request, sw);
+                return Fail($"Hugging Face: {MediaErrorHelper.Extract(err)} (HF free serverless inference is being deprecated for many models — try OpenAI gpt-image-1, enable Gemini billing, or use the built-in placeholder.)", request, sw);
             }
 
             // Success returns raw image bytes (image/png|jpeg).

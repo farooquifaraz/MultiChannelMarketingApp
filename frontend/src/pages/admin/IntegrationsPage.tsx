@@ -23,7 +23,7 @@ const IMAGE_PROVIDERS = [
   { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, optionalKey: true, note: 'FREE · no key needed (optional token raises rate limit)' },
   { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free tier · free token' },
   { key: 'gemini', label: 'Google Nano Banana (Gemini 2.5 Flash Image)', free: true, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Real photos · free tier on AI Studio' },
-  { key: 'dalle', label: 'OpenAI DALL·E 3', free: false, needsKey: true, model: 'dall-e-3' },
+  { key: 'dalle', label: 'OpenAI (gpt-image-1)', free: false, needsKey: true, model: 'gpt-image-1', note: 'Paid · needs OpenAI API credits + verified org' },
   { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core' },
 ];
 

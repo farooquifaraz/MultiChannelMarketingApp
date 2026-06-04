@@ -49,7 +49,7 @@ public class StabilityImageClient : IImageGenerationClient
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Stability image failed: {Status} {Body}", resp.StatusCode, body);
-                return Fail($"Provider returned {(int)resp.StatusCode}.", request, sw);
+                return Fail($"Stability: {MediaErrorHelper.Extract(body)}", request, sw);
             }
 
             var dataUri = ParseImage(body);

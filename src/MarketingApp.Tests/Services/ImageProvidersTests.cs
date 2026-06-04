@@ -138,6 +138,18 @@ public class ImageProvidersTests
     public void Gemini_ExtractApiError_handles_non_json()
         => GeminiImageClient.ExtractApiError("not json").Should().Contain("not json");
 
+    // ---- shared provider error extractor ----
+
+    [Fact]
+    public void MediaError_reads_openai_and_google_message()
+    {
+        MediaErrorHelper.Extract("{\"error\":{\"message\":\"The model 'dall-e-3' does not exist.\"}}")
+            .Should().Contain("does not exist");
+        MediaErrorHelper.Extract("{\"error\":\"plain string error\"}").Should().Be("plain string error");
+        MediaErrorHelper.Extract("totally not json").Should().Contain("not json");
+        MediaErrorHelper.Extract("").Should().Be("no response body");
+    }
+
     // ---- Stability parser + aspect ratio ----
 
     [Fact]

@@ -1173,6 +1173,25 @@ TestCase 'V' 'V9' 'DELETE /creatives/assets/{unknown} returns 404' {
     return $true
 }
 
+TestCase 'V' 'V10' 'POST /creatives/content short brief returns 4xx (validation)' {
+    $r = Call-Api -Method POST -Path '/creatives/content' -Token $global:userToken -Body @{ brief = 'too short' } -ExpectStatus @(400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V11' 'POST /creatives/content requires auth' {
+    $r = Call-Api -Method POST -Path '/creatives/content' -Body @{ brief = 'a longer brief about a property listing in dubai' } -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V12' 'POST /creatives/content never 500s (graceful when AI provider unset)' {
+    # With AI disabled it returns a clean 400 ('enable a provider'); with AI configured it returns 200.
+    $r = Call-Api -Method POST -Path '/creatives/content' -Token $global:userToken -Body @{ brief = '5BR villa in Dubai, AED 16.5M, private pool, handover Q4 2026, agent Ahmed' } -ExpectStatus @(200, 400, 422)
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    return $true
+}
+
 # ===== SECTION W -- P2.2 Payments (checkout + webhook, mock provider) =====
 Section "W. P2.2 Payments"
 

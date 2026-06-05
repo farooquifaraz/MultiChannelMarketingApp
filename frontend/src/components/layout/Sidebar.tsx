@@ -15,6 +15,7 @@ import {
   Building2,
   Image,
   Plug,
+  PenLine,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBrand } from '../../hooks/useBrand';
@@ -27,6 +28,7 @@ const baseNav = [
   { to: '/contacts', icon: Users, label: 'Contacts', adminOnly: false },
   { to: '/templates', icon: FileText, label: 'Templates', adminOnly: false },
   { to: '/creatives', icon: Image, label: 'Banner Studio', adminOnly: false },
+  { to: '/content', icon: PenLine, label: 'AI Copywriter', adminOnly: false },
   { to: '/admin/users', icon: Users, label: 'Users', adminOnly: true },
   { to: '/admin/smtp-groups', icon: Server, label: 'SMTP Groups', adminOnly: true },
   { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },

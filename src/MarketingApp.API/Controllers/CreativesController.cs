@@ -17,8 +17,13 @@ namespace MarketingApp.API.Controllers;
 public class CreativesController : ControllerBase
 {
     private readonly IImageGenerationService _service;
+    private readonly IMarketingContentService _content;
 
-    public CreativesController(IImageGenerationService service) { _service = service; }
+    public CreativesController(IImageGenerationService service, IMarketingContentService content)
+    {
+        _service = service;
+        _content = content;
+    }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -54,6 +59,14 @@ public class CreativesController : ControllerBase
     {
         var assets = await _service.ListMineAsync(GetUserId(), take, ct);
         return Ok(ApiResponse<IEnumerable<GeneratedAssetDto>>.Ok(assets));
+    }
+
+    /// <summary>Generate multi-channel marketing copy (WhatsApp/Instagram/Email) from a brief.</summary>
+    [HttpPost("content")]
+    public async Task<IActionResult> Content([FromBody] GenerateContentDto dto, CancellationToken ct)
+    {
+        var result = await _content.GenerateAsync(dto, ct);
+        return Ok(ApiResponse<MarketingContentDto>.Ok(result));
     }
 
     /// <summary>Delete one of the current user's generated banners.</summary>

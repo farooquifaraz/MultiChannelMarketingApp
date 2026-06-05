@@ -40,11 +40,21 @@ public class GeminiImageClient : IImageGenerationClient
             // "Nano Banana" = gemini-2.5-flash-image (current default image model).
             var model = string.IsNullOrWhiteSpace(request.Model) ? "gemini-2.5-flash-image" : request.Model;
 
-            var payload = new
-            {
-                contents = new[] { new { parts = new[] { new { text = request.Prompt } } } },
-                generationConfig = new { responseModalities = new[] { "TEXT", "IMAGE" } },
-            };
+            // The native image models (gemini-2.5-flash-image) return an image with a plain
+            // generateContent call — exactly like the google-generativeai SDK. Only the older
+            // gemini-2.0-flash-preview-image-generation needs an explicit responseModalities.
+            var needsModalities = model.Contains("2.0", StringComparison.OrdinalIgnoreCase)
+                || model.Contains("preview-image-generation", StringComparison.OrdinalIgnoreCase);
+            object payload = needsModalities
+                ? new
+                {
+                    contents = new[] { new { parts = new[] { new { text = request.Prompt } } } },
+                    generationConfig = new { responseModalities = new[] { "TEXT", "IMAGE" } },
+                }
+                : new
+                {
+                    contents = new[] { new { parts = new[] { new { text = request.Prompt } } } },
+                };
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             var resp = await client.PostAsync($"{baseUrl}/v1beta/models/{model}:generateContent?key={request.ApiKey}", content, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);

@@ -252,6 +252,7 @@ builder.Services.AddScoped<IImageGenerationService,
     MarketingApp.Application.Services.ImageGenerationService>();
 builder.Services.AddScoped<IBrandKitService, MarketingApp.Application.Services.BrandKitService>();
 builder.Services.AddScoped<IIntegrationCredentialService, MarketingApp.Application.Services.IntegrationCredentialService>();
+builder.Services.AddScoped<IMarketingContentService, MarketingApp.Application.Services.MarketingContentService>();
 // P2.2 — payment providers (mock activates immediately keyless; Stripe activates when configured).
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Billing.IBillingProvider,
     MarketingApp.Infrastructure.Services.Billing.MockBillingProvider>();

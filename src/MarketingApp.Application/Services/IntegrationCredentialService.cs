@@ -178,10 +178,14 @@ public class IntegrationCredentialService : IIntegrationCredentialService
         IsActive = string.Equals(c.Provider, activeProvider, StringComparison.OrdinalIgnoreCase),
     };
 
+    /// <summary>
+    /// Shows the first 6 and last 6 characters so the admin can identify which key is saved, e.g.
+    /// "AIzaSy…gjGJ2I". Short keys are fully masked.
+    /// </summary>
     internal static string? Mask(string? key)
     {
         if (string.IsNullOrEmpty(key)) return null;
-        if (key.Length <= 8) return "••••";
-        return "••••••••" + key[^4..];
+        if (key.Length <= 12) return "••••";
+        return key[..6] + "…" + key[^6..];
     }
 }

@@ -246,6 +246,8 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGener
     MarketingApp.Infrastructure.Services.Media.StabilityImageClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
     MarketingApp.Infrastructure.Services.Media.HuggingFaceImageClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClient,
+    MarketingApp.Infrastructure.Services.Media.FluxImageClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.Media.IImageGenerationClientFactory,
     MarketingApp.Infrastructure.Services.Media.ImageGenerationClientFactory>();
 builder.Services.AddScoped<IImageGenerationService,

@@ -28,6 +28,7 @@ const CATALOG: Record<string, { title: string; icon: any; hint: string; provider
       { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Always works · no key' },
       { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, note: 'Free · optional token' },
       { key: 'gemini', label: 'Google Nano Banana (Gemini 2.5 Flash Image)', free: false, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Real photos · needs Google billing' },
+      { key: 'flux', label: 'FLUX (Black Forest Labs)', free: false, needsKey: true, model: 'flux-dev', note: 'Real photos · bfl_ key' },
       { key: 'dalle', label: 'OpenAI (gpt-image-1)', free: false, needsKey: true, model: 'gpt-image-1', note: 'Needs verified org + credits' },
       { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core' },
       { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free token' },

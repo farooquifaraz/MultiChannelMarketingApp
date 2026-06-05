@@ -171,6 +171,38 @@ public class ImageProvidersTests
     public void Stability_maps_aspect_ratio(int w, int h, string expected)
         => StabilityImageClient.AspectRatio(w, h).Should().Be(expected);
 
+    // ---- FLUX (Black Forest Labs) ----
+
+    [Theory]
+    [InlineData(1024, 1024)]
+    [InlineData(1200, 1216)]   // snapped to nearest multiple of 32
+    [InlineData(628, 640)]
+    [InlineData(0, 1024)]      // fallback
+    [InlineData(5000, 1440)]   // clamped to max
+    public void Flux_snaps_dimensions_to_multiple_of_32(int input, int expected)
+        => FluxImageClient.SnapDim(input).Should().Be(expected);
+
+    [Fact]
+    public void Flux_parses_sample_url()
+        => FluxImageClient.ParseSampleUrl("{\"status\":\"Ready\",\"result\":{\"sample\":\"https://x/y.png\"}}")
+            .Should().Be("https://x/y.png");
+
+    [Theory]
+    [InlineData("{\"status\":\"Pending\"}")]
+    [InlineData("{}")]
+    [InlineData("bad")]
+    public void Flux_sample_null_when_not_ready(string body)
+        => FluxImageClient.ParseSampleUrl(body).Should().BeNull();
+
+    [Fact]
+    public async Task Flux_without_key_fails_cleanly()
+    {
+        var c = new FluxImageClient(Mock.Of<IHttpClientFactory>(), NullLogger<FluxImageClient>.Instance);
+        var r = await c.GenerateAsync(new ImageGenerationRequest("x", 1024, 1024, "", null, null, 30), CancellationToken.None);
+        r.IsSuccess.Should().BeFalse();
+        r.Error.Should().Contain("key");
+    }
+
     // ---- key guards ----
 
     [Fact]
@@ -205,8 +237,9 @@ public class ImageProvidersTests
             new GeminiImageClient(http, NullLogger<GeminiImageClient>.Instance),
             new StabilityImageClient(http, NullLogger<StabilityImageClient>.Instance),
             new HuggingFaceImageClient(http, NullLogger<HuggingFaceImageClient>.Instance),
+            new FluxImageClient(http, NullLogger<FluxImageClient>.Instance),
         });
-        foreach (var key in new[] { "mock", "dalle", "pollinations", "gemini", "stability", "huggingface" })
+        foreach (var key in new[] { "mock", "dalle", "pollinations", "gemini", "stability", "huggingface", "flux" })
             factory.Resolve(key).Should().NotBeNull($"provider '{key}' should resolve");
         factory.Resolve("unknown").Should().BeNull();
     }

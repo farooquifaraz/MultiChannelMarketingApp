@@ -20,9 +20,9 @@ public class IntegrationCredentialTests
     [Theory]
     [InlineData(null, null)]
     [InlineData("", null)]
-    [InlineData("short", "••••")]
-    [InlineData("sk-proj-abcd1234WXYZ", "••••••••WXYZ")]
-    public void Mask_hides_secret(string? input, string? expected)
+    [InlineData("short", "••••")]                              // <=12 chars fully masked
+    [InlineData("AIzaSyDHpBOrd7gjGJ2I", "AIzaSy…gjGJ2I")]      // first6 … last6 for identification
+    public void Mask_shows_first6_last6(string? input, string? expected)
         => IntegrationCredentialService.Mask(input).Should().Be(expected);
 
     private static (IntegrationCredentialService svc, List<IntegrationCredential> store, SystemSettings settings) Build()

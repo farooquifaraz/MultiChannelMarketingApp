@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plug, Loader2, Sparkles, Image as ImageIcon, CreditCard, Check, Save, Pencil, X } from 'lucide-react';
+import { Plug, Loader2, Sparkles, Image as ImageIcon, CreditCard, Check, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { integrationsApi, type CategoryCredentials, type CredentialRow } from '../../api/integrationsApi';
 import { useAuthStore } from '../../store/authStore';
@@ -16,35 +16,35 @@ interface ProviderDef {
 
 const CATALOG: Record<string, { title: string; subtitle: string; icon: any; providers: ProviderDef[] }> = {
   ai: {
-    title: 'AI Text', subtitle: 'Powers inbox replies, chat & the AI Copywriter', icon: Sparkles,
+    title: 'AI Text', subtitle: 'Inbox replies · chat · AI Copywriter', icon: Sparkles,
     providers: [
-      { key: 'gemini', label: 'Google Gemini', free: true, needsKey: true, model: 'gemini-2.5-flash', note: 'Generous free tier' },
+      { key: 'gemini', label: 'Google Gemini', free: true, needsKey: true, model: 'gemini-2.5-flash', note: 'Free tier' },
       { key: 'openai', label: 'OpenAI (GPT)', free: false, needsKey: true, model: 'gpt-4o' },
-      { key: 'anthropic', label: 'Anthropic (Claude)', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
-      { key: 'grok', label: 'xAI (Grok)', free: false, needsKey: true, model: 'grok-2' },
-      { key: 'openai-compatible', label: 'OpenAI-compatible (Groq / Ollama / OpenRouter)', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Groq & Ollama have free tiers' },
-      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+      { key: 'anthropic', label: 'Anthropic Claude', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
+      { key: 'grok', label: 'xAI Grok', free: false, needsKey: true, model: 'grok-2' },
+      { key: 'openai-compatible', label: 'OpenAI-compatible', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Groq / Ollama / OpenRouter' },
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false, note: 'Turn AI off' },
     ],
   },
   image: {
-    title: 'Image Generation', subtitle: 'Powers the Banner Studio', icon: ImageIcon,
+    title: 'Image Generation', subtitle: 'Banner Studio', icon: ImageIcon,
     providers: [
-      { key: 'flux', label: 'FLUX — Black Forest Labs', free: false, needsKey: true, model: 'flux-dev', note: 'Cheapest real photos · ~$0.025/img (~400 per $10)', cost: '~$0.025/img' },
-      { key: 'gemini', label: 'Google Nano Banana', free: false, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Gemini 2.5 Flash Image · ~$0.039/img', cost: '~$0.039/img' },
-      { key: 'dalle', label: 'OpenAI — gpt-image-1', free: false, needsKey: true, model: 'gpt-image-1', note: 'Needs verified org + credits', cost: '~$0.04/img' },
+      { key: 'flux', label: 'FLUX (Black Forest Labs)', free: false, needsKey: true, model: 'flux-dev', note: 'Cheapest real photos', cost: '~$0.025 · 400/$10' },
+      { key: 'gemini', label: 'Google Nano Banana', free: false, needsKey: true, model: 'gemini-2.5-flash-image', note: 'Gemini 2.5 Flash Image', cost: '~$0.039/img' },
+      { key: 'dalle', label: 'OpenAI gpt-image-1', free: false, needsKey: true, model: 'gpt-image-1', note: 'Needs verified org', cost: '~$0.04/img' },
       { key: 'stability', label: 'Stability AI', free: false, needsKey: true, model: 'core', cost: '~$0.03/img' },
       { key: 'huggingface', label: 'Hugging Face', free: true, needsKey: true, model: 'black-forest-labs/FLUX.1-schnell', note: 'Free token' },
-      { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, note: 'Free · optional token raises limit' },
+      { key: 'pollinations', label: 'Pollinations.ai', free: true, needsKey: false, note: 'Free · optional token' },
       { key: 'mock', label: 'Built-in placeholder', free: true, needsKey: false, note: 'Always works · no key' },
-      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false, note: 'Turn images off' },
     ],
   },
   payment: {
-    title: 'Payments', subtitle: 'Powers plan upgrades & checkout', icon: CreditCard,
+    title: 'Payments', subtitle: 'Plan upgrades & checkout', icon: CreditCard,
     providers: [
-      { key: 'stripe', label: 'Stripe', free: false, needsKey: true, secondary: 'Webhook signing secret', note: 'Cards + Apple / Google Pay' },
-      { key: 'mock', label: 'Test mode', free: true, needsKey: false, note: 'Activates instantly · no real charge' },
-      { key: 'disabled', label: 'Disabled', free: true, needsKey: false },
+      { key: 'stripe', label: 'Stripe', free: false, needsKey: true, secondary: 'Webhook signing secret', note: 'Cards + Apple/Google Pay' },
+      { key: 'mock', label: 'Test mode', free: true, needsKey: false, note: 'Instant · no real charge' },
+      { key: 'disabled', label: 'Disabled', free: true, needsKey: false, note: 'Turn payments off' },
     ],
   },
 };
@@ -66,11 +66,11 @@ const BRAND: Record<string, { bg: string; fg: string; mark: string }> = {
   disabled: { bg: '#e5e7eb', fg: '#9ca3af', mark: '∅' },
 };
 
-function Logo({ provider }: { provider: string }) {
+function Logo({ provider, size = 40 }: { provider: string; size?: number }) {
   const b = BRAND[provider] || BRAND.disabled;
   return (
-    <span style={{ background: b.bg, color: b.fg }}
-      className="w-9 h-9 rounded-lg flex items-center justify-center text-base font-bold shrink-0 shadow-sm">
+    <span style={{ background: b.bg, color: b.fg, width: size, height: size, fontSize: size * 0.45 }}
+      className="rounded-xl flex items-center justify-center font-bold shrink-0 shadow-sm">
       {b.mark}
     </span>
   );
@@ -105,23 +105,23 @@ export default function IntegrationsPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
         <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><Plug className="w-6 h-6 text-white" /></div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-          <p className="text-gray-500 text-sm">Save each provider's key once, then flip the switch to enable it — just like swapping accounts.</p>
+          <p className="text-gray-500 text-sm">Save each provider's key once, then flip its switch to enable it.</p>
         </div>
       </div>
 
       {(['ai', 'image', 'payment'] as const).map((cat) => (
-        <CategoryCard key={cat} category={cat} state={data[cat]} onChanged={load} />
+        <Category key={cat} category={cat} state={data[cat]} onChanged={load} />
       ))}
     </div>
   );
 }
 
-function CategoryCard({ category, state, onChanged }: { category: string; state?: CategoryCredentials; onChanged: () => void }) {
+function Category({ category, state, onChanged }: { category: string; state?: CategoryCredentials; onChanged: () => void }) {
   const cfg = CATALOG[category];
   const Icon = cfg.icon;
   const active = state?.activeProvider || 'disabled';
@@ -130,30 +130,25 @@ function CategoryCard({ category, state, onChanged }: { category: string; state?
   const activeDef = cfg.providers.find((p) => p.key === active);
 
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+    <section>
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2.5">
           <Icon className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="font-semibold text-gray-900 leading-tight">{cfg.title}</h2>
-            <p className="text-xs text-gray-500">{cfg.subtitle}</p>
-          </div>
+          <h2 className="font-bold text-gray-900 text-lg">{cfg.title}</h2>
+          <span className="text-xs text-gray-400">· {cfg.subtitle}</span>
         </div>
-        <div className="text-right">
-          <span className="text-[11px] text-gray-400">Active</span>
-          <div className="text-sm font-medium text-indigo-600 capitalize">{activeDef?.label || active}</div>
-        </div>
+        <div className="text-xs text-gray-400">active: <span className="font-semibold text-indigo-600">{activeDef?.label || active}</span></div>
       </div>
-      <div className="divide-y divide-gray-50">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cfg.providers.map((p) => (
-          <ProviderRow key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} onChanged={onChanged} />
+          <ProviderCard key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} onChanged={onChanged} />
         ))}
       </div>
     </section>
   );
 }
 
-function ProviderRow({ category, def, saved, isActive, onChanged }:
+function ProviderCard({ category, def, saved, isActive, onChanged }:
   { category: string; def: ProviderDef; saved?: CredentialRow; isActive: boolean; onChanged: () => void }) {
   const [editing, setEditing] = useState(false);
   const [key, setKey] = useState('');
@@ -161,9 +156,8 @@ function ProviderRow({ category, def, saved, isActive, onChanged }:
   const [model, setModel] = useState(saved?.model || def.model || '');
   const [busy, setBusy] = useState(false);
 
-  const open = isActive || editing;
-
   const activate = async () => {
+    if (isActive) return;
     setBusy(true);
     try { await integrationsApi.activate(category, def.key); toast.success(`${def.label} enabled`); onChanged(); }
     catch (e: any) { toast.error(e?.response?.data?.message || 'Could not enable'); }
@@ -183,66 +177,79 @@ function ProviderRow({ category, def, saved, isActive, onChanged }:
     finally { setBusy(false); }
   };
 
+  const ringCls = isActive
+    ? 'border-transparent shadow-lg shadow-indigo-200/60 [background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(135deg,#6366f1,#a855f7)_border-box] border-2'
+    : 'border border-gray-200 hover:border-gray-300';
+
   return (
-    <div className={isActive ? 'bg-indigo-50/40' : ''}>
-      {/* Row header */}
-      <div className="flex items-center gap-3 px-5 py-3">
-        <input type="radio" checked={isActive} onChange={activate} disabled={busy} className="accent-indigo-600 w-4 h-4 shrink-0" title="Enable this provider" />
+    <div className={`rounded-2xl p-4 bg-white flex flex-col ${ringCls} transition`}>
+      {/* header */}
+      <div className="flex items-start gap-3">
         <Logo provider={def.key} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-900">{def.label}</span>
+          <div className="font-semibold text-gray-900 text-sm leading-tight truncate">{def.label}</div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {def.free && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">free</span>}
-            {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white inline-flex items-center gap-1"><Check className="w-3 h-3" />enabled</span>}
-            {def.cost && <span className="text-[10px] text-gray-400">{def.cost}</span>}
-          </div>
-          <div className="text-xs text-gray-400 truncate">
-            {saved?.hasKey ? <>key <span className="font-mono text-gray-500">{saved.keyMasked}</span></> : (def.needsKey ? 'no key yet' : def.note)}
-            {def.needsKey && def.note ? ` · ${def.note}` : ''}
+            {def.cost && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{def.cost}</span>}
+            {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white inline-flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />enabled</span>}
           </div>
         </div>
-        {def.needsKey && !open && (
-          <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-white" title="Configure key">
-            <Pencil className="w-4 h-4" />
-          </button>
+      </div>
+
+      {/* body */}
+      <div className="mt-3 flex-1 space-y-2">
+        {def.needsKey ? (
+          editing ? (
+            <>
+              <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
+                placeholder={saved?.keyMasked ? `${saved.keyMasked} (keep)` : 'Paste API key'}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+              {def.secondary && (
+                <input type="password" value={secondary} onChange={(e) => setSecondary(e.target.value)}
+                  placeholder={saved?.secondarySecretSet ? '•••• webhook secret (keep)' : def.secondary}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+              )}
+              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model (editable)"
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+            </>
+          ) : (
+            <>
+              <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">
+                {saved?.hasKey ? <>🔑 {saved.keyMasked}</> : <span className="text-gray-400">no key yet</span>}
+              </div>
+              {(saved?.model || def.model) && (
+                <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">{saved?.model || def.model}</div>
+              )}
+            </>
+          )
+        ) : (
+          <div className="text-xs text-gray-400 px-1 py-1.5">{def.note}</div>
         )}
       </div>
 
-      {/* Expanded editor (active provider, or when editing) */}
-      {def.needsKey && open && (
-        <div className="px-5 pb-4 pt-1 ml-12 space-y-2">
-          <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">API key</label>
-            <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
-              placeholder={saved?.keyMasked ? `${saved.keyMasked}  (leave blank to keep)` : 'Paste API key / token'}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none font-mono" />
-          </div>
-          {def.secondary && (
-            <div>
-              <label className="block text-[11px] font-medium text-gray-500 mb-1">{def.secondary}</label>
-              <input type="password" value={secondary} onChange={(e) => setSecondary(e.target.value)}
-                placeholder={saved?.secondarySecretSet ? '•••• (leave blank to keep)' : def.secondary}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none font-mono" />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <label className="block text-[11px] font-medium text-gray-500 mb-1">Model (editable)</label>
-              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="(provider default)"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none font-mono" />
-            </div>
-            <button onClick={save} disabled={busy}
-              className="self-end px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1.5">
-              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
-            </button>
-            {!isActive && (
-              <button onClick={() => { setEditing(false); setKey(''); setSecondary(''); }} className="self-end p-2 text-gray-400 hover:text-gray-600" title="Cancel">
-                <X className="w-4 h-4" />
+      {/* footer */}
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <button onClick={activate} disabled={busy || isActive}
+          title={isActive ? 'Enabled' : 'Enable this provider'}
+          className={`relative w-11 h-6 rounded-full transition shrink-0 ${isActive ? 'bg-indigo-600' : 'bg-gray-300'} ${busy ? 'opacity-50' : ''}`}>
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${isActive ? 'left-[22px]' : 'left-0.5'}`} />
+        </button>
+
+        {def.needsKey && (
+          editing ? (
+            <div className="flex items-center gap-1">
+              <button onClick={save} disabled={busy} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1">
+                {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save
               </button>
-            )}
-          </div>
-        </div>
-      )}
+              <button onClick={() => { setEditing(false); setKey(''); setSecondary(''); }} className="p-1.5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+            </div>
+          ) : (
+            <button onClick={() => setEditing(true)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600">
+              {saved?.hasKey ? 'Edit key' : 'Add key'}
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MarketPro · Integrations — Design Mockups</title>
+<style>
+  :root{--ink:#0f172a;--muted:#64748b;--line:#e9eef5;--indigo:#4f46e5;--indigo2:#7c3aed;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Inter,system-ui,Arial,sans-serif;}
+  body{background:#f4f6fb;color:var(--ink);padding:32px;}
+  h1.title{font-size:26px;margin-bottom:4px;}
+  .sub{color:var(--muted);margin-bottom:24px;}
+  .designnav{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+  .designnav a{padding:8px 16px;border-radius:999px;background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink);font-weight:600;font-size:13px;}
+  .designnav a:hover{border-color:var(--indigo);color:var(--indigo);}
+  .designhdr{display:flex;align-items:center;gap:12px;margin:40px 0 6px;}
+  .designhdr .badge{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .designhdr h2{font-size:20px;}
+  .designhdr p{color:var(--muted);font-size:13px;}
+  .wrap{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 8px 30px rgba(15,23,42,.05);}
+  .cat{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin:18px 0 12px;}
+  .cat:first-child{margin-top:0;}
+  .logo{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+  .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .pill.free{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;}
+  .pill.on{background:var(--indigo);color:#fff;}
+  .pill.cost{background:#f1f5f9;color:#64748b;}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .toggle{width:42px;height:24px;border-radius:999px;background:#cbd5e1;position:relative;flex-shrink:0;}
+  .toggle.on{background:var(--indigo);}
+  .toggle .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}
+  .toggle.on .knob{left:21px;}
+  .btn{padding:7px 14px;border-radius:9px;font-size:13px;font-weight:700;border:none;cursor:pointer;}
+  .btn.primary{background:var(--indigo);color:#fff;}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
+
+  /* A — grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .gcard{border:1px solid var(--line);border-radius:16px;padding:16px;background:#fff;}
+  .gcard.on{border-color:transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#6366f1,#a855f7) border-box;border:2px solid transparent;box-shadow:0 8px 24px rgba(99,102,241,.18);}
+  .gcard .top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .gcard .nm{font-weight:700;font-size:14px;}
+  .field{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;color:#475569;margin-top:8px;}
+  .gcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;}
+
+  /* B — tiles */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .tile{border:1px solid var(--line);border-radius:16px;padding:22px 16px;text-align:center;background:#fff;}
+  .tile.on{border-color:#c7d2fe;background:#fafaff;}
+  .tile .logo{margin:0 auto 12px;width:48px;height:48px;font-size:22px;}
+  .tile .nm{font-weight:700;font-size:14px;margin-bottom:10px;}
+  .status{font-size:12px;color:#047857;font-weight:600;margin-bottom:10px;}
+  .status.no{color:var(--muted);}
+
+  /* C — hero */
+  .hero{border-radius:18px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;}
+  .hero.ai{background:linear-gradient(120deg,#4f46e5,#7c3aed,#9333ea);}
+  .hero.img{background:linear-gradient(120deg,#0ea5e9,#6366f1,#7c3aed);}
+  .hero .row{display:flex;align-items:center;gap:14px;}
+  .hero .logo{background:rgba(255,255,255,.18);color:#fff;box-shadow:none;}
+  .hero h3{font-size:18px;}
+  .hero .meta{opacity:.85;font-size:13px;margin-top:2px;}
+  .hero .key{margin-top:14px;background:rgba(255,255,255,.15);border-radius:10px;padding:8px 12px;display:inline-flex;gap:10px;align-items:center;font-size:13px;}
+  .hero .on{position:absolute;top:18px;right:20px;font-size:11px;font-weight:700;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px;}
+  .chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .chip{display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+  .chip .logo{width:24px;height:24px;font-size:12px;border-radius:7px;box-shadow:none;}
+  .chip:hover{border-color:var(--indigo);}
+  .catwrap{margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <h1 class="title">🔌 MarketPro · Integrations — Design Mockups</h1>
+  <p class="sub">Three card-style options with your real providers &amp; masked keys. Tell me which one (A / B / C).</p>
+  <div class="designnav"><a href="#A">A · Cards Grid</a><a href="#B">B · Connected Tiles</a><a href="#C">C · Hero + Picker</a></div>
+
+  <!-- ============ DESIGN A ============ -->
+  <div class="designhdr" id="A"><div class="badge">A</div><div><h2>Cards Grid</h2><p>Each provider is a card; enabled one glows with a gradient ring + toggle.</p></div></div>
+  <div class="wrap">
+    <div class="cat">AI Text · active: Gemini</div>
+    <div class="grid">
+      <div class="gcard on">
+        <div class="top"><span class="logo" style="background:linear-gradient(135deg,#4285F4,#9b72cb,#d96570);color:#fff">✦</span><div><div class="nm">Google Gemini</div><span class="pill free">free</span></div></div>
+        <div class="field mono">key&nbsp; AIzaSy…gjGJ2I</div>
+        <div class="field mono">gemini-2.5-flash</div>
+        <div class="foot"><div class="toggle on"><div class="knob"></div></div><button class="btn ghost">Edit key</button></div>
+      </div>
+      <div class="gcard">
+        <div class="top"><span class="logo" style="background:#000;color:#fff">◯</span><div><div class="nm">OpenAI (GPT)</div><span class="pill cost">~$</span></div></div>
+        <div class="field mono">key&nbsp; sk-pro…zn-ogA</div>
+        <div class="field mono">gpt-4o</div>
+        <div class="foot"><div class="toggle"><div class="knob"></div></div><button class="btn ghost">Edit key</button></div>
+      </div>
+      <div class="gcard">
+        <div class="top"><span class="logo" style="background:#d97757;color:#fff">A</span><div><div class="nm">Anthropic</div><span class="pill cost">~$</span></div></div>
+        <div class="field mono" style="color:#94a3b8">no key yet</div>
+        <div class="field mono">claude-sonnet-4-5</div>
+        <div class="foot"><div class="toggle"><div class="knob"></div></div><button class="btn primary">Add key</button></div>
+      </div>
+    </div>
+    <div class="cat">Image · active: FLUX</div>
+    <div class="grid">
+      <div class="gcard on">
+        <div class="top"><span class="logo" style="background:#0a0a0a;color:#fff">F</span><div><div class="nm">FLUX (flux-dev)</div><span class="pill cost">~$0.025 · 400/$10</span></div></div>
+        <div class="field mono">key&nbsp; bfl_P6…eEyLlE</div>
+        <div class="foot"><div class="toggle on"><div class="knob"></div></div><button class="btn ghost">Edit key</button></div>
+      </div>
+      <div class="gcard">
+        <div class="top"><span class="logo" style="background:linear-gradient(135deg,#4285F4,#9b72cb,#d96570);color:#fff">✦</span><div><div class="nm">Nano Banana</div><span class="pill cost">~$0.039</span></div></div>
+        <div class="field mono">key&nbsp; AIzaSy…gjGJ2I</div>
+        <div class="foot"><div class="toggle"><div class="knob"></div></div><button class="btn ghost">Edit key</button></div>
+      </div>
+      <div class="gcard">
+        <div class="top"><span class="logo" style="background:#16a34a;color:#fff">P</span><div><div class="nm">Pollinations</div><span class="pill free">free</span></div></div>
+        <div class="field mono" style="color:#94a3b8">no key needed</div>
+        <div class="foot"><div class="toggle"><div class="knob"></div></div><button class="btn ghost">Use</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DESIGN B ============ -->
+  <div class="designhdr" id="B"><div class="badge">B</div><div><h2>Connected Tiles</h2><p>Marketplace look (Slack/Notion style). Tap a tile → modal to paste key.</p></div></div>
+  <div class="wrap">
+    <div class="cat">AI Text</div>
+    <div class="tiles">
+      <div class="tile on"><span class="logo" style="background:linear-gradient(135deg,#4285F4,#9b72cb,#d96570);color:#fff">✦</span><div class="nm">Gemini</div><div class="status">✓ Connected</div><span class="pill on">● Enabled</span></div>
+      <div class="tile"><span class="logo" style="background:#000;color:#fff">◯</span><div class="nm">OpenAI</div><div class="status">✓ Connected</div><button class="btn ghost">Enable</button></div>
+      <div class="tile"><span class="logo" style="background:#d97757;color:#fff">A</span><div class="nm">Anthropic</div><div class="status no">Not connected</div><button class="btn primary">Connect →</button></div>
+    </div>
+    <div class="cat">Image</div>
+    <div class="tiles">
+      <div class="tile on"><span class="logo" style="background:#0a0a0a;color:#fff">F</span><div class="nm">FLUX</div><div class="status">✓ Connected · ~$0.025</div><span class="pill on">● Enabled</span></div>
+      <div class="tile"><span class="logo" style="background:linear-gradient(135deg,#4285F4,#9b72cb,#d96570);color:#fff">✦</span><div class="nm">Nano Banana</div><div class="status">✓ Connected</div><button class="btn ghost">Enable</button></div>
+      <div class="tile"><span class="logo" style="background:#FFD21E;color:#000">🤗</span><div class="nm">Hugging Face</div><div class="status no">Not connected</div><button class="btn primary">Connect →</button></div>
+    </div>
+  </div>
+
+  <!-- ============ DESIGN C ============ -->
+  <div class="designhdr" id="C"><div class="badge">C</div><div><h2>Hero + Picker</h2><p>Enabled provider as a big gradient hero; switch with logo chips below.</p></div></div>
+  <div class="wrap">
+    <div class="catwrap">
+      <div class="cat">AI Text</div>
+      <div class="hero ai">
+        <span class="on">● ENABLED</span>
+        <div class="row"><span class="logo">✦</span><div><h3>Google Gemini</h3><div class="meta">gemini-2.5-flash · free tier</div></div></div>
+        <div class="key mono">key AIzaSy…gjGJ2I <span style="opacity:.7">· Edit</span></div>
+      </div>
+      <div class="chips">
+        <div class="chip"><span class="logo" style="background:#000;color:#fff">◯</span>OpenAI</div>
+        <div class="chip"><span class="logo" style="background:#d97757;color:#fff">A</span>Claude</div>
+        <div class="chip"><span class="logo" style="background:#000;color:#fff">𝕏</span>Grok</div>
+        <div class="chip"><span class="logo" style="background:#111827;color:#fff">⌘</span>Groq</div>
+        <div class="chip"><span class="logo" style="background:#e5e7eb;color:#9ca3af">∅</span>Off</div>
+      </div>
+    </div>
+    <div class="catwrap">
+      <div class="cat">Image</div>
+      <div class="hero img">
+        <span class="on">● ENABLED</span>
+        <div class="row"><span class="logo">F</span><div><h3>FLUX · flux-dev</h3><div class="meta">~$0.025/img · ~400 per $10 · cheapest real photos</div></div></div>
+        <div class="key mono">key bfl_P6…eEyLlE <span style="opacity:.7">· Edit</span></div>
+      </div>
+      <div class="chips">
+        <div class="chip"><span class="logo" style="background:linear-gradient(135deg,#4285F4,#9b72cb,#d96570);color:#fff">✦</span>Nano Banana</div>
+        <div class="chip"><span class="logo" style="background:#10a37f;color:#fff">◯</span>gpt-image-1</div>
+        <div class="chip"><span class="logo" style="background:#FFD21E;color:#000">🤗</span>HF</div>
+        <div class="chip"><span class="logo" style="background:#16a34a;color:#fff">P</span>Free</div>
+        <div class="chip"><span class="logo" style="background:#94a3b8;color:#fff">▦</span>Mock</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:#94a3b8;margin-top:30px;font-size:13px;">Reply with <b>A</b>, <b>B</b>, or <b>C</b> and I'll build it into MarketPro.</p>
+</body>
+</html>

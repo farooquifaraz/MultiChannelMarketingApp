@@ -1521,6 +1521,17 @@ function AiAssistantTab({ settings, setSettings, onSave, saving }: { settings: a
       </div>
       <p className="text-sm text-gray-500 -mt-4">Generate suggested replies for incoming inbox messages. Admin can switch providers anytime — no redeploy.</p>
 
+      {/* Single-source-of-truth banner: keys live in the Integrations vault (per-provider, no key loss) */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sm text-indigo-900">
+          <b>Providers &amp; API keys are now managed in Integrations</b> — each provider keeps its own key
+          (no more losing a key when you switch). This tab is just for AI <b>behaviour</b> (prompt, creativity, limits).
+        </p>
+        <a href="/admin/integrations" className="shrink-0 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+          Open Integrations →
+        </a>
+      </div>
+
       {/* Preset chooser */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {AI_PRESETS.map(p => {

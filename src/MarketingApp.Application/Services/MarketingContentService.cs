@@ -78,9 +78,10 @@ Given the brief, return ONLY a valid JSON object (no markdown fences, no comment
     "preview": "Inbox preview text, max 90 chars",
     "body": "Full HTML email body with inline styles, <b> and <br>, 200-300 words, warm + authoritative"
   },
-  "image_prompt": "1-sentence ultra-detailed photorealistic prompt for the hero image: subject, style, lighting (golden hour), composition, no text/watermark"
+  "image_prompt": "A rich, production-grade text-to-image prompt (60-90 words) that recreates the EXACT subject from the brief so the result looks like a real professional photograph, not generic stock. Write it as ONE flowing descriptive paragraph and include, in this order: (1) the precise subject pulled from the brief (e.g. exact property type, number of bedrooms, location/community, the 2-3 standout features actually mentioned); (2) the setting and time of day; (3) photographic style + camera and lens (e.g. 'shot on a full-frame DSLR, 24mm wide-angle, f/8'); (4) lighting (e.g. warm golden-hour glow, soft natural light); (5) composition and mood; (6) a color palette that matches the brand feel; (7) ultra-realism keywords (photorealistic, hyper-detailed, 8k, sharp focus, professional real-estate photography, natural materials, realistic reflections). End the paragraph with exactly: 'No text, no watermark, no logos, no distorted shapes, no people unless essential.'"
 }
 Tone: professional, persuasive, channel-appropriate. Every emoji must serve a purpose.
+The image_prompt must be SPECIFIC to this brief — never generic. Pull concrete nouns and adjectives from the brief so a designer reading it could picture the exact scene.
 """;
 
     /// <summary>

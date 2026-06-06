@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { PenLine, Loader2, Sparkles, Copy, MessageSquare, Instagram, Mail, Image as ImageIcon } from 'lucide-react';
+import { PenLine, Loader2, Sparkles, Copy, MessageSquare, Instagram, Mail, Image as ImageIcon, Wand2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { creativesApi, type MarketingContent } from '../../api/creativesApi';
 
 const EXAMPLE = 'Example: 5BR Villa at The Oasis by Emaar, Dubailand. AED 16,500,000. 8,500 sqft. Private pool, rooftop terrace, smart home, Italian marble. 5 min to Global Village. Handover Q4 2026. Agent: Ahmed, +971 50 123 4567, Luxe Properties.';
 
-export default function ContentStudioPage() {
+/**
+ * AI Copywriter. Rendered standalone OR as a tab inside Creative Studio (embedded).
+ * When embedded, the parent passes onSendToBanner so the generated image prompt can jump
+ * straight into the Banner Studio tab with the prompt pre-filled.
+ */
+export default function ContentStudioPage({ embedded = false, onSendToBanner }: { embedded?: boolean; onSendToBanner?: (prompt: string) => void } = {}) {
   const [brief, setBrief] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<MarketingContent | null>(null);
@@ -28,13 +33,15 @@ export default function ContentStudioPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Copywriter</h1>
-          <p className="text-gray-500 text-sm">Turn one brief into ready-to-send marketing copy for every channel.</p>
+      {!embedded && (
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AI Copywriter</h1>
+            <p className="text-gray-500 text-sm">Turn one brief into ready-to-send marketing copy for every channel.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-sm text-indigo-900">
         <b>What it does:</b> describe your property/offer once → AI writes a <b>WhatsApp broadcast</b>,
@@ -80,13 +87,30 @@ export default function ContentStudioPage() {
           </Block>
 
           {result.imagePrompt && (
-            <div className="md:col-span-3 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-start gap-2">
-              <ImageIcon className="w-4 h-4 text-indigo-500 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-indigo-700">Suggested image prompt (paste into Banner Studio)</p>
-                <p className="text-sm text-gray-700">{result.imagePrompt}</p>
+            <div className="md:col-span-3 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4">
+              <div className="flex items-start gap-2">
+                <ImageIcon className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-indigo-700">Matching hero-image prompt</p>
+                  <p className="text-sm text-gray-700 mt-0.5">{result.imagePrompt}</p>
+                </div>
+                <button onClick={() => copy(result.imagePrompt)} title="Copy prompt" className="text-indigo-400 hover:text-indigo-700 shrink-0"><Copy className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => copy(result.imagePrompt)} className="text-indigo-500 hover:text-indigo-700"><Copy className="w-4 h-4" /></button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {onSendToBanner ? (
+                  <button
+                    onClick={() => onSendToBanner(result.imagePrompt)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 inline-flex items-center gap-2 shadow-sm"
+                  >
+                    <Wand2 className="w-4 h-4" /> Generate this image →
+                  </button>
+                ) : (
+                  <a href="/creatives" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 inline-flex items-center gap-2 shadow-sm">
+                    <Wand2 className="w-4 h-4" /> Open Banner Studio →
+                  </a>
+                )}
+                <span className="text-xs text-indigo-500">Opens Banner Studio with this prompt ready to render.</span>
+              </div>
             </div>
           )}
         </div>

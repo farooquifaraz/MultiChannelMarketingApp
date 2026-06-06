@@ -4,7 +4,12 @@ import toast from 'react-hot-toast';
 import { creativesApi, type GeneratedAsset, type ImageSizeOption, type PromptPreset } from '../../api/creativesApi';
 import { brandKitsApi, type BrandKit } from '../../api/brandKitsApi';
 
-export default function BannerStudioPage() {
+/**
+ * Banner Studio. Rendered standalone OR as a tab inside Creative Studio (embedded).
+ * When embedded, the parent passes a seedPrompt + an incrementing seedNonce; whenever the
+ * nonce changes the textarea is filled with the prompt sent from the AI Copywriter tab.
+ */
+export default function BannerStudioPage({ embedded = false, seedPrompt, seedNonce }: { embedded?: boolean; seedPrompt?: string; seedNonce?: number } = {}) {
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState('1024x1024');
   const [sizes, setSizes] = useState<ImageSizeOption[]>([]);
@@ -43,6 +48,15 @@ export default function BannerStudioPage() {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  // When the AI Copywriter sends over an image prompt, fill the composer + nudge the user.
+  useEffect(() => {
+    if (seedNonce && seedPrompt) {
+      setPrompt(seedPrompt);
+      toast.success('Image prompt loaded from AI Copywriter — review the size & hit Generate.');
+    }
+    /* eslint-disable-next-line */
+  }, [seedNonce]);
 
   const generate = async () => {
     if (!prompt.trim()) { toast.error('Describe the banner you want'); return; }
@@ -113,15 +127,17 @@ export default function BannerStudioPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-            <ImageIcon className="w-6 h-6 text-white" />
+        {!embedded ? (
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+              <ImageIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Banner Studio</h1>
+              <p className="text-gray-500 text-sm">Generate on-brand banner &amp; flyer images from a text prompt.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Banner Studio</h1>
-            <p className="text-gray-500 text-sm">Generate on-brand banner &amp; flyer images from a text prompt.</p>
-          </div>
-        </div>
+        ) : <span />}
         <button onClick={() => setShowKits((v) => !v)} className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
           <Palette className="w-4 h-4" /> Brand Kits ({kits.length})
         </button>

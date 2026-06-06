@@ -20,8 +20,7 @@ const ScheduledCampaignsPage = lazy(() => import('./pages/campaigns/ScheduledCam
 const InboxPage = lazy(() => import('./pages/inbox/InboxPage'));
 const BillingPage = lazy(() => import('./pages/billing/BillingPage'));
 const OrganizationsPage = lazy(() => import('./pages/admin/OrganizationsPage'));
-const BannerStudioPage = lazy(() => import('./pages/creatives/BannerStudioPage'));
-const ContentStudioPage = lazy(() => import('./pages/creatives/ContentStudioPage'));
+const CreativeStudioPage = lazy(() => import('./pages/creatives/CreativeStudioPage'));
 const IntegrationsPage = lazy(() => import('./pages/admin/IntegrationsPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -72,8 +71,10 @@ export default function App() {
           <Route path="profile" element={<UserProfilePage />} />
           <Route path="admin/audit-logs" element={<AuditLogsPage />} />
           <Route path="admin/organizations" element={<OrganizationsPage />} />
-          <Route path="creatives" element={<BannerStudioPage />} />
-          <Route path="content" element={<ContentStudioPage />} />
+          {/* Unified Creative Studio (two tabs). Old paths deep-link to the matching tab. */}
+          <Route path="studio" element={<CreativeStudioPage />} />
+          <Route path="content" element={<CreativeStudioPage initialTab="copy" />} />
+          <Route path="creatives" element={<CreativeStudioPage initialTab="banner" />} />
           <Route path="admin/integrations" element={<IntegrationsPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="billing" element={<BillingPage />} />

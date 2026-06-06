@@ -19,11 +19,12 @@ const CATALOG: Record<string, { title: string; subtitle: string; icon: any; prov
   ai: {
     title: 'AI Text', subtitle: 'Inbox replies · chat · AI Copywriter', icon: Sparkles,
     providers: [
+      { key: 'groq', label: 'Groq (free · fast)', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Free gsk_ key from console.groq.com' },
       { key: 'gemini', label: 'Google Gemini', free: true, needsKey: true, model: 'gemini-2.5-flash', note: 'Free tier' },
       { key: 'openai', label: 'OpenAI (GPT)', free: false, needsKey: true, model: 'gpt-4o' },
       { key: 'anthropic', label: 'Anthropic Claude', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
-      { key: 'grok', label: 'xAI Grok', free: false, needsKey: true, model: 'grok-2' },
-      { key: 'openai-compatible', label: 'Groq / OpenAI-compatible', free: true, needsKey: true, needsBaseUrl: true, baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', note: 'Groq is free + fast — paste gsk_ key + base URL' },
+      { key: 'grok', label: 'xAI Grok (paid)', free: false, needsKey: true, model: 'grok-2', note: 'NOT Groq! Paid · console.x.ai' },
+      { key: 'openai-compatible', label: 'OpenAI-compatible (custom)', free: true, needsKey: true, needsBaseUrl: true, baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', note: 'Any OpenAI-style endpoint · base URL + key' },
       { key: 'disabled', label: 'Disabled', free: true, needsKey: false, note: 'Turn AI off' },
     ],
   },
@@ -57,6 +58,7 @@ const BRAND: Record<string, { bg: string; fg: string; mark: string }> = {
   'openai-compatible': { bg: '#111827', fg: '#fff', mark: '⌘' },
   anthropic: { bg: '#d97757', fg: '#fff', mark: 'A' },
   grok: { bg: '#000', fg: '#fff', mark: '𝕏' },
+  groq: { bg: '#f55036', fg: '#fff', mark: 'G' },
   flux: { bg: '#0a0a0a', fg: '#fff', mark: 'F' },
   dalle: { bg: '#10a37f', fg: '#fff', mark: '◯' },
   stability: { bg: '#7c3aed', fg: '#fff', mark: 'S' },
@@ -70,7 +72,7 @@ const BRAND: Record<string, { bg: string; fg: string; mark: string }> = {
 /** Official brand SVGs via the simple-icons CDN (monochrome brand-colour). Monogram fallback. */
 const ICON_SLUG: Record<string, string> = {
   gemini: 'googlegemini', openai: 'openai', dalle: 'openai', anthropic: 'anthropic',
-  huggingface: 'huggingface', stripe: 'stripe', grok: 'x', stability: 'stabilityai',
+  huggingface: 'huggingface', stripe: 'stripe', grok: 'x', groq: 'groq', stability: 'stabilityai',
   'openai-compatible': 'ollama', pollinations: 'pollinations',
 };
 function Logo({ provider, size = 36 }: { provider: string; size?: number }) {

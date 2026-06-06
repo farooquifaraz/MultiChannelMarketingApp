@@ -230,6 +230,8 @@ builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClient,
     MarketingApp.Infrastructure.Services.AI.GrokAiClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClient,
     MarketingApp.Infrastructure.Services.AI.OpenAiCompatibleAiClient>();
+builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClient,
+    MarketingApp.Infrastructure.Services.AI.GroqAiClient>();
 builder.Services.AddScoped<MarketingApp.Application.Interfaces.AI.IAiClientFactory,
     MarketingApp.Infrastructure.Services.AI.AiClientFactory>();
 // Phase 3 — AI image generation (mock works keyless; DALL·E activates when configured).

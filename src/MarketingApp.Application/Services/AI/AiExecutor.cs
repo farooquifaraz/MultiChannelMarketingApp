@@ -20,7 +20,7 @@ public class AiExecutor : IAiExecutor
         _logger = logger;
     }
 
-    public async Task<AiCompletion> GenerateAsync(string systemPrompt, string userPrompt, AiResponseShape shape, CancellationToken ct)
+    public async Task<AiCompletion> GenerateAsync(string systemPrompt, string userPrompt, AiResponseShape shape, CancellationToken ct, int maxTokens = 0)
     {
         var s = await _systemSettings.GetAsync(ct);
         if (string.IsNullOrWhiteSpace(s.AiProvider) || s.AiProvider == "disabled")
@@ -34,7 +34,7 @@ public class AiExecutor : IAiExecutor
             SystemPrompt: systemPrompt,
             UserPrompt: userPrompt,
             Model: s.AiModel,
-            MaxTokens: Math.Max(s.AiMaxTokens, 1000),
+            MaxTokens: maxTokens > 0 ? maxTokens : Math.Max(s.AiMaxTokens, 1000),
             Temperature: s.AiTemperature,
             ApiKey: primaryKey,
             BaseUrl: s.AiBaseUrl,

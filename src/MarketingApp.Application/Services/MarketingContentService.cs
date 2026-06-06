@@ -38,18 +38,20 @@ public class MarketingContentService : IMarketingContentService
         AiCompletion completion;
         try
         {
-            completion = await _ai.GenerateAsync(SystemPrompt, brief, AiResponseShape.PlainText, ct);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // No AI provider configured / disabled.
-            _logger.LogWarning(ex, "Marketing content generation: AI provider unavailable");
-            throw new AppValidationException("No AI provider is enabled. Go to Integrations → AI Text, paste a key and enable a provider (Gemini text has a free tier).");
+            // Multi-channel JSON (WhatsApp + Instagram + Email + image prompt) is long — give it room
+            // so the JSON isn't truncated (truncation = unparseable = raw JSON shown to the user).
+            completion = await _ai.GenerateAsync(SystemPrompt, brief, AiResponseShape.PlainText, ct, maxTokens: 4000);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Marketing content generation failed");
-            throw new AppValidationException($"AI generation failed: {ex.Message}");
+            _logger.LogWarning(ex, "Marketing content generation failed: {Message}", ex.Message);
+            var m = ex.Message ?? "";
+            // Truly-not-configured → guide to Integrations. Otherwise surface the provider's real reason
+            // (e.g. "Incorrect API key", "quota exceeded") so the user knows exactly what to fix.
+            if (m.Contains("not configured", StringComparison.OrdinalIgnoreCase)
+                || m.Contains("No AI client registered", StringComparison.OrdinalIgnoreCase))
+                throw new AppValidationException("No AI provider is enabled. Go to Integrations → AI Text and enable a provider with a valid key.");
+            throw new AppValidationException($"AI provider error: {m}");
         }
 
         var result = ParseContent(completion.RawText);

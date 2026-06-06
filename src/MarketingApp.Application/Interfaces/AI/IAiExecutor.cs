@@ -13,5 +13,7 @@ public interface IAiExecutor
     /// Reads model / key / temperature / timeout from SystemSettings. Throws if no provider is configured
     /// (provider == "disabled") or if BOTH primary and fallback fail.
     /// </summary>
-    Task<AiCompletion> GenerateAsync(string systemPrompt, string userPrompt, AiResponseShape shape, CancellationToken ct);
+    /// <param name="maxTokens">Override max output tokens (0 = use SystemSettings). Larger requests like
+    /// multi-channel marketing copy need more so the JSON isn't truncated.</param>
+    Task<AiCompletion> GenerateAsync(string systemPrompt, string userPrompt, AiResponseShape shape, CancellationToken ct, int maxTokens = 0);
 }

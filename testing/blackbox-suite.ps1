@@ -750,7 +750,7 @@ Section "P. Frontend SPA"
 
 TestCase 'P' 'P1' 'GET / returns SPA index' {
     try {
-        $r = Invoke-WebRequest -Uri 'http://localhost:5173/' -UseBasicParsing -TimeoutSec 10
+        $r = Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 10
         if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
         return $true
     } catch { return "ex: $($_.Exception.Message)" }
@@ -758,7 +758,7 @@ TestCase 'P' 'P1' 'GET / returns SPA index' {
 
 TestCase 'P' 'P2' 'GET /login (SPA fallback) returns index' {
     try {
-        $r = Invoke-WebRequest -Uri 'http://localhost:5173/login' -UseBasicParsing -TimeoutSec 10
+        $r = Invoke-WebRequest -Uri 'http://localhost:3000/login' -UseBasicParsing -TimeoutSec 10
         if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
         return $true
     } catch { return "ex: $($_.Exception.Message)" }
@@ -766,7 +766,7 @@ TestCase 'P' 'P2' 'GET /login (SPA fallback) returns index' {
 
 TestCase 'P' 'P3' 'GET /dashboard (SPA fallback)' {
     try {
-        $r = Invoke-WebRequest -Uri 'http://localhost:5173/dashboard' -UseBasicParsing -TimeoutSec 10
+        $r = Invoke-WebRequest -Uri 'http://localhost:3000/dashboard' -UseBasicParsing -TimeoutSec 10
         if ($r.StatusCode -ne 200) { return "status=$($r.StatusCode)" }
         return $true
     } catch { return "ex: $($_.Exception.Message)" }

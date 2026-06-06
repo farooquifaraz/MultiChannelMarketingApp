@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 interface ProviderDef {
   key: string; label: string; free: boolean; needsKey: boolean;
   model?: string; note?: string; secondary?: string; cost?: string;
+  needsBaseUrl?: boolean; baseUrl?: string;
 }
 
 const CATALOG: Record<string, { title: string; subtitle: string; icon: any; providers: ProviderDef[] }> = {
@@ -22,7 +23,7 @@ const CATALOG: Record<string, { title: string; subtitle: string; icon: any; prov
       { key: 'openai', label: 'OpenAI (GPT)', free: false, needsKey: true, model: 'gpt-4o' },
       { key: 'anthropic', label: 'Anthropic Claude', free: false, needsKey: true, model: 'claude-sonnet-4-5' },
       { key: 'grok', label: 'xAI Grok', free: false, needsKey: true, model: 'grok-2' },
-      { key: 'openai-compatible', label: 'OpenAI-compatible', free: true, needsKey: true, model: 'llama-3.3-70b-versatile', note: 'Groq / Ollama / OpenRouter' },
+      { key: 'openai-compatible', label: 'Groq / OpenAI-compatible', free: true, needsKey: true, needsBaseUrl: true, baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', note: 'Groq is free + fast — paste gsk_ key + base URL' },
       { key: 'disabled', label: 'Disabled', free: true, needsKey: false, note: 'Turn AI off' },
     ],
   },
@@ -157,19 +158,20 @@ function Category({ category, state, onChanged }: { category: string; state?: Ca
       </div>
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${category === 'image' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
         {cfg.providers.map((p) => (
-          <ProviderCard key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} onChanged={onChanged} />
+          <ProviderCard key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} compact={category === 'image'} onChanged={onChanged} />
         ))}
       </div>
     </section>
   );
 }
 
-function ProviderCard({ category, def, saved, isActive, onChanged }:
-  { category: string; def: ProviderDef; saved?: CredentialRow; isActive: boolean; onChanged: () => void }) {
+function ProviderCard({ category, def, saved, isActive, compact = false, onChanged }:
+  { category: string; def: ProviderDef; saved?: CredentialRow; isActive: boolean; compact?: boolean; onChanged: () => void }) {
   const [editing, setEditing] = useState(false);
   const [key, setKey] = useState('');
   const [secondary, setSecondary] = useState('');
   const [model, setModel] = useState(saved?.model || def.model || '');
+  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl || def.baseUrl || '');
   const [busy, setBusy] = useState(false);
 
   const activate = async () => {
@@ -185,6 +187,7 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
     try {
       await integrationsApi.saveKey(category, def.key, {
         apiKey: key.trim() || null, model: model.trim() || null, secondarySecret: secondary.trim() || null,
+        baseUrl: baseUrl.trim() || null,
       });
       toast.success(`${def.label} saved`);
       setKey(''); setSecondary(''); setEditing(false);
@@ -198,10 +201,10 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
     : 'border border-gray-200 hover:border-gray-300';
 
   return (
-    <div className={`rounded-2xl p-3.5 bg-white flex flex-col ${ringCls} transition`}>
+    <div className={`rounded-2xl bg-white flex flex-col ${compact ? 'p-3' : 'p-3.5'} ${ringCls} transition`}>
       {/* header */}
-      <div className="flex items-start gap-3">
-        <Logo provider={def.key} />
+      <div className={`flex items-start ${compact ? 'gap-2.5' : 'gap-3'}`}>
+        <Logo provider={def.key} size={compact ? 30 : 36} />
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-gray-900 text-sm leading-tight truncate">{def.label}</div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -213,7 +216,7 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
       </div>
 
       {/* body */}
-      <div className="mt-3 flex-1 space-y-2">
+      <div className={`flex-1 space-y-1.5 ${compact ? 'mt-2' : 'mt-3'}`}>
         {def.needsKey ? (
           editing ? (
             <>
@@ -223,6 +226,10 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
               {def.secondary && (
                 <input type="password" value={secondary} onChange={(e) => setSecondary(e.target.value)}
                   placeholder={saved?.secondarySecretSet ? '•••• webhook secret (keep)' : def.secondary}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+              )}
+              {def.needsBaseUrl && (
+                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="base URL (e.g. https://api.groq.com/openai/v1)"
                   className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
               )}
               <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model (editable)"
@@ -239,7 +246,7 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
       </div>
 
       {/* footer */}
-      <div className="mt-3 flex items-center justify-between gap-2">
+      <div className={`flex items-center justify-between gap-2 ${compact ? 'mt-2.5' : 'mt-3'}`}>
         <button onClick={activate} disabled={busy || isActive}
           title={isActive ? 'Enabled' : 'Enable this provider'}
           className={`relative w-11 h-6 rounded-full transition shrink-0 ${isActive ? 'bg-indigo-600' : 'bg-gray-300'} ${busy ? 'opacity-50' : ''}`}>

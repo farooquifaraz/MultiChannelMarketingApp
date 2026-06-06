@@ -207,8 +207,8 @@ export default function BannerStudioPage() {
         </div>
       </div>
 
-      {/* Gallery */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Gallery — fixed small cards that reflow (don't balloon on zoom/wide screens) */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
         {assets.map((a) => (
           <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
             <button

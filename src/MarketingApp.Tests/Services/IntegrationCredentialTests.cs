@@ -123,6 +123,25 @@ public class IntegrationCredentialTests
     }
 
     [Fact]
+    public async Task Activating_key_required_provider_without_key_is_rejected()
+    {
+        var (svc, _, settings) = Build();
+        // openai has no saved credential/key → cannot be enabled (prevents the "no provider" breakage).
+        var act = () => svc.SetActiveAsync(Guid.NewGuid(), "ai", "openai");
+        await act.Should().ThrowAsync<AppValidationException>();
+        settings.AiProvider.Should().Be("disabled");   // unchanged
+    }
+
+    [Fact]
+    public async Task Activating_openai_compatible_without_base_url_is_rejected()
+    {
+        var (svc, _, _) = Build();
+        await svc.SaveAsync(Guid.NewGuid(), "ai", "openai-compatible", new SaveCredentialDto { ApiKey = "gsk_x" });
+        var act = () => svc.SetActiveAsync(Guid.NewGuid(), "ai", "openai-compatible");
+        await act.Should().ThrowAsync<AppValidationException>();
+    }
+
+    [Fact]
     public async Task Activating_keyless_provider_clears_active_secret()
     {
         var (svc, _, settings) = Build();

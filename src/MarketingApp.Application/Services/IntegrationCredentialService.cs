@@ -92,7 +92,18 @@ public class IntegrationCredentialService : IIntegrationCredentialService
 
         var settings = await GetSettingsAsync(ct);
         var cred = (await _repo.FindAsync(c => c.Category == category && c.Provider == provider, ct)).FirstOrDefault();
-        // It's fine to activate a keyless provider (mock/pollinations/disabled) with no saved credential.
+
+        // Guard: a provider that REQUIRES a key cannot be enabled without one — otherwise the feature
+        // silently fails later ("No provider enabled"). Keyless providers can always be activated.
+        var keyless = new[] { "disabled", "mock", "pollinations" };
+        if (!keyless.Contains(provider))
+        {
+            if (cred is null || string.IsNullOrWhiteSpace(cred.ApiKey))
+                throw new AppValidationException($"Add an API key for '{provider}' first, then enable it.");
+            if (provider == "openai-compatible" && string.IsNullOrWhiteSpace(cred.BaseUrl))
+                throw new AppValidationException("OpenAI-compatible needs a Base URL (e.g. Groq: https://api.groq.com/openai/v1). Add it with the key.");
+        }
+
         SetActiveProvider(settings, category, provider);
         if (cred is not null) ApplyToSettings(settings, category, cred);
         else ClearActiveSecrets(settings, category);

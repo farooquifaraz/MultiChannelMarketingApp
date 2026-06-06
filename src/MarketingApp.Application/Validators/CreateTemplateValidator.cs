@@ -10,8 +10,8 @@ public class CreateTemplateValidator : AbstractValidator<CreateTemplateDto>
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Channel)
             .NotEmpty()
-            .Must(c => new[] { "email", "whatsapp", "sms" }.Contains(c.ToLowerInvariant()))
-            .WithMessage("Channel must be: email, whatsapp, or sms");
+            .Must(c => new[] { "email", "whatsapp", "sms", "instagram", "facebook" }.Contains(c.ToLowerInvariant()))
+            .WithMessage("Channel must be: email, whatsapp, sms, instagram, or facebook");
         RuleFor(x => x.Subject).MaximumLength(200);
         RuleFor(x => x.Body).NotEmpty();
         RuleFor(x => x.Subject)

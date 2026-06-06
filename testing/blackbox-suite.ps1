@@ -508,6 +508,25 @@ TestCase 'F' 'F4' 'DELETE /templates/:id removes' {
     return $true
 }
 
+# P3.8 — social channels are now valid template channels (Creative Studio saves IG/FB copy)
+TestCase 'F' 'F5' 'POST /templates create instagram template (P3.8)' {
+    $r = Call-Api -Method POST -Path '/templates' -Token $global:userToken -Body @{
+        name = "BB IG $Stamp"; channel = 'instagram'; body = 'Caption #dubai #realestate'
+    }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    Call-Api -Method DELETE -Path "/templates/$($r.Data.data.id)" -Token $global:userToken -ExpectStatus @(200,204) | Out-Null
+    return $true
+}
+
+TestCase 'F' 'F6' 'POST /templates create facebook template (P3.8)' {
+    $r = Call-Api -Method POST -Path '/templates' -Token $global:userToken -Body @{
+        name = "BB FB $Stamp"; channel = 'facebook'; body = 'Facebook post body with a CTA'
+    }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    Call-Api -Method DELETE -Path "/templates/$($r.Data.data.id)" -Token $global:userToken -ExpectStatus @(200,204) | Out-Null
+    return $true
+}
+
 # ===== SECTION G -- Campaigns =====
 Section "G. Campaigns"
 

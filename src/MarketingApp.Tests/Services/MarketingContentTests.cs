@@ -60,4 +60,43 @@ public class MarketingContentTests
         dto.Instagram.Caption.Should().BeEmpty();
         dto.Email.Subject.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Parses_facebook_section()
+    {
+        var json = "{\"facebook\":{\"post\":\"🏡 Luxury villa\",\"headline\":\"5BR Oasis Villa\",\"cta\":\"Book a viewing\"}}";
+        var dto = MarketingContentService.ParseContent(json);
+        dto.Facebook.Post.Should().Contain("Luxury villa");
+        dto.Facebook.Headline.Should().Be("5BR Oasis Villa");
+        dto.Facebook.Cta.Should().Be("Book a viewing");
+    }
+
+    [Theory]
+    [InlineData(null, null, 4)]               // nothing → all 4
+    [InlineData(new[] { "all" }, null, 4)]    // explicit all → all 4
+    [InlineData(new[] { "facebook", "whatsapp" }, null, 2)]
+    [InlineData(new[] { "instagram", "bogus" }, null, 1)] // unknown ignored
+    public void NormalizeChannels_resolves_requested_set(string[]? channels, string? legacy, int expected)
+    {
+        var list = channels?.ToList();
+        MarketingContentService.NormalizeChannels(list, legacy).Count.Should().Be(expected);
+    }
+
+    [Fact]
+    public void NormalizeChannels_keeps_canonical_order()
+    {
+        var r = MarketingContentService.NormalizeChannels(new() { "email", "whatsapp" }, null);
+        r.Should().ContainInOrder("whatsapp", "email"); // canonical order, not input order
+    }
+
+    [Fact]
+    public void BuildSystemPrompt_includes_only_requested_channels_plus_image()
+    {
+        var prompt = MarketingContentService.BuildSystemPrompt(new[] { "facebook" });
+        prompt.Should().Contain("\"facebook\"");
+        prompt.Should().Contain("\"image_prompt\"");
+        prompt.Should().NotContain("\"whatsapp\"");
+        prompt.Should().NotContain("\"instagram\"");
+        prompt.Should().NotContain("\"email\"");
+    }
 }

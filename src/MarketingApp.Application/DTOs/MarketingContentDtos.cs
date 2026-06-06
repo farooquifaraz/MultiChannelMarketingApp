@@ -6,6 +6,12 @@ public class GenerateContentDto
     public string Brief { get; set; } = string.Empty;
     /// <summary>Optional channel focus: "all" (default) | "whatsapp" | "instagram" | "email".</summary>
     public string? Channel { get; set; }
+    /// <summary>
+    /// Optional list of channels to generate (subset of: whatsapp, instagram, facebook, email).
+    /// When null/empty, all channels are produced. Lets the Creative Studio generate only what the
+    /// user toggled on (cheaper + faster), and request a single "lead" channel per shared group.
+    /// </summary>
+    public List<string>? Channels { get; set; }
 }
 
 public class WhatsAppContentDto
@@ -21,6 +27,13 @@ public class InstagramContentDto
     public string StoryCta { get; set; } = string.Empty;
 }
 
+public class FacebookContentDto
+{
+    public string Post { get; set; } = string.Empty;
+    public string Headline { get; set; } = string.Empty;
+    public string Cta { get; set; } = string.Empty;
+}
+
 public class EmailContentDto
 {
     public string Subject { get; set; } = string.Empty;
@@ -33,6 +46,7 @@ public class MarketingContentDto
 {
     public WhatsAppContentDto WhatsApp { get; set; } = new();
     public InstagramContentDto Instagram { get; set; } = new();
+    public FacebookContentDto Facebook { get; set; } = new();
     public EmailContentDto Email { get; set; } = new();
     /// <summary>An image prompt the user can paste into the Banner Studio.</summary>
     public string ImagePrompt { get; set; } = string.Empty;

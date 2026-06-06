@@ -110,7 +110,7 @@ export default function TemplatesPage() {
   };
 
   const list = templates?.data || [];
-  const ChannelIcons: Record<string, any> = { email: Mail, whatsapp: MessageCircle, sms: Smartphone };
+  const ChannelIcons: Record<string, any> = { email: Mail, whatsapp: MessageCircle, sms: Smartphone, instagram: MessageCircle, facebook: MessageCircle };
 
   return (
     <div className="space-y-6">
@@ -127,7 +127,7 @@ export default function TemplatesPage() {
 
       {/* Channel Filter */}
       <div className="flex gap-2">
-        {['', 'email', 'whatsapp', 'sms'].map((ch) => (
+        {['', 'email', 'whatsapp', 'sms', 'instagram', 'facebook'].map((ch) => (
           <button key={ch} onClick={() => setChannelFilter(ch)} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${channelFilter === ch ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             {ch || 'All'}
           </button>
@@ -150,6 +150,8 @@ export default function TemplatesPage() {
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                   <option value="sms">SMS</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
                 </select>
               </div>
             </div>

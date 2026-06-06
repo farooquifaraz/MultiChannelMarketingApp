@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Creative Studio — Mockup v2</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --card:#fff;
+    --indigo:#6366f1; --purple:#a855f7; --green:#22c55e; --pink:#ec4899; --blue:#3b82f6; --amber:#f59e0b;
+    /* dummy generated hero image (used only after "Generate this image") */
+    --dummy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fdba74'/%3E%3Cstop offset='0.6' stop-color='%23f59e0b'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23s)'/%3E%3Ccircle cx='322' cy='66' r='32' fill='%23fff7ed'/%3E%3Crect y='208' width='400' height='92' fill='%231e293b'/%3E%3Crect x='70' y='130' width='182' height='92' fill='%23f8fafc'/%3E%3Cpolygon points='64,130 161,86 258,130' fill='%23e2e8f0'/%3E%3Crect x='100' y='158' width='30' height='38' fill='%2360a5fa'/%3E%3Crect x='150' y='158' width='30' height='38' fill='%2360a5fa'/%3E%3Crect x='198' y='172' width='26' height='50' fill='%23334155'/%3E%3Cellipse cx='306' cy='252' rx='74' ry='22' fill='%2338bdf8'/%3E%3C/svg%3E");
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:'Segoe UI',Inter,system-ui,sans-serif;color:var(--ink);
+    background:linear-gradient(135deg,#eef2ff,#faf5ff 45%,#fdf2f8);min-height:100vh;padding:30px 16px 90px}
+  .wrap{max-width:1140px;margin:0 auto}
+  .hero{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+  .hero .logo{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--indigo),var(--purple));box-shadow:0 10px 30px -8px rgba(99,102,241,.6);font-size:26px}
+  .hero h1{margin:0;font-size:30px;letter-spacing:-.5px;background:linear-gradient(90deg,#4f46e5,#a855f7,#ec4899);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{margin:2px 0 0;color:var(--muted);font-size:14px}
+  .badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    padding:6px 12px;border-radius:999px;color:#fff;background:linear-gradient(90deg,#6366f1,#a855f7)}
+  .steps{display:flex;gap:10px;margin:22px 0 26px}
+  .step{flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:#fff;
+    border:1px solid var(--line);box-shadow:0 6px 18px -12px rgba(2,6,23,.25);cursor:pointer;transition:.2s}
+  .step.active{border-color:transparent;background:linear-gradient(135deg,#eef2ff,#faf5ff);box-shadow:0 14px 30px -16px rgba(99,102,241,.7)}
+  .step .n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,#94a3b8,#cbd5e1)}
+  .step.active .n{background:linear-gradient(135deg,var(--indigo),var(--purple))}
+  .step b{font-size:14px} .step span{display:block;font-size:11.5px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 20px 50px -28px rgba(2,6,23,.35);margin-bottom:22px}
+  .card h2{margin:0 0 4px;font-size:18px} .card .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+  textarea{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:14px;font:inherit;resize:vertical;min-height:90px;outline:none}
+  textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+  /* channel toggle */
+  .chan-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:14px 0 6px}
+  @media(max-width:760px){.chan-grid{grid-template-columns:repeat(2,1fr)}}
+  .chan{position:relative;border-radius:18px;padding:16px;border:2px solid var(--line);background:#fff;cursor:pointer;transition:.18s}
+  .chan .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#fff;border:1px solid var(--line);margin-bottom:10px}
+  .chan .logo img{width:26px;height:26px}
+  .chan b{font-size:15px} .chan small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+  .chan .sw{position:absolute;top:14px;right:14px;width:42px;height:24px;border-radius:999px;background:#cbd5e1;transition:.18s}
+  .chan .sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .chan.on{border-color:transparent;box-shadow:0 16px 34px -20px rgba(2,6,23,.5);transform:translateY(-2px)}
+  .chan.on .sw{background:linear-gradient(90deg,#22c55e,#16a34a)} .chan.on .sw::after{left:21px}
+  .chan.wa.on{background:linear-gradient(160deg,#ecfdf5,#d1fae5)}
+  .chan.ig.on{background:linear-gradient(160deg,#fdf2f8,#fae8ff)}
+  .chan.fb.on{background:linear-gradient(160deg,#eff6ff,#dbeafe)}
+  .chan.em.on{background:linear-gradient(160deg,#eef2ff,#e0e7ff)}
+  /* combination builder */
+  .combo{margin-top:16px;border:1px dashed #c7d2fe;border-radius:16px;padding:16px;background:linear-gradient(90deg,#eef2ff,#faf5ff)}
+  .combo h3{margin:0 0 2px;font-size:14px} .combo .sub2{font-size:12px;color:var(--muted);margin:0 0 12px}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .preset{font-size:12px;font-weight:600;padding:7px 12px;border-radius:999px;border:1px solid #c7d2fe;background:#fff;color:#4f46e5;cursor:pointer;transition:.15s}
+  .preset:hover{background:#eef2ff}
+  .grp-chips{display:flex;flex-wrap:wrap;gap:10px}
+  .gchip{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px}
+  .gchip img{width:20px;height:20px}
+  .gchip .glabel{font-size:13px;font-weight:600}
+  .gbadge{font-size:11px;font-weight:800;color:#fff;border-radius:8px;padding:3px 9px;cursor:pointer;user-select:none}
+  .gA{background:linear-gradient(135deg,#6366f1,#4338ca)} .gB{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .gC{background:linear-gradient(135deg,#ec4899,#a855f7)} .gD{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .summary{margin-top:14px;font-size:13px;color:#334155}
+  .summary .tag{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin:3px 4px 0 0;font-weight:600}
+  .summary .tag.shared{border-color:#22c55e;color:#15803d;background:#f0fdf4}
+  /* buttons */
+  .btn{border:none;border-radius:13px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  .btn-primary{color:#fff;background:linear-gradient(135deg,var(--indigo),var(--purple));box-shadow:0 12px 26px -12px rgba(99,102,241,.8)}
+  .btn-primary:hover{filter:brightness(1.05)} .btn-ghost{background:#f1f5f9;color:#334155}
+  .btn-green{color:#fff;background:linear-gradient(135deg,#22c55e,#16a34a)} .btn-sm{padding:8px 12px;font-size:12.5px;border-radius:10px}
+  .hint{font-size:12px;color:var(--muted)}
+  /* result cards */
+  .res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px} @media(max-width:820px){.res-grid{grid-template-columns:1fr}}
+  .res{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+  .res .head{padding:11px 14px;color:#fff;display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
+  .res .head img{width:18px;height:18px;filter:brightness(0) invert(1)}
+  .res.wa .head{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .res.ig .head{background:linear-gradient(135deg,#ec4899,#a855f7)}
+  .res.fb .head{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+  .res.em .head{background:linear-gradient(135deg,#6366f1,#4338ca)}
+  .res .head .tabs{margin-left:auto;display:flex;background:rgba(255,255,255,.2);border-radius:9px;padding:2px}
+  .res .head .tabs button{border:none;background:transparent;color:#fff;font:inherit;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;opacity:.8}
+  .res .head .tabs button.on{background:#fff;color:#0f172a;opacity:1}
+  .res .body{padding:14px;font-size:13px;color:#334155;white-space:pre-wrap;line-height:1.5;flex:1;max-height:340px;overflow:auto}
+  .res .foot{padding:10px 14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vers{display:flex;gap:6px;margin-right:auto}
+  .vchip{font-size:11px;padding:4px 9px;border-radius:999px;background:#f1f5f9;color:#475569;cursor:pointer;border:1px solid transparent}
+  .vchip.cur{background:linear-gradient(90deg,#eef2ff,#faf5ff);border-color:#c7d2fe;color:#4f46e5;font-weight:700}
+  .res.locked{box-shadow:0 0 0 2px #22c55e inset}
+  .lockpill{font-size:11px;background:rgba(255,255,255,.22);padding:3px 9px;border-radius:999px}
+  /* ===== platform previews ===== */
+  .prev{padding:16px;background:#f8fafc;display:flex;justify-content:center}
+  /* Image block: placeholder until generated, then the real (dummy) image */
+  .heroimg{position:relative;background:#eef2f7}
+  .heroimg::after{content:'🖼️ No image yet — click “Generate this image”';position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:8px;
+    color:#94a3b8;font-size:11px;font-weight:600;border:1px dashed #cbd5e1;border-radius:inherit}
+  body.imgready .heroimg{background:#0b0b0b var(--dummy) center/cover no-repeat}
+  body.imgready .heroimg::after{content:''}
+  .imgp .thumb::after{content:'📷 No image yet';font-size:10px;border-radius:12px}
+  /* WhatsApp chat */
+  .wa-phone{width:300px;background:#0b141a;border-radius:22px;padding:10px;box-shadow:0 20px 50px -20px rgba(0,0,0,.5)}
+  .wa-bar{display:flex;align-items:center;gap:8px;color:#e9edef;font-size:13px;padding:4px 6px 8px}
+  .wa-bar .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .wa-screen{background:#0b141a url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\"><circle cx=\"4\" cy=\"4\" r=\"1\" fill=\"%231f2c33\"/></svg>');border-radius:12px;padding:10px}
+  .wa-bub{background:#005c4b;color:#e9edef;border-radius:10px;border-top-right-radius:3px;padding:6px;max-width:240px;margin-left:auto;font-size:12.5px;line-height:1.45}
+  .wa-bub .heroimg{height:150px;border-radius:7px;margin-bottom:6px}
+  .wa-bub .tick{display:block;text-align:right;font-size:10px;color:#8696a0;margin-top:3px}
+  /* Instagram post */
+  .ig-card{width:320px;background:#fff;border:1px solid #dbdbdb;border-radius:14px;overflow:hidden}
+  .ig-top{display:flex;align-items:center;gap:8px;padding:10px}
+  .ig-top .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ec4899,#a855f7)}
+  .ig-top b{font-size:13px} .ig-top .more{margin-left:auto;color:#888}
+  .ig-card .heroimg{height:300px}
+  .ig-acts{display:flex;gap:14px;padding:9px 12px;font-size:18px}
+  .ig-cap{padding:0 12px 12px;font-size:12.5px;line-height:1.5}
+  .ig-cap b{font-weight:700} .ig-tags{color:#1d4ed8}
+  /* Facebook post */
+  .fb-card{width:330px;background:#fff;border:1px solid #dadde1;border-radius:12px;overflow:hidden}
+  .fb-top{display:flex;align-items:center;gap:9px;padding:11px}
+  .fb-top .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+  .fb-top b{font-size:13px;display:block} .fb-top small{font-size:11px;color:#65676b}
+  .fb-text{padding:0 12px 10px;font-size:13px;line-height:1.45}
+  .fb-card .heroimg{height:230px}
+  .fb-react{display:flex;gap:18px;padding:9px 14px;color:#65676b;font-size:13px;border-top:1px solid #eee;margin-top:2px}
+  /* Email preview */
+  .em-card{width:340px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .em-top{padding:11px 14px;border-bottom:1px solid #eee}
+  .em-top .subj{font-weight:700;font-size:13.5px} .em-top .from{font-size:11.5px;color:#65676b;margin-top:2px}
+  .em-card .heroimg{height:130px} .em-body{padding:12px 14px;font-size:12.5px;line-height:1.5;color:#334155}
+  /* image prompt */
+  .imgp{margin-top:16px;border:1px solid #c7d2fe;border-radius:18px;padding:16px;background:linear-gradient(135deg,#eef2ff,#faf5ff);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .imgp .thumb{width:120px;height:120px;border-radius:12px;flex:none}
+  .imgp b{font-size:13px;color:#4338ca} .imgp p{margin:6px 0 10px;font-size:12.5px;color:#334155}
+  /* save & launch */
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#475569;margin-top:6px}
+  .flow .pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:600} .flow .arr{color:#a855f7;font-weight:800}
+  .launch{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px} @media(max-width:760px){.launch{grid-template-columns:1fr}}
+  .lcard{border-radius:18px;padding:18px;color:#fff;min-height:130px;display:flex;flex-direction:column;gap:6px}
+  .lcard.tpl{background:linear-gradient(135deg,#6366f1,#a855f7)} .lcard.em{background:linear-gradient(135deg,#4f46e5,#3b82f6)} .lcard.wa{background:linear-gradient(135deg,#16a34a,#22c55e)}
+  .lcard h3{margin:0;font-size:16px} .lcard small{opacity:.9;font-size:12px;flex:1} .lcard .go{align-self:flex-start;background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;padding:8px 14px;border-radius:10px;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="logo">✨</div>
+    <div><h1>Creative Studio</h1><p>Brief → channels &amp; combinations → AI copy → live previews → lock → templates → campaign</p></div>
+    <span class="badge">Mockup v2</span>
+  </div>
+
+  <div class="steps">
+    <div class="step active" onclick="go(1)"><div class="n">1</div><div><b>Brief &amp; Channels</b><span>Pick + combine</span></div></div>
+    <div class="step" onclick="go(2)"><div class="n">2</div><div><b>Generate, Preview &amp; Lock</b><span>See it like the real app</span></div></div>
+    <div class="step" onclick="go(3)"><div class="n">3</div><div><b>Save &amp; Launch</b><span>Templates → campaign</span></div></div>
+  </div>
+
+  <!-- ===== STEP 1 ===== -->
+  <section id="s1">
+    <div class="card">
+      <h2>1 · Brief + choose channels</h2>
+      <p class="sub">One brief powers every channel. Toggle only what you need — AI writes (and bills) just those.</p>
+      <textarea>5BR Villa at The Oasis by Emaar, Dubailand. AED 16,500,000. 8,500 sqft. Private pool, rooftop terrace, smart home, Italian marble. 5 min to Global Village. Handover Q4 2026. Agent: Ahmed, +971 50 123 4567.</textarea>
+
+      <div class="chan-grid">
+        <div class="chan wa on" onclick="tog(this)"><div class="sw"></div><div class="logo"><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp"></div><b>WhatsApp</b><small>Broadcast + status</small></div>
+        <div class="chan ig on" onclick="tog(this)"><div class="sw"></div><div class="logo"><img src="https://cdn.simpleicons.org/instagram/E4405F" alt="Instagram"></div><b>Instagram</b><small>Caption + hashtags</small></div>
+        <div class="chan fb on" onclick="tog(this)"><div class="sw"></div><div class="logo"><img src="https://cdn.simpleicons.org/facebook/1877F2" alt="Facebook"></div><b>Facebook</b><small>Post + headline <em>(new)</em></small></div>
+        <div class="chan em on" onclick="tog(this)"><div class="sw"></div><div class="logo"><img src="https://cdn.simpleicons.org/gmail/EA4335" alt="Email"></div><b>Email</b><small>Subject + HTML body</small></div>
+      </div>
+
+      <!-- combination builder -->
+      <div class="combo">
+        <h3>🔗 Combine channels — which ones share the SAME copy?</h3>
+        <p class="sub2">Tap a colour badge to move a channel into a group. Channels with the same colour get <b>one shared post</b>. Different colours = tailored copy each.</p>
+        <div class="presets">
+          <span class="preset" onclick="preset('sep')">All separate</span>
+          <span class="preset" onclick="preset('igfb')">Instagram + Facebook</span>
+          <span class="preset" onclick="preset('fbwa')">Facebook + WhatsApp</span>
+          <span class="preset" onclick="preset('social')">All social together</span>
+        </div>
+        <div class="grp-chips" id="grpChips">
+          <div class="gchip" data-ch="wa"><img src="https://cdn.simpleicons.org/whatsapp/25D366"><span class="glabel">WhatsApp</span><span class="gbadge gA" onclick="cycle('wa')">A</span></div>
+          <div class="gchip" data-ch="ig"><img src="https://cdn.simpleicons.org/instagram/E4405F"><span class="glabel">Instagram</span><span class="gbadge gB" onclick="cycle('ig')">B</span></div>
+          <div class="gchip" data-ch="fb"><img src="https://cdn.simpleicons.org/facebook/1877F2"><span class="glabel">Facebook</span><span class="gbadge gB" onclick="cycle('fb')">B</span></div>
+          <div class="gchip" data-ch="em"><img src="https://cdn.simpleicons.org/gmail/EA4335"><span class="glabel">Email</span><span class="gbadge gD" onclick="cycle('em')">D</span></div>
+        </div>
+        <div class="summary" id="summary"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-top:18px">
+        <button class="btn btn-primary" onclick="go(2)">✨ Generate selected content</button>
+        <span class="hint">Default engine: <b>Groq (free)</b> · change in Settings → Integrations</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 2 ===== -->
+  <section id="s2" class="hide">
+    <div class="card">
+      <h2>2 · Generate, preview &amp; lock</h2>
+      <p class="sub">Toggle <b>Copy / Preview</b> on any card — Preview shows exactly how it lands on each platform (with the generated image). <b>Lock</b> when happy; Regenerate keeps old versions (v1/v2…) so you can switch back.</p>
+
+      <div class="res-grid">
+        <!-- WhatsApp -->
+        <div class="res wa locked" data-view="copy">
+          <div class="head"><img src="https://cdn.simpleicons.org/whatsapp"> WhatsApp <span class="lockpill">🔒 Locked</span>
+            <div class="tabs"><button class="on" onclick="view(this,'copy')">Copy</button><button onclick="view(this,'prev')">Preview</button></div></div>
+          <div class="body view-copy">*Luxury 5BR Villa — The Oasis by Emaar* 🌅
+
+Waterfront living in Dubailand. Private pool, rooftop terrace &amp; Italian marble throughout.
+
+💰 AED 16,500,000 · 8,500 sqft
+🏡 5 Ensuite Bedrooms
+🏊 Private Pool + Rooftop Terrace
+🤖 Full Smart Home
+
+⚡ Rare resale — won't last!
+📞 Ahmed +971 50 123 4567</div>
+          <div class="prev view-prev hide">
+            <div class="wa-phone"><div class="wa-bar"><div class="av"></div>Luxe Properties</div>
+              <div class="wa-screen"><div class="wa-bub"><div class="heroimg"></div>*Luxury 5BR Villa — The Oasis by Emaar* 🌅 Private pool, rooftop terrace &amp; Italian marble. 💰 AED 16.5M 📞 Ahmed +971 50 123 4567<span class="tick">11:24 ✓✓</span></div></div></div>
+          </div>
+          <div class="foot"><div class="vers"><span class="vchip">v1</span><span class="vchip cur">v2 ✓</span></div>
+            <button class="btn btn-ghost btn-sm" onclick="lock(this,false)">Unlock</button><button class="btn btn-ghost btn-sm">✏️ Edit</button></div>
+        </div>
+
+        <!-- Instagram -->
+        <div class="res ig" data-view="copy">
+          <div class="head"><img src="https://cdn.simpleicons.org/instagram"> Instagram <span class="lockpill">shared B</span>
+            <div class="tabs"><button class="on" onclick="view(this,'copy')">Copy</button><button onclick="view(this,'prev')">Preview</button></div></div>
+          <div class="body view-copy">Step into refined luxury at The Oasis by Emaar 🌟 5BR · private pool · rooftop terrace · smart home · Italian marble.
+
+📍 Dubailand · 5 min to Global Village
+💰 AED 16.5M · Handover Q4 2026
+
+#LuxuryVilla #DubaiRealEstate #Emaar #TheOasis #Palmiera</div>
+          <div class="prev view-prev hide">
+            <div class="ig-card"><div class="ig-top"><div class="av"></div><b>luxe.properties</b><span class="more">•••</span></div>
+              <div class="heroimg"></div>
+              <div class="ig-acts">❤️ 💬 ✈️ <span style="margin-left:auto">🔖</span></div>
+              <div class="ig-cap"><b>luxe.properties</b> Step into refined luxury at The Oasis by Emaar 🌟 5BR · private pool · rooftop terrace. <span class="ig-tags">#LuxuryVilla #DubaiRealEstate #Emaar</span></div></div>
+          </div>
+          <div class="foot"><div class="vers"><span class="vchip">v1</span><span class="vchip cur">v2 ✓</span><span class="vchip">v3</span></div>
+            <button class="btn btn-green btn-sm" onclick="lock(this,true)">🔒 Lock &amp; keep</button><button class="btn btn-ghost btn-sm">🔄 Regenerate</button></div>
+        </div>
+
+        <!-- Facebook -->
+        <div class="res fb" data-view="copy">
+          <div class="head"><img src="https://cdn.simpleicons.org/facebook"> Facebook <span class="lockpill">shared B</span>
+            <div class="tabs"><button class="on" onclick="view(this,'copy')">Copy</button><button onclick="view(this,'prev')">Preview</button></div></div>
+          <div class="body view-copy">🏡 Luxury 5BR Villa — The Oasis by Emaar, Dubailand
+
+Refined waterfront living: private pool, rooftop terrace, full smart home &amp; Italian marble. AED 16.5M · 8,500 sqft · Handover Q4 2026.
+
+📞 Book a private viewing — Ahmed, +971 50 123 4567</div>
+          <div class="prev view-prev hide">
+            <div class="fb-card"><div class="fb-top"><div class="av"></div><div><b>Luxe Properties</b><small>Sponsored · 🌐</small></div></div>
+              <div class="fb-text">🏡 Luxury 5BR Villa — The Oasis by Emaar. Private pool, rooftop terrace &amp; smart home. AED 16.5M · Handover Q4 2026.</div>
+              <div class="heroimg"></div>
+              <div class="fb-react">👍❤️ 128 &nbsp;·&nbsp; 14 comments &nbsp;·&nbsp; 9 shares</div></div>
+          </div>
+          <div class="foot"><div class="vers"><span class="vchip cur">v1 ✓</span></div>
+            <button class="btn btn-green btn-sm" onclick="lock(this,true)">🔒 Lock &amp; keep</button><button class="btn btn-ghost btn-sm">🔄 Regenerate</button></div>
+        </div>
+
+        <!-- Email -->
+        <div class="res em" data-view="copy">
+          <div class="head"><img src="https://cdn.simpleicons.org/gmail"> Email <span class="lockpill">unlocked</span>
+            <div class="tabs"><button class="on" onclick="view(this,'copy')">Copy</button><button onclick="view(this,'prev')">Preview</button></div></div>
+          <div class="body view-copy"><b>Subject:</b> Your private viewing — 5BR Oasis villa (Q4 handover)
+
+Step into refined waterfront luxury at Palmiera, The Oasis by Emaar. This 5-bedroom villa pairs an expansive layout with a private pool, rooftop terrace and full smart-home automation…</div>
+          <div class="prev view-prev hide">
+            <div class="em-card"><div class="em-top"><div class="subj">Your private viewing — 5BR Oasis villa (Q4 handover)</div><div class="from">Luxe Properties &lt;ahmed@luxe.ae&gt; · to you</div></div>
+              <div class="heroimg"></div>
+              <div class="em-body">Step into refined waterfront luxury at Palmiera, The Oasis by Emaar. A 5-bedroom villa with private pool, rooftop terrace &amp; full smart-home automation. <b>AED 16,500,000.</b><br><br>📞 Book a viewing — Ahmed, +971 50 123 4567</div></div>
+          </div>
+          <div class="foot"><div class="vers"><span class="vchip cur">v1 ✓</span></div>
+            <button class="btn btn-green btn-sm" onclick="lock(this,true)">🔒 Lock &amp; keep</button><button class="btn btn-ghost btn-sm">🔄 Regenerate</button><button class="btn btn-ghost btn-sm">✏️ Edit</button></div>
+        </div>
+      </div>
+
+      <div class="imgp">
+        <div class="heroimg thumb"></div>
+        <div style="flex:1;min-width:240px">
+          <b>🖼️ Matching hero-image prompt</b>
+          <p>A luxurious 5BR villa at The Oasis by Emaar, private pool, rooftop terrace, Italian marble, warm golden-hour glow, full-frame DSLR 24mm f/8, photorealistic, 8k… No text, no watermark, no people.</p>
+          <button class="btn btn-primary btn-sm" onclick="genImage(this)">🎨 Generate this image →</button>
+          <span class="hint" style="margin-left:8px">Before generating, Previews show the copy <b>without</b> an image; after, the real image fills every Preview.</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:18px"><button class="btn btn-ghost" onclick="go(1)">← Back</button><button class="btn btn-primary" onclick="go(3)">Continue to Save &amp; Launch →</button></div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 3 ===== -->
+  <section id="s3" class="hide">
+    <div class="card">
+      <h2>3 · Save &amp; launch</h2>
+      <p class="sub">Each locked channel is saved as its own template. Email &amp; WhatsApp go straight into a campaign draft → delivery.</p>
+      <div class="flow"><span class="pill">Locked content</span><span class="arr">→</span><span class="pill">Channel template</span><span class="arr">→</span><span class="pill">Campaign draft</span><span class="arr">→</span><span class="pill">Contact group</span><span class="arr">→</span><span class="pill">Send / schedule</span></div>
+      <div class="launch">
+        <div class="lcard tpl"><h3>💾 Save to Templates</h3><small>Locked channels → Email, WhatsApp, Instagram &amp; Facebook templates (auto-tagged by channel + shared groups kept together).</small><button class="go">Save all locked</button></div>
+        <div class="lcard em"><h3>✉️ Email campaign</h3><small>Draft from the Email template → choose group → send or schedule.</small><button class="go">Create draft →</button></div>
+        <div class="lcard wa"><h3>💬 WhatsApp campaign</h3><small>Draft from the WhatsApp template → choose group → send or schedule.</small><button class="go">Create draft →</button></div>
+      </div>
+      <p class="note">📸👍 <b>Instagram &amp; Facebook</b> are saved as templates now (with their preview). One-click <b>auto-posting</b> to IG/FB via Meta login arrives in the Social phase; until then, copy + image are ready to publish.</p>
+      <div style="display:flex;gap:12px;margin-top:16px"><button class="btn btn-ghost" onclick="go(2)">← Back</button><button class="btn btn-green">✅ Done</button></div>
+    </div>
+  </section>
+
+  <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:28px">MarketPro · Creative Studio v2 · click steps, toggles, group badges, Copy/Preview tabs &amp; Lock buttons</p>
+</div>
+
+<script>
+  var groups={wa:'A',ig:'B',fb:'B',em:'D'}; var order=['A','B','C','D'];
+  var names={wa:'WhatsApp',ig:'Instagram',fb:'Facebook',em:'Email'};
+  function go(n){for(var i=1;i<=3;i++)document.getElementById('s'+i).classList.toggle('hide',i!==n);
+    document.querySelectorAll('.step').forEach(function(s,i){s.classList.toggle('active',i===n-1)});window.scrollTo({top:0,behavior:'smooth'});}
+  function tog(el){el.classList.toggle('on');}
+  function cycle(ch){var i=order.indexOf(groups[ch]);groups[ch]=order[(i+1)%order.length];render();}
+  function preset(p){groups={wa:'A',ig:'B',fb:'C',em:'D'};
+    if(p==='sep'){groups={wa:'A',ig:'B',fb:'C',em:'D'};}
+    if(p==='igfb'){groups={wa:'A',ig:'B',fb:'B',em:'D'};}
+    if(p==='fbwa'){groups={wa:'A',ig:'B',fb:'A',em:'D'};}
+    if(p==='social'){groups={wa:'A',ig:'A',fb:'A',em:'D'};}
+    render();}
+  function render(){
+    for(var ch in groups){var b=document.querySelector('.gchip[data-ch="'+ch+'"] .gbadge');b.textContent=groups[ch];b.className='gbadge g'+groups[ch];}
+    var byG={};for(var c in groups){(byG[groups[c]]=byG[groups[c]]||[]).push(c);}
+    var html='<b>Will generate '+Object.keys(byG).length+' piece(s):</b> ';
+    for(var g in byG){var list=byG[g].map(function(x){return names[x]}).join(' + ');var shared=byG[g].length>1;
+      html+='<span class="tag'+(shared?' shared':'')+'">'+(shared?'🔗 ':'')+list+(shared?' — 1 shared copy':'')+'</span>';}
+    document.getElementById('summary').innerHTML=html;}
+  function lock(btn,doLock){var res=btn.closest('.res');res.classList.toggle('locked',doLock);var pill=res.querySelector('.lockpill');
+    if(doLock){pill.textContent='🔒 Locked';btn.textContent='Unlock';btn.className='btn btn-ghost btn-sm';btn.setAttribute('onclick','lock(this,false)');}
+    else{pill.textContent='unlocked';btn.textContent='🔒 Lock & keep';btn.className='btn btn-green btn-sm';btn.setAttribute('onclick','lock(this,true)');}}
+  function genImage(btn){var on=document.body.classList.toggle('imgready');
+    btn.textContent=on?'✓ Image generated (click to clear)':'🎨 Generate this image →';
+    btn.className='btn btn-sm '+(on?'btn-green':'btn-primary');}
+  function view(btn,v){var res=btn.closest('.res');res.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('on')});btn.classList.add('on');
+    res.querySelector('.view-copy').classList.toggle('hide',v!=='copy');res.querySelector('.view-prev').classList.toggle('hide',v!=='prev');}
+  render();
+</script>
+</body>
+</html>

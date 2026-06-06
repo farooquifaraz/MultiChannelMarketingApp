@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2, Eye, Mail, MessageCircle, Smartphone, Globe2, User as UserIcon, Download } from 'lucide-react';
 import { campaignApi } from '../../api/campaignApi';
@@ -28,6 +28,19 @@ export default function CampaignsPage() {
   const [formChannel, setFormChannel] = useState('email');
   const [formTemplateId, setFormTemplateId] = useState('');
   const [formGroupId, setFormGroupId] = useState('');
+
+  // Prefill + open the create form when arriving from Creative Studio ("Create campaign" handoff).
+  const location = useLocation();
+  useEffect(() => {
+    const s: any = location.state;
+    if (s && s.templateId) {
+      setFormChannel(s.channel || 'email');
+      setFormTemplateId(s.templateId);
+      if (s.name) setFormName(s.name);
+      setShowCreate(true);
+      window.history.replaceState({}, ''); // clear state so a refresh doesn't re-open
+    }
+  }, [location.state]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['campaigns', page, statusFilter, channelFilter, viewAll],

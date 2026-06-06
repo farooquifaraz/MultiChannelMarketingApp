@@ -33,12 +33,15 @@ export const creativesApi = {
     axiosInstance.post('/creatives/generate', { prompt, size, brandKitId: brandKitId || null }),
   assets: (take = 50) => axiosInstance.get('/creatives/assets', { params: { take } }),
   deleteAsset: (id: string) => axiosInstance.delete(`/creatives/assets/${id}`),
-  content: (brief: string) => axiosInstance.post('/creatives/content', { brief }),
+  // channels: subset of whatsapp/instagram/facebook/email; omit/empty = all.
+  content: (brief: string, channels?: string[]) =>
+    axiosInstance.post('/creatives/content', { brief, channels: channels && channels.length ? channels : null }),
 };
 
 export interface MarketingContent {
   whatsApp: { broadcast: string; statusText: string };
   instagram: { caption: string; reelsHook: string; storyCta: string };
+  facebook: { post: string; headline: string; cta: string };
   email: { subject: string; preview: string; body: string };
   imagePrompt: string;
   provider: string;

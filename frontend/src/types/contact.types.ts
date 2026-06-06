@@ -47,6 +47,9 @@ export interface CreateTemplateDto {
   channel: string;
   subject?: string;
   body: string;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+  mediaFileName?: string | null;
 }
 
 export interface AuthResponseDto {

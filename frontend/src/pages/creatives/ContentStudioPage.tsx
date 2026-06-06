@@ -32,8 +32,14 @@ export default function ContentStudioPage() {
         <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">AI Copywriter</h1>
-          <p className="text-gray-500 text-sm">Paste a property/offer brief → get ready-to-send WhatsApp, Instagram &amp; Email copy.</p>
+          <p className="text-gray-500 text-sm">Turn one brief into ready-to-send marketing copy for every channel.</p>
         </div>
+      </div>
+
+      <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-sm text-indigo-900">
+        <b>What it does:</b> describe your property/offer once → AI writes a <b>WhatsApp broadcast</b>,
+        <b> Instagram caption</b> and <b>Email</b> in seconds, plus a matching <b>image prompt</b> you can
+        send straight to the <b>Banner Studio</b>. Uses your active AI provider (Integrations).
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">

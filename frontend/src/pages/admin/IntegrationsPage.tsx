@@ -66,10 +66,26 @@ const BRAND: Record<string, { bg: string; fg: string; mark: string }> = {
   disabled: { bg: '#e5e7eb', fg: '#9ca3af', mark: '∅' },
 };
 
-function Logo({ provider, size = 40 }: { provider: string; size?: number }) {
+/** Official brand SVGs via the simple-icons CDN (monochrome brand-colour). Monogram fallback. */
+const ICON_SLUG: Record<string, string> = {
+  gemini: 'googlegemini', openai: 'openai', dalle: 'openai', anthropic: 'anthropic',
+  huggingface: 'huggingface', stripe: 'stripe', grok: 'x', stability: 'stabilityai',
+  'openai-compatible': 'ollama', pollinations: 'pollinations',
+};
+function Logo({ provider, size = 36 }: { provider: string; size?: number }) {
   const b = BRAND[provider] || BRAND.disabled;
+  const slug = ICON_SLUG[provider];
+  const [err, setErr] = useState(false);
+  if (slug && !err) {
+    return (
+      <span style={{ width: size, height: size }} className="rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0">
+        <img src={`https://cdn.simpleicons.org/${slug}`} alt={provider} onError={() => setErr(true)}
+          style={{ width: size * 0.58, height: size * 0.58 }} />
+      </span>
+    );
+  }
   return (
-    <span style={{ background: b.bg, color: b.fg, width: size, height: size, fontSize: size * 0.45 }}
+    <span style={{ background: b.bg, color: b.fg, width: size, height: size, fontSize: size * 0.42 }}
       className="rounded-xl flex items-center justify-center font-bold shrink-0 shadow-sm">
       {b.mark}
     </span>
@@ -139,7 +155,7 @@ function Category({ category, state, onChanged }: { category: string; state?: Ca
         </div>
         <div className="text-xs text-gray-400">active: <span className="font-semibold text-indigo-600">{activeDef?.label || active}</span></div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${category === 'image' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
         {cfg.providers.map((p) => (
           <ProviderCard key={p.key} category={category} def={p} saved={byProvider[p.key]} isActive={active === p.key} onChanged={onChanged} />
         ))}
@@ -182,7 +198,7 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
     : 'border border-gray-200 hover:border-gray-300';
 
   return (
-    <div className={`rounded-2xl p-4 bg-white flex flex-col ${ringCls} transition`}>
+    <div className={`rounded-2xl p-3.5 bg-white flex flex-col ${ringCls} transition`}>
       {/* header */}
       <div className="flex items-start gap-3">
         <Logo provider={def.key} />
@@ -213,14 +229,9 @@ function ProviderCard({ category, def, saved, isActive, onChanged }:
                 className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
             </>
           ) : (
-            <>
-              <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">
-                {saved?.hasKey ? <>🔑 {saved.keyMasked}</> : <span className="text-gray-400">no key yet</span>}
-              </div>
-              {(saved?.model || def.model) && (
-                <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">{saved?.model || def.model}</div>
-              )}
-            </>
+            <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">
+              {saved?.hasKey ? <>🔑 {saved.keyMasked}</> : <span className="text-gray-400">no key yet</span>}
+            </div>
           )
         ) : (
           <div className="text-xs text-gray-400 px-1 py-1.5">{def.note}</div>

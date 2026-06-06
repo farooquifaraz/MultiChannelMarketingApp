@@ -119,12 +119,18 @@ export default function BannerStudioPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Banner Studio</h1>
-            <p className="text-gray-500 text-sm">Generate AI banners &amp; flyers from a text prompt.</p>
+            <p className="text-gray-500 text-sm">Generate on-brand banner &amp; flyer images from a text prompt.</p>
           </div>
         </div>
         <button onClick={() => setShowKits((v) => !v)} className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
           <Palette className="w-4 h-4" /> Brand Kits ({kits.length})
         </button>
+      </div>
+
+      <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-sm text-indigo-900">
+        <b>What it does:</b> type a prompt (or click a preset) → AI generates a <b>banner / flyer image</b>.
+        Apply a <b>Brand Kit</b> (logo, colours, font) so it matches your brand. Switch image engines anytime
+        in <b>Integrations</b> (FLUX, Nano Banana, etc.). Tip: the <b>AI Copywriter</b> gives you a ready image prompt.
       </div>
 
       {/* Brand kits manager */}

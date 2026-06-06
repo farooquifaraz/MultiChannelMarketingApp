@@ -14,7 +14,6 @@ import {
   CreditCard,
   Building2,
   Image,
-  Plug,
   PenLine,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -34,7 +33,7 @@ const baseNav = [
   { to: '/campaigns/scheduled', icon: Clock, label: 'Scheduled', adminOnly: false },
   { to: '/admin/audit-logs', icon: ShieldAlert, label: 'Audit Logs', adminOnly: true },
   { to: '/admin/organizations', icon: Building2, label: 'Organizations', adminOnly: true },
-  { to: '/admin/integrations', icon: Plug, label: 'Integrations', adminOnly: true },
+  // Integrations now lives inside Settings → Integrations tab (no separate sidebar item).
   { to: '/billing', icon: CreditCard, label: 'Plan & Usage', adminOnly: false },
   { to: '/settings', icon: Settings, label: 'Settings', adminOnly: false },
 ];

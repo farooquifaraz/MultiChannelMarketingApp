@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MessageSquare, Smartphone, Bell, Save, FlaskConical, Eye, EyeOff, Settings, CheckCircle2, Loader2, PenTool, Briefcase, Phone, Globe, Image as ImageIcon, Upload, X, Shield, Zap, Clock, Sparkles, RotateCcw } from 'lucide-react';
+import { Mail, MessageSquare, Smartphone, Bell, Save, FlaskConical, Eye, EyeOff, Settings, CheckCircle2, Loader2, PenTool, Briefcase, Phone, Globe, Image as ImageIcon, Upload, X, Shield, Zap, Clock, Sparkles, RotateCcw, Plug } from 'lucide-react';
 import toast from 'react-hot-toast';
+import IntegrationsPage from '../admin/IntegrationsPage';
 import { settingsApi, adminApi, meApi, type CreateSmtpSettings, type SystemSettings as SystemSettingsType, type MySignature } from '../../api/settingsApi';
 import { buildAvatarUrl } from '../../config/brand';
 import { useAuthStore } from '../../store/authStore';
 
-type TabType = 'email' | 'signature' | 'whatsapp' | 'sms' | 'notifications' | 'admin' | 'mysignature' | 'ai';
+type TabType = 'email' | 'signature' | 'whatsapp' | 'sms' | 'notifications' | 'admin' | 'mysignature' | 'ai' | 'integrations';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('notifications');
@@ -332,7 +333,9 @@ export default function SettingsPage() {
     { id: 'mysignature' as TabType, label: 'My Signature', icon: PenTool, color: 'text-pink-600' },
     { id: 'notifications' as TabType, label: 'Notifications', icon: Bell, color: 'text-amber-600' },
     ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Admin', icon: Shield, color: 'text-red-600' }] : []),
-    ...(isAdmin ? [{ id: 'ai' as TabType, label: 'AI Assistant', icon: Sparkles, color: 'text-purple-600' }] : []),
+    ...(isAdmin ? [{ id: 'integrations' as TabType, label: 'Integrations', icon: Plug, color: 'text-indigo-600' }] : []),
+    // AI Assistant tab removed — AI providers & keys are now managed in the Integrations tab
+    // (per-provider vault). AI reply behaviour runs on sensible defaults.
   ];
 
   const inputClass = "w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-700 bg-gray-50 focus:bg-white";
@@ -1137,6 +1140,11 @@ export default function SettingsPage() {
           {/* === ADMIN Tab — Platform-wide settings (visible only to admins) === */}
           {activeTab === 'ai' && isAdmin && systemSettings && (
             <AiAssistantTab settings={systemSettings} setSettings={setSystemSettings} onSave={handleSaveSystemSettings} saving={savingAdmin} />
+          )}
+
+          {/* === INTEGRATIONS Tab — per-provider credential vault (AI + image + payments) === */}
+          {activeTab === 'integrations' && isAdmin && (
+            <IntegrationsPage />
           )}
 
           {activeTab === 'admin' && isAdmin && (

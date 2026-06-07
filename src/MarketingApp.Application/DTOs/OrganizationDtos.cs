@@ -22,6 +22,13 @@ public class CreateOrganizationDto
     public string? PlanCode { get; set; }
 }
 
+/// <summary>Rename / re-plan an organization (admin). Slug stays stable.</summary>
+public class UpdateOrganizationDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? PlanCode { get; set; }
+}
+
 /// <summary>Move a user into an organization (admin).</summary>
 public class AssignUserToOrgDto
 {

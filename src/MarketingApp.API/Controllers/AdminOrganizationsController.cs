@@ -51,4 +51,22 @@ public class AdminOrganizationsController : ControllerBase
         var org = await _service.AssignUserAsync(GetUserId(), dto.UserId, dto.OrganizationId, ct);
         return Ok(ApiResponse<OrganizationDto>.Ok(org));
     }
+
+    /// <summary>Rename / re-plan an organization (not allowed for Legacy).</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOrganizationDto dto, CancellationToken ct)
+    {
+        if (GuardAdmin() is { } forbidden) return forbidden;
+        var org = await _service.UpdateAsync(GetUserId(), id, dto, ct);
+        return Ok(ApiResponse<OrganizationDto>.Ok(org));
+    }
+
+    /// <summary>Delete an organization (members move back to Legacy; Legacy itself can't be deleted).</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        if (GuardAdmin() is { } forbidden) return forbidden;
+        await _service.DeleteAsync(GetUserId(), id, ct);
+        return Ok(ApiResponse<object>.Ok(new { deleted = true }));
+    }
 }

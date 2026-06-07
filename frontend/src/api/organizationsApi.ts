@@ -21,6 +21,9 @@ export interface CreateOrganizationPayload {
 export const organizationsApi = {
   list: () => axiosInstance.get('/admin/organizations'),
   create: (data: CreateOrganizationPayload) => axiosInstance.post('/admin/organizations', data),
+  update: (id: string, data: { name: string; planCode?: string }) =>
+    axiosInstance.put(`/admin/organizations/${id}`, data),
+  remove: (id: string) => axiosInstance.delete(`/admin/organizations/${id}`),
   assignUser: (userId: string, organizationId: string) =>
     axiosInstance.post('/admin/organizations/assign-user', { userId, organizationId }),
 };

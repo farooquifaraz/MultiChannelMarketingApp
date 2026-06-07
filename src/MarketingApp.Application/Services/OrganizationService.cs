@@ -100,6 +100,45 @@ public class OrganizationService : IOrganizationService
         return ToDto(org, count);
     }
 
+    public async Task<OrganizationDto> UpdateAsync(Guid actorId, Guid orgId, UpdateOrganizationDto dto, CancellationToken ct = default)
+    {
+        if (orgId == Organization.LegacyOrgId)
+            throw new AppValidationException("The Legacy organization cannot be edited.");
+        var org = await _orgRepo.GetByIdAsync(orgId, ct)
+            ?? throw new NotFoundException("Organization", orgId);
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new AppValidationException("Organization name is required.");
+
+        org.Name = dto.Name.Trim();
+        if (!string.IsNullOrWhiteSpace(dto.PlanCode)) org.PlanCode = dto.PlanCode.Trim().ToLowerInvariant();
+        org.UpdatedAt = DateTime.UtcNow;
+        await _orgRepo.UpdateAsync(org, ct);
+        await _audit.LogAsync(actorId, "OrganizationUpdated", "Organization", org.Id, ct: ct);
+
+        var count = await _userRepo.CountAsync(u => u.OrganizationId == orgId, ct);
+        return ToDto(org, count);
+    }
+
+    public async Task DeleteAsync(Guid actorId, Guid orgId, CancellationToken ct = default)
+    {
+        if (orgId == Organization.LegacyOrgId)
+            throw new AppValidationException("The Legacy organization cannot be deleted.");
+        var org = await _orgRepo.GetByIdAsync(orgId, ct)
+            ?? throw new NotFoundException("Organization", orgId);
+
+        // Move any members back to Legacy so no user is orphaned, then delete the org.
+        var members = (await _userRepo.GetAllAsync(ct)).Where(u => u.OrganizationId == orgId).ToList();
+        foreach (var u in members)
+        {
+            u.OrganizationId = Organization.LegacyOrgId;
+            u.UpdatedAt = DateTime.UtcNow;
+            await _userRepo.UpdateAsync(u, ct);
+        }
+        await _orgRepo.DeleteAsync(org, ct);
+        await _audit.LogAsync(actorId, "OrganizationDeleted", "Organization", orgId, ct: ct);
+        _logger.LogInformation("Organization {OrgId} deleted by {Actor}; {Count} member(s) moved to Legacy", orgId, actorId, members.Count);
+    }
+
     private static OrganizationDto ToDto(Organization o, int userCount) => new()
     {
         Id = o.Id,

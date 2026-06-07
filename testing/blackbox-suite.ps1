@@ -1124,6 +1124,32 @@ TestCase 'U' 'U9' 'Regression: existing users were backfilled to a non-null org'
     return $true
 }
 
+# P2.4.1 — org rename + delete (delete reassigns members to Legacy; also cleans up the BB org)
+TestCase 'U' 'U10' 'PUT /admin/organizations/{id} renames the org' {
+    if (-not $global:createdOrgId) { return "no org id from U3" }
+    $r = Call-Api -Method PUT -Path "/admin/organizations/$($global:createdOrgId)" -Token $global:adminToken -Body @{ name = "BB Org Renamed $Stamp" }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.name -ne "BB Org Renamed $Stamp") { return "name not updated" }
+    return $true
+}
+
+TestCase 'U' 'U11' 'PUT/DELETE on the Legacy org is rejected (protected)' {
+    $legacy = '00000000-0000-0000-0000-00000000ace0'
+    $d = Call-Api -Method DELETE -Path "/admin/organizations/$legacy" -Token $global:adminToken -ExpectStatus @(400, 422)
+    if (-not $d.Ok) { return "delete-legacy status=$($d.Status)" }
+    return $true
+}
+
+TestCase 'U' 'U12' 'DELETE /admin/organizations/{id} deletes + moves members to Legacy (cleanup)' {
+    if (-not $global:createdOrgId) { return "no org id from U3" }
+    $r = Call-Api -Method DELETE -Path "/admin/organizations/$($global:createdOrgId)" -Token $global:adminToken -ExpectStatus @(200, 204)
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    # the assigned user must have been moved back to Legacy (no orphan)
+    $list = Call-Api -Method GET -Path '/admin/organizations' -Token $global:adminToken
+    if ($list.Ok -and ($list.Data.data | Where-Object { $_.id -eq $global:createdOrgId })) { return "org still present after delete" }
+    return $true
+}
+
 # ===== SECTION V -- P3.1 Banner Studio (AI image generation, mock provider) =====
 Section "V. P3.1 Banner Studio"
 

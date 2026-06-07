@@ -20,4 +20,10 @@ public interface IOrganizationService
 
     /// <summary>Move a user into an organization. Throws if user or org not found.</summary>
     Task<OrganizationDto> AssignUserAsync(Guid actorId, Guid userId, Guid organizationId, CancellationToken ct = default);
+
+    /// <summary>Rename / re-plan an organization. Cannot edit the Legacy org.</summary>
+    Task<OrganizationDto> UpdateAsync(Guid actorId, Guid orgId, UpdateOrganizationDto dto, CancellationToken ct = default);
+
+    /// <summary>Delete an organization. Cannot delete Legacy; any members are moved back to Legacy first.</summary>
+    Task DeleteAsync(Guid actorId, Guid orgId, CancellationToken ct = default);
 }

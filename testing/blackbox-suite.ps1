@@ -1211,6 +1211,21 @@ TestCase 'V' 'V12' 'POST /creatives/content never 500s (graceful when AI provide
     return $true
 }
 
+# P3.8.2 — dedicated "regenerate image prompt" endpoint
+TestCase 'V' 'V13' 'POST /creatives/image-prompt requires auth' {
+    $r = Call-Api -Method POST -Path '/creatives/image-prompt' -Body @{ brief = 'x' } -ExpectStatus @(401)
+    if (-not $r.Ok) { return "status=$($r.Status)" }
+    return $true
+}
+
+TestCase 'V' 'V14' 'POST /creatives/image-prompt never 500s (short brief 4xx / configured 200)' {
+    $short = Call-Api -Method POST -Path '/creatives/image-prompt' -Token $global:userToken -Body @{ brief = 'hi' } -ExpectStatus @(400, 422)
+    if (-not $short.Ok) { return "short-brief status=$($short.Status)" }
+    $ok = Call-Api -Method POST -Path '/creatives/image-prompt' -Token $global:userToken -Body @{ brief = 'IzyLrn learning app for Class 6-12 with AI tutor and NCERT books' } -ExpectStatus @(200, 400, 422)
+    if (-not $ok.Ok) { return "status=$($ok.Status) body=$($ok.Raw)" }
+    return $true
+}
+
 # ===== SECTION W -- P2.2 Payments (checkout + webhook, mock provider) =====
 Section "W. P2.2 Payments"
 

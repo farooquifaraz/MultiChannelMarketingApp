@@ -10,4 +10,7 @@ namespace MarketingApp.Application.Interfaces;
 public interface IMarketingContentService
 {
     Task<MarketingContentDto> GenerateAsync(GenerateContentDto dto, CancellationToken ct = default);
+
+    /// <summary>Generate ONLY a fresh hero-image prompt for a brief (cheap — used by "regenerate prompt").</summary>
+    Task<string> GenerateImagePromptAsync(string brief, CancellationToken ct = default);
 }

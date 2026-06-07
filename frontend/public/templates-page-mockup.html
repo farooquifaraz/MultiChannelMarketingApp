@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Templates Page — Gradient + Grouped Mockup</title>
+<style>
+  :root{--ink:#0f172a;--muted:#64748b;--line:#e6e8f0;
+    --dummy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fdba74'/%3E%3Cstop offset='0.6' stop-color='%23f59e0b'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23s)'/%3E%3Ccircle cx='322' cy='66' r='32' fill='%23fff7ed'/%3E%3Crect y='208' width='400' height='92' fill='%231e293b'/%3E%3Crect x='70' y='130' width='182' height='92' fill='%23f8fafc'/%3E%3Cpolygon points='64,130 161,86 258,130' fill='%23e2e8f0'/%3E%3C/svg%3E");}
+  *{box-sizing:border-box}html,body{margin:0}
+  body{font-family:'Segoe UI',Inter,system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef2ff,#faf5ff 45%,#fdf2f8);min-height:100vh;padding:24px 16px 70px}
+  .wrap{max-width:1120px;margin:0 auto}
+  /* header */
+  .top{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#4f46e5,#7c3aed 55%,#db2777);border-radius:22px;padding:22px 24px;color:#fff;box-shadow:0 24px 50px -24px rgba(99,102,241,.7);margin-bottom:18px}
+  .top .ic{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:25px}
+  .top h1{margin:0;font-size:24px}.top p{margin:3px 0 0;font-size:13px;opacity:.85}
+  .top .new{margin-left:auto;background:#fff;color:#4f46e5;border:none;border-radius:12px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;gap:8px;align-items:center;box-shadow:0 10px 24px -12px rgba(0,0,0,.4)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .fchip{font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;cursor:pointer;color:#475569;display:inline-flex;align-items:center;gap:7px}
+  .fchip img{width:15px;height:15px}.fchip.on{border-color:transparent;color:#fff;background:linear-gradient(135deg,#6366f1,#a855f7)}
+  .sec-h{display:flex;align-items:center;gap:10px;margin:6px 2px 12px}
+  .sec-h b{font-size:14px}.sec-h .ln{flex:1;height:1px;background:linear-gradient(90deg,#e2e8f0,transparent)}
+  .sec-h .cnt{font-size:11px;font-weight:700;color:#6d28d9;background:#f3e8ff;border-radius:999px;padding:3px 10px}
+  /* SET card */
+  .set{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 22px 50px -34px rgba(2,6,23,.45);margin-bottom:18px}
+  .set-h{display:flex;align-items:center;gap:12px;padding:15px 18px;color:#fff;background:linear-gradient(120deg,#1e293b,#4338ca)}
+  .set-h .badge{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:18px}
+  .set-h b{font-size:15px;display:block}.set-h small{font-size:11.5px;opacity:.8}
+  .set-h .acts{margin-left:auto;display:flex;gap:8px}
+  .sbtn{border:none;border-radius:10px;padding:8px 13px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .sbtn.edit{background:#fff;color:#4338ca}.sbtn.ghost{background:rgba(255,255,255,.16);color:#fff}
+  .set-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;padding:16px}
+  .mini{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;transition:.15s}
+  .mini:hover{box-shadow:0 16px 30px -22px rgba(2,6,23,.5);transform:translateY(-2px)}
+  .mini-h{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#fff}
+  .mini-h img{width:16px;height:16px;filter:brightness(0) invert(1)}
+  .mini-h b{font-size:12.5px}.mini-h .img{margin-left:auto;font-size:10px;background:rgba(255,255,255,.22);padding:2px 7px;border-radius:999px}
+  .wa{background:linear-gradient(135deg,#22c55e,#16a34a)}.ig{background:linear-gradient(135deg,#ec4899,#a855f7)}
+  .fb{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.em{background:linear-gradient(135deg,#6366f1,#4338ca)}
+  .mini .snip{padding:11px 12px;font-size:12px;color:#475569;line-height:1.45;height:74px;overflow:hidden}
+  .mini .foot{display:flex;gap:6px;padding:9px 12px;border-top:1px solid var(--line)}
+  .mini .foot button{flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px;font:inherit;font-size:11.5px;font-weight:600;color:#475569;cursor:pointer}
+  /* standalone grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  .tcard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 16px 36px -28px rgba(2,6,23,.4)}
+  .tcard .bar{height:6px}.bar.wa{background:#22c55e}.bar.ig{background:#ec4899}.bar.fb{background:#3b82f6}.bar.em{background:#6366f1}
+  .tcard .b{padding:14px}.tcard .b .row{display:flex;align-items:center;gap:8px}.tcard .b .row .lg{width:30px;height:30px;border-radius:9px;display:grid;place-items:center}.tcard .b .row .lg img{width:18px;height:18px}
+  .tcard b{font-size:13.5px}.tcard small{color:var(--muted);font-size:11px;text-transform:capitalize}
+  .tcard p{font-size:12px;color:#64748b;margin:10px 0 0;line-height:1.45;height:50px;overflow:hidden}
+  /* grouped edit modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;z-index:40}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:20px;width:100%;max-width:840px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px -30px rgba(2,6,23,.6)}
+  .modal-h{display:flex;align-items:center;gap:12px;padding:18px 22px;color:#fff;background:linear-gradient(120deg,#4f46e5,#7c3aed,#db2777)}
+  .modal-h b{font-size:16px}.modal-h small{opacity:.85;font-size:12px;display:block}
+  .modal-h .x{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:15px}
+  .modal-b{padding:18px;overflow:auto;display:grid;gap:14px}
+  .ged{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .ged-h{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#fff}.ged-h img{width:16px;height:16px;filter:brightness(0) invert(1)}.ged-h b{font-size:13px}
+  .ged-h .sync{margin-left:auto;font-size:10.5px;background:rgba(255,255,255,.22);padding:2px 8px;border-radius:999px}
+  .ged textarea{width:100%;border:none;padding:11px 12px;font:inherit;font-size:12.5px;resize:vertical;min-height:70px;outline:none}
+  .modal-f{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
+  .modal-f .note{font-size:11.5px;color:var(--muted);margin-right:auto}
+  .pbtn{border:none;border-radius:11px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+  .pbtn.primary{color:#fff;background:linear-gradient(135deg,#6366f1,#a855f7)}.pbtn.ghost{background:#f1f5f9;color:#334155}
+  .sync-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;padding:0 4px}
+  .sw{position:relative;width:42px;height:23px;border-radius:999px;background:#cbd5e1;cursor:pointer}.sw.on{background:linear-gradient(90deg,#6366f1,#a855f7)}
+  .sw::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.18s}.sw.on::after{left:22px}
+  .legend{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="ic">🗂️</div>
+    <div><h1>Templates</h1><p>Saved copy for every channel — grouped by the campaign they were created in</p></div>
+    <button class="new">＋ New template</button>
+  </div>
+
+  <div class="filters">
+    <span class="fchip on">All</span>
+    <span class="fchip"><img src="https://cdn.simpleicons.org/whatsapp/25D366">WhatsApp</span>
+    <span class="fchip"><img src="https://cdn.simpleicons.org/instagram/E4405F">Instagram</span>
+    <span class="fchip"><img src="https://cdn.simpleicons.org/facebook/1877F2">Facebook</span>
+    <span class="fchip"><img src="https://cdn.simpleicons.org/gmail/EA4335">Email</span>
+  </div>
+
+  <!-- ===== TEMPLATE SETS (grouped) ===== -->
+  <div class="sec-h"><b>📦 Template sets</b><span class="cnt">created together</span><span class="ln"></span></div>
+
+  <div class="set">
+    <div class="set-h">
+      <div class="badge">✨</div>
+      <div><b>IzyLrn — Class 6-12 launch</b><small>4 channels · created 7 Jun 2026 · Groq</small></div>
+      <div class="acts">
+        <button class="sbtn edit" onclick="openEdit()">✎ Edit set (all channels)</button>
+        <button class="sbtn ghost">🚀 New campaign</button>
+        <button class="sbtn ghost">🗑</button>
+      </div>
+    </div>
+    <div class="set-body">
+      <div class="mini"><div class="mini-h wa"><img src="https://cdn.simpleicons.org/whatsapp"><b>WhatsApp</b><span class="img">🖼</span></div><div class="snip">📚 Unlock Your Child's Potential — everything for Class 6-12 in one app! AI tutor, NCERT books, 36K+ questions…</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+      <div class="mini"><div class="mini-h ig"><img src="https://cdn.simpleicons.org/instagram"><b>Instagram</b><span class="img">🖼</span></div><div class="snip">Revolutionize your learning experience with our all-in-one app! 📚 #IzyLrn #NCERT #StudySmart</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+      <div class="mini"><div class="mini-h fb"><img src="https://cdn.simpleicons.org/facebook"><b>Facebook</b></div><div class="snip">Introducing the ultimate learning app for Class 6-12 students! Comprehensive AI tutor, video lessons…</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+      <div class="mini"><div class="mini-h em"><img src="https://cdn.simpleicons.org/gmail"><b>Email</b><span class="img">🖼</span></div><div class="snip"><b>Unlock 80% Off: Limited Time Offer!</b><br>Imagine giving your child every tool they need to excel…</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+    </div>
+  </div>
+
+  <div class="set">
+    <div class="set-h">
+      <div class="badge">🏡</div>
+      <div><b>Oasis Villa launch</b><small>2 channels (IG + FB shared) · created 5 Jun 2026</small></div>
+      <div class="acts"><button class="sbtn edit" onclick="openEdit()">✎ Edit set</button><button class="sbtn ghost">🚀 New campaign</button><button class="sbtn ghost">🗑</button></div>
+    </div>
+    <div class="set-body">
+      <div class="mini"><div class="mini-h ig"><img src="https://cdn.simpleicons.org/instagram"><b>Instagram</b><span class="img">🖼</span></div><div class="snip">Step into refined luxury at The Oasis by Emaar 🌟 5BR · private pool · rooftop terrace.</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+      <div class="mini"><div class="mini-h fb"><img src="https://cdn.simpleicons.org/facebook"><b>Facebook</b><span class="img">🖼</span></div><div class="snip">🏡 Luxury 5BR Villa — The Oasis by Emaar. Private pool, rooftop terrace & smart home.</div><div class="foot"><button>👁 Preview</button><button onclick="openEdit()">✎ Edit</button></div></div>
+    </div>
+  </div>
+
+  <!-- ===== STANDALONE ===== -->
+  <div class="sec-h"><b>📄 Standalone templates</b><span class="ln"></span></div>
+  <div class="grid">
+    <div class="tcard"><div class="bar em"></div><div class="b"><div class="row"><span class="lg" style="background:#eef2ff"><img src="https://cdn.simpleicons.org/gmail/EA4335"></span><div><b>Welcome email</b><br><small>email</small></div></div><p>Hi {{first_name}}, welcome aboard! Here's how to get started…</p></div></div>
+    <div class="tcard"><div class="bar wa"></div><div class="b"><div class="row"><span class="lg" style="background:#ecfdf5"><img src="https://cdn.simpleicons.org/whatsapp/25D366"></span><div><b>Festival greeting</b><br><small>whatsapp</small></div></div><p>🎉 Wishing you joy this festive season from the team…</p></div></div>
+  </div>
+
+  <p class="legend">📦 <b>Template sets</b> = all channels created together in one Creative Studio session — edit them as a group or individually. 📄 Standalone = created on their own.</p>
+</div>
+
+<!-- grouped edit modal -->
+<div class="overlay" id="overlay" onclick="if(event.target.id==='overlay')closeEdit()">
+  <div class="modal">
+    <div class="modal-h"><div class="badge" style="width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.18);display:grid;place-items:center">✨</div><div><b>Edit set — IzyLrn Class 6-12 launch</b><small>Edit all channels together, then Save all</small></div><button class="x" onclick="closeEdit()">✕</button></div>
+    <div class="modal-b">
+      <div class="sync-row"><span class="sw on" onclick="this.classList.toggle('on')"></span> Keep shared channels in sync (IG + FB share one copy — editing one updates both)</div>
+      <div class="ged"><div class="ged-h wa"><img src="https://cdn.simpleicons.org/whatsapp"><b>WhatsApp</b><span class="sync">🖼 image attached</span></div><textarea>📚 Unlock Your Child's Potential
+
+Get everything your child needs for Class 6-12 in one app! AI tutor, NCERT books, video lessons, 36K+ practice questions.
+
+⚡ Limited time: 80% off lifetime subscription!
+📞 Call us to know more</textarea></div>
+      <div class="ged"><div class="ged-h ig"><img src="https://cdn.simpleicons.org/instagram"><b>Instagram</b><span class="sync">🔗 shared with Facebook</span></div><textarea>Revolutionize your learning experience with our all-in-one app! 📚 From AI tutor to 36K+ practice questions, we've got you covered. #IzyLrn #NCERT #StudySmart</textarea></div>
+      <div class="ged"><div class="ged-h fb"><img src="https://cdn.simpleicons.org/facebook"><b>Facebook</b><span class="sync">🔗 shared with Instagram</span></div><textarea>Introducing the ultimate learning app for Class 6-12 students! 📚 Comprehensive AI tutor, video lessons, NCERT books, 36K+ practice questions.</textarea></div>
+      <div class="ged"><div class="ged-h em"><img src="https://cdn.simpleicons.org/gmail"><b>Email</b><span class="sync">🖼 inline image</span></div><textarea>Subject: Unlock 80% Off: Limited Time Offer!
+
+Imagine giving your child every tool they need to excel — AI tutor, NCERT books, video lessons and 36K+ practice questions, all in one app.</textarea></div>
+    </div>
+    <div class="modal-f"><span class="note">Changes create a new version of each edited template (old versions kept).</span><button class="pbtn ghost" onclick="closeEdit()">Cancel</button><button class="pbtn primary" onclick="closeEdit()">💾 Save all (4)</button></div>
+  </div>
+</div>
+
+<script>
+  function openEdit(){document.getElementById('overlay').classList.add('show')}
+  function closeEdit(){document.getElementById('overlay').classList.remove('show')}
+</script>
+</body>
+</html>

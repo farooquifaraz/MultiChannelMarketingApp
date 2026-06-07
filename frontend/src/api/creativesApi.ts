@@ -36,6 +36,8 @@ export const creativesApi = {
   // channels: subset of whatsapp/instagram/facebook/email; omit/empty = all.
   content: (brief: string, channels?: string[]) =>
     axiosInstance.post('/creatives/content', { brief, channels: channels && channels.length ? channels : null }),
+  // Regenerate ONLY the hero-image prompt (cheap).
+  imagePrompt: (brief: string) => axiosInstance.post('/creatives/image-prompt', { brief }),
 };
 
 export interface MarketingContent {

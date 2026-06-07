@@ -61,6 +61,29 @@ public class MarketingContentService : IMarketingContentService
         return result;
     }
 
+    public async Task<string> GenerateImagePromptAsync(string brief, CancellationToken ct = default)
+    {
+        brief = (brief ?? string.Empty).Trim();
+        if (brief.Length < MinBrief)
+            throw new AppValidationException($"Please provide at least {MinBrief} characters describing the property/offer.");
+
+        AiCompletion completion;
+        try
+        {
+            // Empty channel list → BuildSystemPrompt returns only the image_prompt block (cheap).
+            completion = await _ai.GenerateAsync(BuildSystemPrompt(Array.Empty<string>()), brief, AiResponseShape.PlainText, ct, maxTokens: 800);
+        }
+        catch (Exception ex)
+        {
+            var m = ex.Message ?? "";
+            if (m.Contains("not configured", StringComparison.OrdinalIgnoreCase) || m.Contains("No AI client registered", StringComparison.OrdinalIgnoreCase))
+                throw new AppValidationException("No AI provider is enabled. Go to Integrations → AI Text and enable a provider with a valid key.");
+            throw new AppValidationException($"AI provider error: {m}");
+        }
+        var prompt = ParseContent(completion.RawText).ImagePrompt;
+        return string.IsNullOrWhiteSpace(prompt) ? completion.RawText.Trim() : prompt;
+    }
+
     /// <summary>All channels we know how to write. Order is the canonical "lead" order for shared groups.</summary>
     internal static readonly string[] AllChannels = { "whatsapp", "instagram", "facebook", "email" };
 

@@ -42,11 +42,12 @@ export interface PreviewFields {
  * Renders a copy + image preview the way it would appear on the target platform.
  * `img` null → the image block shows a placeholder (or is omitted entirely when omitImageWhenEmpty).
  */
-export function ChannelPreview({ channel, fields, img, omitImageWhenEmpty = false }:
-  { channel: string; fields: PreviewFields; img?: string | null; omitImageWhenEmpty?: boolean }) {
+export function ChannelPreview({ channel, fields, img, omitImageWhenEmpty = false, brand }:
+  { channel: string; fields: PreviewFields; img?: string | null; omitImageWhenEmpty?: boolean; brand?: string }) {
   const showImg = img || !omitImageWhenEmpty;
-  const handle = fields.handle || 'luxe.properties';
-  const sender = fields.sender || 'Luxe Properties';
+  const cleanBrand = (brand || '').trim();
+  const sender = fields.sender || cleanBrand || 'Your Brand';
+  const handle = fields.handle || (cleanBrand ? cleanBrand.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '') : 'your.brand');
 
   if (channel === 'whatsapp' || channel === 'sms') {
     return (

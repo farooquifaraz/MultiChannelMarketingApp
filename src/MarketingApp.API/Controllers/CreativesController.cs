@@ -69,6 +69,14 @@ public class CreativesController : ControllerBase
         return Ok(ApiResponse<MarketingContentDto>.Ok(result));
     }
 
+    /// <summary>Regenerate ONLY the hero-image prompt for a brief (cheap — for "don't like the prompt").</summary>
+    [HttpPost("image-prompt")]
+    public async Task<IActionResult> ImagePrompt([FromBody] GenerateContentDto dto, CancellationToken ct)
+    {
+        var prompt = await _content.GenerateImagePromptAsync(dto.Brief, ct);
+        return Ok(ApiResponse<object>.Ok(new { imagePrompt = prompt }));
+    }
+
     /// <summary>Delete one of the current user's generated banners.</summary>
     [HttpDelete("assets/{id:guid}")]
     public async Task<IActionResult> DeleteAsset(Guid id, CancellationToken ct)

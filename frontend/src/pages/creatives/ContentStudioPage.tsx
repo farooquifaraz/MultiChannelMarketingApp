@@ -39,6 +39,8 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
 
   const [brief, setBrief] = useState('');
   const [name, setName] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [promptBusy, setPromptBusy] = useState(false);
   const [enabled, setEnabled] = useState<Record<ChannelId, boolean>>({ whatsapp: true, instagram: true, facebook: true, email: true });
   const [group, setGroup] = useState<Record<ChannelId, string>>({ whatsapp: 'A', instagram: 'B', facebook: 'B', email: 'D' });
   const [presetId, setPresetId] = useState('igfb');
@@ -129,6 +131,17 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
     setEditing(null); toast.success('Saved as a new version');
   };
 
+  const regeneratePrompt = async () => {
+    if (brief.trim().length < 20) { toast.error('Add a brief first'); return; }
+    setPromptBusy(true);
+    try {
+      const env: any = await creativesApi.imagePrompt(brief.trim());
+      const p = env.data?.imagePrompt;
+      if (p) { setImagePrompt(p); toast.success('New image prompt generated'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Could not regenerate prompt'); }
+    finally { setPromptBusy(false); }
+  };
+
   const genImage = async () => {
     if (!imagePrompt) return; setImgBusy(true);
     try {
@@ -194,11 +207,18 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
     <div className="grid md:grid-cols-3 gap-3">
       <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={4} maxLength={10000} placeholder={EXAMPLE}
         className="md:col-span-2 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y" />
-      <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case">(optional)</span></label>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Oasis Villa launch"
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
-        <p className="text-[11px] text-gray-400 mt-1.5">Names your saved templates &amp; campaign.</p>
+      <div className="space-y-2.5">
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case">(optional)</span></label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Oasis Villa launch"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brand / sender name</label>
+          <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g. IzyLrn"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+          <p className="text-[11px] text-gray-400 mt-1">Shown as the sender/handle in every preview.</p>
+        </div>
       </div>
     </div>
   );
@@ -269,14 +289,19 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
             {!heroImageUrl && '📷 No image'}
           </div>
           <div className="flex-1 min-w-[240px]">
-            <p className="text-xs font-semibold text-indigo-700">🖼️ Matching hero image</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-semibold text-indigo-700">🖼️ Matching hero image</p>
+              <button onClick={regeneratePrompt} disabled={promptBusy} className="text-[11px] font-semibold text-indigo-600 inline-flex items-center gap-1 hover:text-indigo-800 disabled:opacity-50">
+                {promptBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} New prompt
+              </button>
+            </div>
             <p className="text-[12.5px] text-gray-600 mt-0.5 line-clamp-2">{imagePrompt}</p>
             <div className="mt-2.5 flex items-center gap-2 flex-wrap">
               <select value={size} onChange={(e) => setSize(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs">
                 {(sizes.length ? sizes : [{ token: '1024x1024', label: 'Square' } as any]).map((o) => <option key={o.token} value={o.token}>{o.label} ({o.token})</option>)}
               </select>
               <button onClick={genImage} disabled={imgBusy} className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 inline-flex items-center gap-1.5">
-                {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}{heroImageUrl ? 'Regenerate' : 'Generate image'}
+                {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}{heroImageUrl ? 'Regenerate image' : 'Generate image'}
               </button>
               {onSendToBanner && <button onClick={() => onSendToBanner(imagePrompt)} className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><Wand2 className="w-3.5 h-3.5" /> Banner Studio</button>}
             </div>
@@ -312,7 +337,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
                   </div>
                 ) : view === 'preview' ? (
                   <div className="p-4 bg-slate-50 flex justify-center">
-                    <ChannelPreview channel={c} img={heroImageUrl} fields={{ text: v.text, subject: v.subject, isHtml: c === 'email' }} />
+                    <ChannelPreview channel={c} img={heroImageUrl} brand={brandName} fields={{ text: v.text, subject: v.subject, isHtml: c === 'email' }} />
                   </div>
                 ) : (
                   <div className="p-4 text-sm text-gray-700 overflow-auto max-h-[320px]">

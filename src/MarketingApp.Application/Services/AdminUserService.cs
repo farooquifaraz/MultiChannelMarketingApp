@@ -93,6 +93,9 @@ public class AdminUserService : IAdminUserService
             Role = role,
             IsActive = true,
             SmtpGroupId = dto.SmtpGroupId,
+            // Admin-created users join the Legacy org by default (same as self-registration),
+            // so every user always has a non-null organization (no orphans).
+            OrganizationId = Organization.LegacyOrgId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };

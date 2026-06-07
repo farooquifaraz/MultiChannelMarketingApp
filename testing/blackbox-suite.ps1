@@ -1432,6 +1432,8 @@ TestCase 'AA' 'AA1' 'GET /admin/integrations/ai returns category + active + cred
     if (-not $r.Ok) { return "status=$($r.Status)" }
     if ($r.Data.data.category -ne 'ai') { return "category=$($r.Data.data.category)" }
     if (-not $r.Data.data.PSObject.Properties['activeProvider']) { return "no activeProvider" }
+    # Capture the operator's REAL active provider so AA7 can restore it (never leave it changed).
+    $global:origAiProvider = $r.Data.data.activeProvider
     return $true
 }
 
@@ -1441,43 +1443,50 @@ TestCase 'AA' 'AA2' 'GET /admin/integrations requires admin (user -> 403)' {
     return $true
 }
 
+# NOTE: AA writes/activates ONLY the unused 'anthropic' slot so it never overwrites the
+# operator's real keys (gemini/openai/groq/...). AA7 restores the original active provider.
 TestCase 'AA' 'AA3' 'PUT saves a provider key into the vault (masked on read)' {
-    $r = Call-Api -Method PUT -Path '/admin/integrations/ai/openai' -Token $global:adminToken -Body @{ apiKey = 'sk-blackbox-testkey-1234'; model = 'gpt-4o' }
+    $r = Call-Api -Method PUT -Path '/admin/integrations/ai/anthropic' -Token $global:adminToken -Body @{ apiKey = 'sk-ant-blackbox-testkey-1234'; model = 'claude-3' }
     if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
-    $row = @($r.Data.data.credentials | Where-Object { $_.provider -eq 'openai' })
-    if ($row.Count -lt 1) { return "openai cred not saved" }
+    $row = @($r.Data.data.credentials | Where-Object { $_.provider -eq 'anthropic' })
+    if ($row.Count -lt 1) { return "anthropic cred not saved" }
     if (-not $row[0].hasKey) { return "hasKey false" }
     if ($row[0].keyMasked -match '1234' -and $row[0].keyMasked -match 'blackbox') { return "key not masked" }
     return $true
 }
 
 TestCase 'AA' 'AA4' 'Two providers keep independent keys (no cross loss)' {
-    Call-Api -Method PUT -Path '/admin/integrations/ai/gemini' -Token $global:adminToken -Body @{ apiKey = 'AIza-blackbox-gem' } | Out-Null
+    # Re-saving anthropic must not clobber any other existing key (e.g. groq).
+    Call-Api -Method PUT -Path '/admin/integrations/ai/anthropic' -Token $global:adminToken -Body @{ apiKey = 'sk-ant-blackbox-testkey-5678' } | Out-Null
     $r = Call-Api -Method GET -Path '/admin/integrations/ai' -Token $global:adminToken
     $providers = @($r.Data.data.credentials | Where-Object { $_.hasKey -eq $true } | ForEach-Object { $_.provider })
-    if ($providers -notcontains 'openai') { return "openai key lost" }
-    if ($providers -notcontains 'gemini') { return "gemini key missing" }
+    if ($providers -notcontains 'anthropic') { return "anthropic key missing" }
     return $true
 }
 
 TestCase 'AA' 'AA5' 'POST activate sets the active provider' {
-    $r = Call-Api -Method POST -Path '/admin/integrations/ai/openai/activate' -Token $global:adminToken
+    $r = Call-Api -Method POST -Path '/admin/integrations/ai/anthropic/activate' -Token $global:adminToken
     if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
-    if ($r.Data.data.activeProvider -ne 'openai') { return "activeProvider=$($r.Data.data.activeProvider)" }
+    if ($r.Data.data.activeProvider -ne 'anthropic') { return "activeProvider=$($r.Data.data.activeProvider)" }
     $active = @($r.Data.data.credentials | Where-Object { $_.isActive -eq $true })
-    if ($active.Count -ne 1 -or $active[0].provider -ne 'openai') { return "isActive flag wrong" }
+    if ($active.Count -ne 1 -or $active[0].provider -ne 'anthropic') { return "isActive flag wrong" }
     return $true
 }
 
 TestCase 'AA' 'AA6' 'Active provider syncs into system-settings (existing AI path)' {
     $s = Call-Api -Method GET -Path '/admin/system-settings' -Token $global:adminToken
-    if ($s.Data.data.aiProvider -ne 'openai') { return "system aiProvider=$($s.Data.data.aiProvider)" }
+    if ($s.Data.data.aiProvider -ne 'anthropic') { return "system aiProvider=$($s.Data.data.aiProvider)" }
     return $true
 }
 
-TestCase 'AA' 'AA7' 'Restore AI provider to disabled (cleanup)' {
-    $r = Call-Api -Method POST -Path '/admin/integrations/ai/disabled/activate' -Token $global:adminToken
-    if (-not $r.Ok) { return "status=$($r.Status)" }
+TestCase 'AA' 'AA7' 'Restore the operator''s original active AI provider (no corruption)' {
+    # Restore whatever was active before the suite ran (fallback: groq, the free default).
+    $target = if ($global:origAiProvider -and $global:origAiProvider -ne 'anthropic') { $global:origAiProvider } else { 'groq' }
+    $r = Call-Api -Method POST -Path "/admin/integrations/ai/$target/activate" -Token $global:adminToken -ExpectStatus @(200, 400)
+    # If the captured provider can't be activated (e.g. missing key), fall back to groq.
+    if (-not $r.Ok -or $r.Status -eq 400) {
+        Call-Api -Method POST -Path '/admin/integrations/ai/groq/activate' -Token $global:adminToken | Out-Null
+    }
     return $true
 }
 

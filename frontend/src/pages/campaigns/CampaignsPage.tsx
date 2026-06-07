@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Send, Trash2, Eye, Mail, MessageCircle, Smartphone, Globe2, User as UserIcon, Download } from 'lucide-react';
+import { Plus, Send, Trash2, Eye, Mail, MessageCircle, Smartphone, Globe2, User as UserIcon, Download, Activity, CheckCircle2, FileEdit } from 'lucide-react';
 import { campaignApi } from '../../api/campaignApi';
 import { downloadFile } from '../../utils/download';
 import { contactApi } from '../../api/contactApi';
@@ -163,6 +163,30 @@ export default function CampaignsPage() {
           </button>
         </div>
       </div>
+
+      {/* KPI summary (current view) */}
+      {campaigns.length > 0 && (() => {
+        const low = (s: string) => (s || '').toLowerCase();
+        const k = [
+          { label: 'Total', value: campaigns.length, icon: Send, grad: 'from-primary-500 to-primary-700' },
+          { label: 'Running', value: campaigns.filter((c) => low(c.status) === 'running').length, icon: Activity, grad: 'from-blue-500 to-blue-700' },
+          { label: 'Completed', value: campaigns.filter((c) => low(c.status) === 'completed').length, icon: CheckCircle2, grad: 'from-green-500 to-emerald-600' },
+          { label: 'Drafts', value: campaigns.filter((c) => low(c.status) === 'draft').length, icon: FileEdit, grad: 'from-amber-500 to-orange-600' },
+        ];
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {k.map((c) => (
+              <div key={c.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.grad} grid place-items-center shadow-md mb-3`}>
+                  <c.icon className="w-5 h-5 text-white" />
+                </div>
+                <p className="text-[26px] font-extrabold tracking-tight text-gray-900 leading-tight">{c.value}</p>
+                <p className="text-[13px] text-gray-500 mt-0.5">{c.label}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Admin scope toggle + filters */}
       {isAdmin && (

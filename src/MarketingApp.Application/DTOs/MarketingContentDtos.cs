@@ -50,6 +50,10 @@ public class MarketingContentDto
     public EmailContentDto Email { get; set; } = new();
     /// <summary>An image prompt the user can paste into the Banner Studio.</summary>
     public string ImagePrompt { get; set; } = string.Empty;
+    /// <summary>AI-suggested short campaign name (editable in the UI).</summary>
+    public string CampaignName { get; set; } = string.Empty;
+    /// <summary>Brand / sender name extracted from the brief (e.g. "IzyLrn"); empty if none.</summary>
+    public string BrandName { get; set; } = string.Empty;
     /// <summary>Which AI provider produced it.</summary>
     public string Provider { get; set; } = string.Empty;
 }

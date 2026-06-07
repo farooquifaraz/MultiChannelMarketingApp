@@ -46,5 +46,7 @@ export interface MarketingContent {
   facebook: { post: string; headline: string; cta: string };
   email: { subject: string; preview: string; body: string };
   imagePrompt: string;
+  campaignName: string;
+  brandName: string;
   provider: string;
 }

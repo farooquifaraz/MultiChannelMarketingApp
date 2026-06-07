@@ -145,11 +145,17 @@ public class MarketingContentService : IMarketingContentService
   "image_prompt": "A rich, production-grade text-to-image prompt (60-90 words) that recreates the EXACT subject from the brief so the result looks like a real professional photograph, not generic stock. Write it as ONE flowing descriptive paragraph and include, in this order: (1) the precise subject pulled from the brief (e.g. exact property type, number of bedrooms, location/community, the 2-3 standout features actually mentioned); (2) the setting and time of day; (3) photographic style + camera and lens (e.g. 'shot on a full-frame DSLR, 24mm wide-angle, f/8'); (4) lighting (e.g. warm golden-hour glow, soft natural light); (5) composition and mood; (6) a color palette that matches the brand feel; (7) ultra-realism keywords (photorealistic, hyper-detailed, 8k, sharp focus, professional real-estate photography, natural materials, realistic reflections). End the paragraph with exactly: 'No text, no watermark, no logos, no distorted shapes, no people unless essential.'"
 """;
 
-    /// <summary>Build the structured marketing prompt for ONLY the requested channels (+ image prompt).</summary>
+    private const string MetaBlock = """
+  "campaign_name": "A short, catchy campaign name for this offer in Title Case, max 40 chars (e.g. 'Oasis Villa Launch')",
+  "brand_name": "The brand / company / sender name found in the brief (e.g. 'IzyLrn', 'Luxe Properties'); empty string if none is mentioned"
+""";
+
+    /// <summary>Build the structured marketing prompt for ONLY the requested channels (+ image prompt + meta).</summary>
     internal static string BuildSystemPrompt(IReadOnlyList<string> channels)
     {
         var blocks = channels.Where(ChannelBlocks.ContainsKey).Select(c => ChannelBlocks[c].Trim()).ToList();
         blocks.Add(ImagePromptBlock.Trim());
+        blocks.Add(MetaBlock.Trim());
         var body = string.Join(",\n", blocks);
         return $$"""
 You are a senior marketing director who writes campaigns that SELL — not just describe.
@@ -198,6 +204,8 @@ The image_prompt must be SPECIFIC to this brief — never generic. Pull concrete
                 dto.Email.Body = Str(em, "body");
             }
             dto.ImagePrompt = Str(root, "image_prompt");
+            dto.CampaignName = Str(root, "campaign_name");
+            dto.BrandName = Str(root, "brand_name");
         }
         catch (JsonException)
         {

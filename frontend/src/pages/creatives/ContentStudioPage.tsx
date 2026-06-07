@@ -108,6 +108,9 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
       // Fresh "set" id for this batch — every template saved from it groups together.
       setGroupId((globalThis.crypto?.randomUUID?.() as string) || `${Date.now()}-${enabledList.join('')}`);
       setImagePrompt(data.imagePrompt || ''); setProvider(data.provider || '');
+      // AI-suggested name + brand — fill only when the user hasn't typed their own (stays editable).
+      if (!name.trim() && data.campaignName) setName(data.campaignName);
+      if (!brandName.trim() && data.brandName) setBrandName(data.brandName);
       if (mode === 'guided') setGstep(3);
       toast.success(`Generated ${distinctGroups.length} piece(s) with ${data.provider || 'AI'}`);
     } catch (err: any) {
@@ -214,13 +217,14 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
         className="md:col-span-2 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y" />
       <div className="space-y-2.5">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case">(optional)</span></label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Oasis Villa launch"
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case text-indigo-500">✨ AI-suggested</span></label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-filled after Generate — editable"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+          <p className="text-[11px] text-gray-400 mt-1">AI fills this from your brief; change it anytime.</p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brand / sender name</label>
-          <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g. IzyLrn"
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brand / sender name <span className="font-normal normal-case text-indigo-500">✨ AI-suggested</span></label>
+          <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Auto-filled from your brief — editable"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
           <p className="text-[11px] text-gray-400 mt-1">Shown as the sender/handle in every preview.</p>
         </div>

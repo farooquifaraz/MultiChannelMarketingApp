@@ -62,6 +62,23 @@ public class MarketingContentTests
     }
 
     [Fact]
+    public void Parses_campaign_and_brand_name()
+    {
+        var json = "{\"campaign_name\":\"Oasis Villa Launch\",\"brand_name\":\"IzyLrn\"}";
+        var dto = MarketingContentService.ParseContent(json);
+        dto.CampaignName.Should().Be("Oasis Villa Launch");
+        dto.BrandName.Should().Be("IzyLrn");
+    }
+
+    [Fact]
+    public void BuildSystemPrompt_always_includes_campaign_and_brand_meta()
+    {
+        var prompt = MarketingContentService.BuildSystemPrompt(new[] { "whatsapp" });
+        prompt.Should().Contain("\"campaign_name\"");
+        prompt.Should().Contain("\"brand_name\"");
+    }
+
+    [Fact]
     public void Parses_facebook_section()
     {
         var json = "{\"facebook\":{\"post\":\"🏡 Luxury villa\",\"headline\":\"5BR Oasis Villa\",\"cta\":\"Book a viewing\"}}";

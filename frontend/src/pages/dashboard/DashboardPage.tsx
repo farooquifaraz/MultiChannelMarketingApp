@@ -96,20 +96,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {statsLoading ? '...' : typeof card.value === 'number' ? formatNumber(card.value) : card.value}
-                </p>
-              </div>
-              <div className={`w-12 h-12 ${card.bgColor} rounded-xl flex items-center justify-center`}>
-                <card.icon className={`w-6 h-6 ${card.iconColor}`} />
-              </div>
+            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${card.color} grid place-items-center shadow-md mb-3`}>
+              <card.icon className="w-5 h-5 text-white" />
             </div>
+            <p className="text-[26px] font-extrabold tracking-tight text-gray-900 leading-tight">
+              {statsLoading ? '…' : typeof card.value === 'number' ? formatNumber(card.value) : card.value}
+            </p>
+            <p className="text-[13px] text-gray-500 mt-0.5">{card.label}</p>
           </div>
         ))}
       </div>

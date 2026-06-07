@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Sun, Moon } from 'lucide-react';
+import { LogOut, Sun, Moon, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/authApi';
 import toast from 'react-hot-toast';
@@ -22,16 +22,25 @@ export default function Header() {
     }
   };
 
+  const initials = (user?.fullName || user?.email || 'U').split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase();
+
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center gap-4 px-6">
       <div>
-        <h2 className="text-sm text-gray-500">Welcome back,</h2>
-        <p className="text-base font-semibold text-gray-900">{user?.fullName || 'User'}</p>
+        <h2 className="text-xs text-gray-500">Welcome back,</h2>
+        <p className="text-[15px] font-bold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>
       </div>
-      <div className="flex items-center gap-3">
+
+      {/* Search */}
+      <div className="hidden md:flex items-center gap-2 ml-4 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-100 text-gray-400 text-sm min-w-[240px]">
+        <Search className="w-4 h-4" />
+        <span>Search campaigns, contacts…</span>
+      </div>
+
+      <div className="flex items-center gap-2 ml-auto">
         <button
           onClick={() => setTheme(toggleTheme())}
-          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-xl transition-all"
+          className="w-10 h-10 grid place-items-center rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-all"
           title={theme === 'midnight' ? 'Switch to Gold (light)' : 'Switch to Midnight (dark)'}
         >
           {theme === 'midnight' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -39,17 +48,15 @@ export default function Header() {
         <NotificationBell />
         <button
           onClick={() => navigate('/profile')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+          className="flex items-center gap-2.5 pl-1 pr-3 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-100 rounded-xl transition-colors"
           title="My Profile"
         >
-          <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-            <User className="w-4 h-4 text-primary-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">{user?.email}</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-primary-700 grid place-items-center text-white text-xs font-bold">{initials}</div>
+          <span className="text-sm font-medium text-gray-700 hidden sm:block max-w-[160px] truncate">{user?.email}</span>
         </button>
         <button
           onClick={handleLogout}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+          className="w-10 h-10 grid place-items-center rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
           title="Logout"
         >
           <LogOut className="w-5 h-5" />

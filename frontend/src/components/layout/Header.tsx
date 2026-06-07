@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/authApi';
 import toast from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
+import { getTheme, toggleTheme } from '../../lib/theme';
 
 export default function Header() {
   const { user, refreshToken, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(getTheme());
 
   const handleLogout = async () => {
     try {
@@ -26,6 +29,13 @@ export default function Header() {
         <p className="text-base font-semibold text-gray-900">{user?.fullName || 'User'}</p>
       </div>
       <div className="flex items-center gap-3">
+        <button
+          onClick={() => setTheme(toggleTheme())}
+          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-xl transition-all"
+          title={theme === 'midnight' ? 'Switch to Gold (light)' : 'Switch to Midnight (dark)'}
+        >
+          {theme === 'midnight' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
         <NotificationBell />
         <button
           onClick={() => navigate('/profile')}

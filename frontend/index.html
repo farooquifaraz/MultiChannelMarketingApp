@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>MarketPro</title>
+    <script>
+      // Apply saved theme before paint to avoid a flash. Default: gold (light).
+      (function () {
+        try {
+          var t = localStorage.getItem('mp-theme') || 'gold';
+          document.documentElement.setAttribute('data-theme', t);
+          if (t === 'midnight') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

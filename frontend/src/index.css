@@ -55,3 +55,72 @@ body {
   0%, 100% { transform: scale(1); opacity: 0.85; }
   50% { transform: scale(1.25); opacity: 1; }
 }
+
+/* =========================================================================
+   THEME SYSTEM — Gold (light, default) + Midnight (dark)
+   Implemented as global utility overrides so every page follows the theme
+   without per-component dark: variants.
+   ========================================================================= */
+
+/* --- GOLD: warm the neutral canvas a touch (brand colour comes from `primary`) --- */
+html[data-theme="gold"] body,
+html[data-theme="gold"] .bg-gray-50 { background-color: #faf7ef !important; }
+
+/* --- MIDNIGHT: dark surfaces / text / borders --- */
+html[data-theme="midnight"] body { background-color: #0b1020 !important; color: #e8ecf6; }
+
+/* surfaces */
+html[data-theme="midnight"] .bg-white { background-color: #151b2e !important; }
+html[data-theme="midnight"] .bg-gray-50 { background-color: #0e1424 !important; }
+html[data-theme="midnight"] .bg-gray-100 { background-color: #1b2236 !important; }
+html[data-theme="midnight"] .bg-slate-50 { background-color: #0e1424 !important; }
+html[data-theme="midnight"] .bg-slate-100 { background-color: #1b2236 !important; }
+
+/* soft tinted "*-50" badge/callout backgrounds → dark tints */
+html[data-theme="midnight"] .bg-indigo-50,
+html[data-theme="midnight"] .bg-blue-50,
+html[data-theme="midnight"] .bg-purple-50 { background-color: #1b2440 !important; }
+html[data-theme="midnight"] .bg-emerald-50,
+html[data-theme="midnight"] .bg-green-50 { background-color: #10261d !important; }
+html[data-theme="midnight"] .bg-amber-50,
+html[data-theme="midnight"] .bg-yellow-50 { background-color: #2a2210 !important; }
+html[data-theme="midnight"] .bg-red-50,
+html[data-theme="midnight"] .bg-rose-50 { background-color: #2a1420 !important; }
+
+/* text */
+html[data-theme="midnight"] .text-gray-900 { color: #e8ecf6 !important; }
+html[data-theme="midnight"] .text-gray-800 { color: #dbe2f0 !important; }
+html[data-theme="midnight"] .text-gray-700 { color: #cbd5e1 !important; }
+html[data-theme="midnight"] .text-gray-600 { color: #aab4c6 !important; }
+html[data-theme="midnight"] .text-gray-500 { color: #94a3b8 !important; }
+html[data-theme="midnight"] .text-gray-400 { color: #6b7689 !important; }
+
+/* borders + dividers */
+html[data-theme="midnight"] .border-gray-100,
+html[data-theme="midnight"] .divide-gray-100 > * { border-color: #232c44 !important; }
+html[data-theme="midnight"] .border-gray-200,
+html[data-theme="midnight"] .divide-gray-200 > * { border-color: #2a3450 !important; }
+html[data-theme="midnight"] .border-gray-300 { border-color: #313c5c !important; }
+
+/* hover surfaces */
+html[data-theme="midnight"] .hover\:bg-gray-50:hover { background-color: #1b2236 !important; }
+html[data-theme="midnight"] .hover\:bg-gray-100:hover { background-color: #232c44 !important; }
+
+/* form controls */
+html[data-theme="midnight"] input,
+html[data-theme="midnight"] select,
+html[data-theme="midnight"] textarea {
+  background-color: #1b2236 !important;
+  color: #e8ecf6 !important;
+  border-color: #2a3450 !important;
+}
+html[data-theme="midnight"] ::placeholder { color: #6b7689 !important; }
+
+/* prose / email bodies readable on dark */
+html[data-theme="midnight"] .prose { color: #cbd5e1 !important; }
+html[data-theme="midnight"] .email-html-body { color: #cbd5e1 !important; }
+
+/* dark scrollbar */
+html[data-theme="midnight"] ::-webkit-scrollbar-track { background: #0e1424; }
+html[data-theme="midnight"] ::-webkit-scrollbar-thumb { background: #2a3450; }
+html[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover { background: #3a466a; }

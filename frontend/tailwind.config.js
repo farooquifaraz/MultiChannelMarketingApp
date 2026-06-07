@@ -8,18 +8,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Gold brand palette — deep enough at 600/700 for readable white-on-gold buttons.
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          50: '#fbf7ec',
+          100: '#f6ebca',
+          200: '#ecd595',
+          300: '#dfbb5c',
+          400: '#cda033',
+          500: '#b8860b',
+          600: '#9a6f0c',
+          700: '#7c590f',
+          800: '#664a13',
+          900: '#553e14',
+          950: '#2f2107',
         },
         accent: {
           50: '#f0fdf4',

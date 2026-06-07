@@ -124,3 +124,37 @@ html[data-theme="midnight"] .email-html-body { color: #cbd5e1 !important; }
 html[data-theme="midnight"] ::-webkit-scrollbar-track { background: #0e1424; }
 html[data-theme="midnight"] ::-webkit-scrollbar-thumb { background: #2a3450; }
 html[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover { background: #3a466a; }
+
+/* =========================================================================
+   UNIFIED BUTTON SYSTEM — one gold gradient for every primary/brand action
+   (mockup style). Applied app-wide via scoped overrides so no per-button
+   edits are needed; channel-coloured buttons (WhatsApp green) are left alone.
+   ========================================================================= */
+:root {
+  --btn-grad: linear-gradient(135deg, #caa14a 0%, #a9802a 55%, #7c590f 100%);
+  --btn-shadow: 0 12px 26px -12px rgba(154, 111, 12, 0.55);
+}
+
+/* reusable primitives for future work */
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all; }
+  .btn-primary { color: #fff; background-image: var(--btn-grad); box-shadow: var(--btn-shadow); }
+  .btn-ghost { @apply bg-gray-50 text-gray-700 border border-gray-200; }
+  .btn-soft { @apply bg-primary-50 text-primary-700; }
+  .btn-sm { @apply rounded-lg px-3 py-1.5 text-xs; }
+}
+
+/* retrofit existing brand/primary buttons → one consistent gold gradient */
+button.bg-primary-600, a.bg-primary-600, button.bg-primary-700, a.bg-primary-700,
+button.bg-indigo-600,  a.bg-indigo-600,  button.bg-indigo-700,  a.bg-indigo-700,
+button.bg-blue-600,    a.bg-blue-600,    button.bg-blue-700,    a.bg-blue-700,
+button[class*="from-indigo"],  a[class*="from-indigo"],
+button[class*="from-primary"], a[class*="from-primary"],
+button[class*="from-blue"],    a[class*="from-blue"],
+button[class*="from-purple"],  a[class*="from-purple"] {
+  background-image: var(--btn-grad) !important;
+  box-shadow: var(--btn-shadow);
+  font-weight: 600 !important;
+}
+button.bg-primary-600:hover, button.bg-indigo-600:hover,
+button[class*="from-indigo"]:hover, button[class*="from-primary"]:hover { filter: brightness(1.06); }

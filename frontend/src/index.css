@@ -144,17 +144,23 @@ html[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover { background: #3a466
   .btn-sm { @apply rounded-lg px-3 py-1.5 text-xs; }
 }
 
-/* retrofit existing brand/primary buttons → one consistent gold gradient */
+/* retrofit existing brand/primary buttons → one consistent gold gradient.
+   Targets solid 600/700 + gradients that START at shade 600/700 (generic primary
+   actions). Channel chips use `from-<colour>-500` gradients, so they are NOT matched
+   and keep their brand colour (WhatsApp green, Facebook blue, Email indigo, IG pink). */
 button.bg-primary-600, a.bg-primary-600, button.bg-primary-700, a.bg-primary-700,
 button.bg-indigo-600,  a.bg-indigo-600,  button.bg-indigo-700,  a.bg-indigo-700,
 button.bg-blue-600,    a.bg-blue-600,    button.bg-blue-700,    a.bg-blue-700,
-button[class*="from-indigo"],  a[class*="from-indigo"],
-button[class*="from-primary"], a[class*="from-primary"],
-button[class*="from-blue"],    a[class*="from-blue"],
-button[class*="from-purple"],  a[class*="from-purple"] {
+button[class*="from-primary-"],   a[class*="from-primary-"],
+button[class*="from-indigo-600"], a[class*="from-indigo-600"],
+button[class*="from-indigo-700"], a[class*="from-indigo-700"],
+button[class*="from-blue-600"],   a[class*="from-blue-600"],
+button[class*="from-blue-700"],   a[class*="from-blue-700"],
+button[class*="from-purple-600"], a[class*="from-purple-600"],
+button[class*="from-purple-700"], a[class*="from-purple-700"] {
   background-image: var(--btn-grad) !important;
   box-shadow: var(--btn-shadow);
   font-weight: 600 !important;
 }
 button.bg-primary-600:hover, button.bg-indigo-600:hover,
-button[class*="from-indigo"]:hover, button[class*="from-primary"]:hover { filter: brightness(1.06); }
+button[class*="from-primary-"]:hover, button[class*="from-indigo-600"]:hover { filter: brightness(1.06); }

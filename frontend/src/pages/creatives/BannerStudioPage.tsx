@@ -121,7 +121,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary-500" /></div>;
   }
 
   return (
@@ -129,7 +129,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {!embedded ? (
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+            <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl">
               <ImageIcon className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -163,7 +163,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
               <label className="block text-xs text-gray-500 mb-1">Font</label>
               <input value={kFont} onChange={(e) => setKFont(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm w-28" />
             </div>
-            <button onClick={createKit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 inline-flex items-center gap-1">
+            <button onClick={createKit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 inline-flex items-center gap-1">
               <Plus className="w-4 h-4" /> Add
             </button>
           </div>
@@ -188,7 +188,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
         {/* Preset chips */}
         <div className="flex flex-wrap gap-2">
           {presets.map((p) => (
-            <button key={p.title} onClick={() => setPrompt(p.prompt)} className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100">
+            <button key={p.title} onClick={() => setPrompt(p.prompt)} className="text-xs px-3 py-1.5 rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-100">
               {p.title}
             </button>
           ))}
@@ -199,7 +199,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
           maxLength={1000}
           rows={3}
           placeholder="e.g. A modern Dubai real-estate flyer for a luxury 3-bedroom apartment, gold and navy, elegant"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 outline-none resize-y"
         />
         <div className="flex gap-2 flex-wrap items-center">
           <select value={size} onChange={(e) => setSize(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
@@ -209,7 +209,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
             <option value="">No brand kit</option>
             {kits.map((k) => <option key={k.id} value={k.id}>{k.name}{k.isDefault ? ' (default)' : ''}</option>)}
           </select>
-          <button onClick={generate} disabled={generating} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2">
+          <button onClick={generate} disabled={generating} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 inline-flex items-center gap-2">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {generating ? 'Generating…' : 'Generate'}
           </button>
@@ -251,7 +251,7 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
               <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
                 <span>{a.size} · {a.provider}</span>
                 {a.status === 'completed' && a.imageUrl && (
-                  <a href={a.imageUrl} download={`banner-${a.id}.svg`} className="inline-flex items-center gap-1 text-indigo-500 hover:text-indigo-700">
+                  <a href={a.imageUrl} download={`banner-${a.id}.svg`} className="inline-flex items-center gap-1 text-primary-500 hover:text-primary-700">
                     <Download className="w-3.5 h-3.5" /> Save
                   </a>
                 )}

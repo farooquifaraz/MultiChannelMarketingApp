@@ -123,7 +123,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50 focus:bg-white";
+  const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-sm bg-gray-50 focus:bg-white";
 
   return (
     <div className="space-y-6">
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
           {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-          <input type="checkbox" checked={activeOnly} onChange={e => setActiveOnly(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
+          <input type="checkbox" checked={activeOnly} onChange={e => setActiveOnly(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
           Active only
         </label>
         <button onClick={load} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg" title="Refresh">
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
                 <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${!u.isActive ? 'opacity-60' : ''}`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white ${u.role === 'admin' ? 'bg-gradient-to-br from-red-500 to-orange-500' : 'bg-gradient-to-br from-indigo-500 to-purple-500'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white ${u.role === 'admin' ? 'bg-gradient-to-br from-red-500 to-orange-500' : 'bg-gradient-to-br from-primary-500 to-purple-500'}`}>
                         {(u.fullName || '?').charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
                       value={u.role}
                       onChange={e => handleRoleChange(u, e.target.value as 'admin' | 'user')}
                       disabled={u.id === me?.id}
-                      className={`px-2 py-1 text-xs font-medium rounded-lg border ${u.role === 'admin' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'} ${u.id === me?.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      className={`px-2 py-1 text-xs font-medium rounded-lg border ${u.role === 'admin' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-primary-50 text-primary-700 border-primary-200'} ${u.id === me?.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       title={u.id === me?.id ? "You can't change your own role" : 'Change role'}
                     >
                       <option value="user">User</option>
@@ -373,7 +373,7 @@ export default function AdminUsersPage() {
                 </select>
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" checked={editForm.isActive} onChange={e => setEditForm({...editForm, isActive: e.target.checked})} className="w-4 h-4 text-indigo-600 rounded" />
+                <input type="checkbox" checked={editForm.isActive} onChange={e => setEditForm({...editForm, isActive: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
                 Account active
               </label>
             </div>

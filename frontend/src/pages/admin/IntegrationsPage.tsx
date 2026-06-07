@@ -121,12 +121,12 @@ export default function IntegrationsPage() {
   useEffect(() => { if (isAdmin) load(); /* eslint-disable-next-line */ }, [isAdmin]);
 
   if (!isAdmin) return null;
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary-500" /></div>;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><Plug className="w-6 h-6 text-white" /></div>
+        <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl"><Plug className="w-6 h-6 text-white" /></div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
           <p className="text-gray-500 text-sm">Save each provider's key once, then flip its switch to enable it.</p>
@@ -152,11 +152,11 @@ function Category({ category, state, onChanged }: { category: string; state?: Ca
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-5 h-5 text-indigo-500" />
+          <Icon className="w-5 h-5 text-primary-500" />
           <h2 className="font-bold text-gray-900 text-lg">{cfg.title}</h2>
           <span className="text-xs text-gray-400">· {cfg.subtitle}</span>
         </div>
-        <div className="text-xs text-gray-400">active: <span className="font-semibold text-indigo-600">{activeDef?.label || active}</span></div>
+        <div className="text-xs text-gray-400">active: <span className="font-semibold text-primary-600">{activeDef?.label || active}</span></div>
       </div>
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${category === 'image' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
         {cfg.providers.map((p) => (
@@ -199,7 +199,7 @@ function ProviderCard({ category, def, saved, isActive, compact = false, onChang
   };
 
   const ringCls = isActive
-    ? 'border-transparent shadow-lg shadow-indigo-200/60 [background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(135deg,#6366f1,#a855f7)_border-box] border-2'
+    ? 'border-transparent shadow-lg shadow-primary-200/60 [background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(135deg,#6366f1,#a855f7)_border-box] border-2'
     : 'border border-gray-200 hover:border-gray-300';
 
   return (
@@ -212,7 +212,7 @@ function ProviderCard({ category, def, saved, isActive, compact = false, onChang
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {def.free && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">free</span>}
             {def.cost && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{def.cost}</span>}
-            {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white inline-flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />enabled</span>}
+            {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-600 text-white inline-flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />enabled</span>}
           </div>
         </div>
       </div>
@@ -224,18 +224,18 @@ function ProviderCard({ category, def, saved, isActive, compact = false, onChang
             <>
               <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
                 placeholder={saved?.keyMasked ? `${saved.keyMasked} (keep)` : 'Paste API key'}
-                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-primary-400 outline-none" />
               {def.secondary && (
                 <input type="password" value={secondary} onChange={(e) => setSecondary(e.target.value)}
                   placeholder={saved?.secondarySecretSet ? '•••• webhook secret (keep)' : def.secondary}
-                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-primary-400 outline-none" />
               )}
               {def.needsBaseUrl && (
                 <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="base URL (e.g. https://api.groq.com/openai/v1)"
-                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-primary-400 outline-none" />
               )}
               <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model (editable)"
-                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-400 outline-none" />
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-primary-400 outline-none" />
             </>
           ) : (
             <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-mono text-gray-500 truncate">
@@ -251,20 +251,20 @@ function ProviderCard({ category, def, saved, isActive, compact = false, onChang
       <div className={`flex items-center justify-between gap-2 ${compact ? 'mt-2.5' : 'mt-3'}`}>
         <button onClick={activate} disabled={busy || isActive}
           title={isActive ? 'Enabled' : 'Enable this provider'}
-          className={`relative w-11 h-6 rounded-full transition shrink-0 ${isActive ? 'bg-indigo-600' : 'bg-gray-300'} ${busy ? 'opacity-50' : ''}`}>
+          className={`relative w-11 h-6 rounded-full transition shrink-0 ${isActive ? 'bg-primary-600' : 'bg-gray-300'} ${busy ? 'opacity-50' : ''}`}>
           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${isActive ? 'left-[22px]' : 'left-0.5'}`} />
         </button>
 
         {def.needsKey && (
           editing ? (
             <div className="flex items-center gap-1">
-              <button onClick={save} disabled={busy} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-1">
+              <button onClick={save} disabled={busy} className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-semibold hover:bg-primary-700 disabled:opacity-50 inline-flex items-center gap-1">
                 {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save
               </button>
               <button onClick={() => { setEditing(false); setKey(''); setSecondary(''); }} className="p-1.5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
             </div>
           ) : (
-            <button onClick={() => setEditing(true)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600">
+            <button onClick={() => setEditing(true)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-primary-300 hover:text-primary-600">
               {saved?.hasKey ? 'Edit key' : 'Add key'}
             </button>
           )

@@ -167,7 +167,7 @@ export default function TemplatesPage() {
                 })()}
               </p>
               <p className="text-xs text-gray-500 capitalize flex items-center gap-1.5">{t.channel}
-                {t.mediaUrl && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-semibold rounded-full"><ImageIcon className="w-2.5 h-2.5" /> image</span>}
+                {t.mediaUrl && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-600 text-[9px] font-semibold rounded-full"><ImageIcon className="w-2.5 h-2.5" /> image</span>}
               </p>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function TemplatesPage() {
           <h1 className="text-2xl font-bold">Templates</h1>
           <p className="text-white/80 text-sm mt-0.5">Saved copy for every channel — grouped by the campaign they were created in</p>
         </div>
-        <button onClick={() => { resetForm(); setShowCreate(true); }} className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-700 rounded-xl font-semibold hover:bg-indigo-50 shadow-lg">
+        <button onClick={() => { resetForm(); setShowCreate(true); }} className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-white text-primary-700 rounded-xl font-semibold hover:bg-primary-50 shadow-lg">
           <Plus className="w-5 h-5" />
           New Template
         </button>
@@ -294,7 +294,7 @@ export default function TemplatesPage() {
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-auto p-6 bg-gradient-to-br from-indigo-50/40 to-slate-100">
+              <div className="flex-1 overflow-auto p-6 bg-gradient-to-br from-primary-50/40 to-slate-100">
                 {previewMode === 'code' ? (
                   <pre className="w-full min-h-[300px] overflow-auto bg-gray-900 text-green-300 text-xs p-4 rounded-xl whitespace-pre-wrap font-mono leading-relaxed">{previewTpl.body}</pre>
                 ) : isEmail ? (
@@ -330,9 +330,9 @@ export default function TemplatesPage() {
           {sets.length > 0 && (
             <div>
               <div className="flex items-center gap-2.5 mb-3">
-                <Layers className="w-5 h-5 text-indigo-600" />
+                <Layers className="w-5 h-5 text-primary-600" />
                 <h2 className="text-sm font-bold text-gray-800">Template sets</h2>
-                <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">created together</span>
+                <span className="text-[11px] font-semibold text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-full">created together</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
               </div>
               <div className="space-y-4">
@@ -345,7 +345,7 @@ export default function TemplatesPage() {
                         <small className="text-white/70 text-[11.5px]">{set.items.length} channel{set.items.length > 1 ? 's' : ''} · {formatDate(set.items[0].updatedAt)}</small>
                       </div>
                       <div className="ml-auto flex gap-2">
-                        <button onClick={() => setEditSet(set)} className="px-3 py-1.5 bg-white text-indigo-700 rounded-lg text-xs font-bold inline-flex items-center gap-1.5"><Edit2 className="w-3.5 h-3.5" /> Edit set</button>
+                        <button onClick={() => setEditSet(set)} className="px-3 py-1.5 bg-white text-primary-700 rounded-lg text-xs font-bold inline-flex items-center gap-1.5"><Edit2 className="w-3.5 h-3.5" /> Edit set</button>
                         <button onClick={() => newCampaignFromSet(set.items)} className="px-3 py-1.5 bg-white/15 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><Send className="w-3.5 h-3.5" /> Campaign</button>
                         <button onClick={() => deleteSet(set.items)} className="px-2.5 py-1.5 bg-white/15 text-white rounded-lg text-xs"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -362,7 +362,7 @@ export default function TemplatesPage() {
                             </div>
                             <p className="px-3 py-2.5 text-xs text-gray-500 leading-snug h-[68px] overflow-hidden">{stripHtml(t.body).slice(0, 130)}</p>
                             <div className="flex gap-1.5 px-3 py-2 border-t border-gray-100">
-                              <button onClick={() => handlePreview(t)} className="flex-1 text-[11.5px] font-semibold text-gray-500 border border-gray-200 rounded-lg py-1.5 hover:text-indigo-600">👁 Preview</button>
+                              <button onClick={() => handlePreview(t)} className="flex-1 text-[11.5px] font-semibold text-gray-500 border border-gray-200 rounded-lg py-1.5 hover:text-primary-600">👁 Preview</button>
                               <button onClick={() => startEdit(t)} className="flex-1 text-[11.5px] font-semibold text-gray-500 border border-gray-200 rounded-lg py-1.5 hover:text-amber-600">✎ Edit</button>
                             </div>
                           </div>
@@ -649,7 +649,7 @@ function GroupEditModal({ set, onClose, onSaved }: {
         <div className="p-4 overflow-auto space-y-3.5">
           {hasIG && hasFB && (
             <label className="flex items-center gap-2.5 text-sm text-gray-600 px-1 cursor-pointer">
-              <span onClick={() => setSync((v) => !v)} className={`relative w-11 h-6 rounded-full transition-all ${sync ? 'bg-gradient-to-r from-indigo-500 to-purple-600' : 'bg-gray-300'}`}>
+              <span onClick={() => setSync((v) => !v)} className={`relative w-11 h-6 rounded-full transition-all ${sync ? 'bg-gradient-to-r from-primary-500 to-purple-600' : 'bg-gray-300'}`}>
                 <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${sync ? 'left-[22px]' : 'left-0.5'}`} />
               </span>
               Keep Instagram &amp; Facebook in sync (editing one updates both)
@@ -680,7 +680,7 @@ function GroupEditModal({ set, onClose, onSaved }: {
         <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100">
           <span className="text-[11.5px] text-gray-400 mr-auto">Saving updates each template (the attached image is kept).</span>
           <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
-          <button onClick={saveAll} disabled={saving} className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg disabled:opacity-50 font-semibold text-sm inline-flex items-center gap-2">
+          <button onClick={saveAll} disabled={saving} className="px-5 py-2 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-lg disabled:opacity-50 font-semibold text-sm inline-flex items-center gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save all ({items.length})
           </button>
         </div>

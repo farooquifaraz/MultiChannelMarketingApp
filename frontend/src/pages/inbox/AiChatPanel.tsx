@@ -97,7 +97,7 @@ export default function AiChatPanel({ thread }: { thread: InboxThreadDetail }) {
       {/* Header */}
       <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-primary-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -177,7 +177,7 @@ export default function AiChatPanel({ thread }: { thread: InboxThreadDetail }) {
             className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none"
           />
           <button onClick={() => send(input)} disabled={askMutation.isPending || !input.trim()}
-            className="p-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50">
+            className="p-2.5 bg-gradient-to-r from-purple-600 to-primary-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50">
             <Send className="w-4 h-4" />
           </button>
         </div>
@@ -191,11 +191,11 @@ function ChatBubble({ turn }: { turn: AiChatTurn }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-        isUser ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-800'
+        isUser ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-800'
       }`}>
         <div className="flex items-center gap-1.5 mb-1">
           {isUser ? <UserIcon className="w-3 h-3 opacity-70" /> : <Sparkles className="w-3 h-3 text-purple-500" />}
-          <span className={`text-[10px] font-semibold uppercase tracking-wide ${isUser ? 'text-indigo-100' : 'text-purple-600'}`}>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${isUser ? 'text-primary-100' : 'text-purple-600'}`}>
             {isUser ? 'You' : 'AI'}
           </span>
           {!isUser && turn.providerUsed && <span className="text-[10px] text-gray-400">· {turn.providerUsed}</span>}

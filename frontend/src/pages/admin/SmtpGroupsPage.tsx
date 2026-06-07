@@ -228,13 +228,13 @@ export default function SmtpGroupsPage() {
     } finally { setTestingGroupId(null); }
   };
 
-  const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50 focus:bg-white";
+  const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-sm bg-gray-50 focus:bg-white";
   const labelCls = "block text-xs font-medium text-gray-700 mb-1";
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
@@ -244,7 +244,7 @@ export default function SmtpGroupsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+          <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl">
             <Server className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -257,7 +257,7 @@ export default function SmtpGroupsPage() {
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm"
         >
           <Plus className="w-4 h-4" /> New Group
         </button>
@@ -265,7 +265,7 @@ export default function SmtpGroupsPage() {
 
       {/* Test email widget */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
-        <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+        <Sparkles className="w-4 h-4 text-primary-500 flex-shrink-0" />
         <label className="text-xs text-gray-600 font-medium whitespace-nowrap">Test send to:</label>
         <input
           type="email"
@@ -298,11 +298,11 @@ export default function SmtpGroupsPage() {
 
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.isDefault} onChange={e => setForm({...form, isDefault: e.target.checked})} className="w-4 h-4 text-indigo-600 rounded" />
+                <input type="checkbox" checked={form.isDefault} onChange={e => setForm({...form, isDefault: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
                 <span className="text-sm text-gray-700">Use as <strong>default</strong> group (for users without assignment)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.isActive} onChange={e => setForm({...form, isActive: e.target.checked})} className="w-4 h-4 text-indigo-600 rounded" />
+                <input type="checkbox" checked={form.isActive} onChange={e => setForm({...form, isActive: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
                 <span className="text-sm text-gray-700">Active</span>
               </label>
             </div>
@@ -317,7 +317,7 @@ export default function SmtpGroupsPage() {
                     type="button"
                     onClick={() => setForm({...form, emailProvider: p})}
                     className={`p-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                      form.emailProvider === p ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-100 hover:border-gray-200 text-gray-600'
+                      form.emailProvider === p ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-100 hover:border-gray-200 text-gray-600'
                     }`}
                   >
                     {p.toUpperCase()}
@@ -355,7 +355,7 @@ export default function SmtpGroupsPage() {
                     : credentialIndicator(null, 'SMTP password')}
                 </div>
                 <label className="flex items-center gap-2 col-span-2">
-                  <input type="checkbox" checked={form.smtpEnableSsl} onChange={e => setForm({...form, smtpEnableSsl: e.target.checked})} className="w-4 h-4 text-indigo-600 rounded" />
+                  <input type="checkbox" checked={form.smtpEnableSsl} onChange={e => setForm({...form, smtpEnableSsl: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
                   <span className="text-sm text-gray-700">Enable SSL/TLS (recommended)</span>
                 </label>
               </div>
@@ -567,7 +567,7 @@ export default function SmtpGroupsPage() {
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button type="button" onClick={resetForm} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-              <button type="submit" disabled={saving} className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium">
+              <button type="submit" disabled={saving} className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 font-medium">
                 {saving ? 'Saving...' : (editId ? 'Update Group' : 'Create Group')}
               </button>
             </div>
@@ -581,7 +581,7 @@ export default function SmtpGroupsPage() {
           <div key={g.id} className={`bg-white rounded-2xl border p-5 ${g.isDefault ? 'border-amber-200 ring-1 ring-amber-100' : 'border-gray-100'}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${g.isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${g.isActive ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-400'}`}>
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
@@ -601,7 +601,7 @@ export default function SmtpGroupsPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">Users</p>
-                <p className="text-xl font-bold text-indigo-600">{g.assignedUserCount}</p>
+                <p className="text-xl font-bold text-primary-600">{g.assignedUserCount}</p>
               </div>
             </div>
 
@@ -612,7 +612,7 @@ export default function SmtpGroupsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={() => setShowAssignFor(g)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100">
+              <button onClick={() => setShowAssignFor(g)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100">
                 <Users className="w-3 h-3" /> Assign Users
               </button>
               <button onClick={() => runTest(g)} disabled={testingGroupId === g.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50">
@@ -689,7 +689,7 @@ export default function SmtpGroupsPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm text-gray-900">{t.name}</span>
                           <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{t.language}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">{t.category}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-primary-50 text-primary-600">{t.category}</span>
                           {t.headerType && <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 text-purple-600">{t.headerType}</span>}
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -776,7 +776,7 @@ function AssignUsersModal({ group, allAssignments, onClose }: {
                   type="checkbox"
                   checked={selected.has(u.userId)}
                   onChange={() => toggle(u.userId)}
-                  className="w-4 h-4 text-indigo-600 rounded"
+                  className="w-4 h-4 text-primary-600 rounded"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
@@ -795,7 +795,7 @@ function AssignUsersModal({ group, allAssignments, onClose }: {
 
         <div className="p-4 border-t border-gray-100 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-          <button onClick={save} disabled={saving} className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium">
+          <button onClick={save} disabled={saving} className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 font-medium">
             {saving ? 'Saving...' : 'Save Assignments'}
           </button>
         </div>

@@ -34,7 +34,7 @@ export default function CreativeStudioPage({ initialTab = 'copy' }: { initialTab
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+        <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl">
           <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -52,7 +52,7 @@ export default function CreativeStudioPage({ initialTab = 'copy' }: { initialTab
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                active ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                active ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
               <t.icon className="w-4 h-4" />

@@ -105,13 +105,13 @@ export default function OrganizationsPage() {
 
   if (!isAdmin) return null;
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary-500" /></div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+        <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl">
           <Building2 className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -128,13 +128,13 @@ export default function OrganizationsPage() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Organization name (e.g. Acme Realty)"
-            className="flex-1 min-w-[220px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
+            className="flex-1 min-w-[220px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 outline-none"
             onKeyDown={(e) => e.key === 'Enter' && create()}
           />
           <button
             onClick={create}
             disabled={creating}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
           >
             {creating ? 'Creating...' : 'Create'}
           </button>
@@ -161,7 +161,7 @@ export default function OrganizationsPage() {
                   {editId === o.id ? (
                     <div className="flex items-center gap-2">
                       <input value={editName} autoFocus onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit(o)}
-                        className="px-2 py-1 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                        className="px-2 py-1 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-primary-400 outline-none" />
                       <button onClick={() => saveEdit(o)} disabled={busyId === o.id} className="text-green-600 hover:text-green-700" title="Save"><Check className="w-4 h-4" /></button>
                       <button onClick={() => setEditId(null)} className="text-gray-400 hover:text-gray-600" title="Cancel"><X className="w-4 h-4" /></button>
                     </div>
@@ -208,7 +208,7 @@ export default function OrganizationsPage() {
           <select
             value={assignUserId}
             onChange={(e) => setAssignUserId(e.target.value)}
-            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
+            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 outline-none"
           >
             <option value="">Select user…</option>
             {users.map((u) => (
@@ -218,7 +218,7 @@ export default function OrganizationsPage() {
           <select
             value={assignOrgId}
             onChange={(e) => setAssignOrgId(e.target.value)}
-            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
+            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 outline-none"
           >
             <option value="">Select organization…</option>
             {orgs.map((o) => (

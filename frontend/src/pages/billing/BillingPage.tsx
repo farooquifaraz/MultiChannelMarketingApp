@@ -61,13 +61,13 @@ export default function BillingPage() {
   const fmtLimit = (n: number) => (n < 0 ? 'Unlimited' : n.toLocaleString());
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary-500" /></div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+        <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl">
           <CreditCard className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -106,7 +106,7 @@ export default function BillingPage() {
         {plans.map(p => {
           const current = p.code === sub?.planCode;
           return (
-            <div key={p.code} className={`rounded-2xl border p-5 flex flex-col ${current ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
+            <div key={p.code} className={`rounded-2xl border p-5 flex flex-col ${current ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-200'}`}>
               <p className="font-semibold text-gray-900">{p.name}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {p.priceAedMonthly === 0 ? 'Free' : <>AED {p.priceAedMonthly}<span className="text-sm font-normal text-gray-400">/mo</span></>}
@@ -121,7 +121,7 @@ export default function BillingPage() {
               <button
                 onClick={() => changePlan(p.code)}
                 disabled={current || changing === p.code}
-                className={`mt-4 w-full py-2 rounded-lg text-sm font-medium ${current ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50'}`}
+                className={`mt-4 w-full py-2 rounded-lg text-sm font-medium ${current ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50'}`}
               >
                 {changing === p.code ? <Loader2 className="w-4 h-4 animate-spin inline" /> : current ? 'Current plan' : 'Switch'}
               </button>
@@ -135,7 +135,7 @@ export default function BillingPage() {
 }
 
 function UsageBar({ icon: Icon, label, m }: { icon: any; label: string; m: UsageMetric }) {
-  const barColor = m.overLimit ? 'bg-red-500' : m.percent > 80 ? 'bg-amber-500' : 'bg-indigo-500';
+  const barColor = m.overLimit ? 'bg-red-500' : m.percent > 80 ? 'bg-amber-500' : 'bg-primary-500';
   return (
     <div className="rounded-xl border border-gray-100 p-3">
       <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1"><Icon className="w-3.5 h-3.5" /> {label}</div>

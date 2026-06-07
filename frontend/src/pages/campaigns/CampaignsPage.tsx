@@ -376,7 +376,7 @@ export default function CampaignsPage() {
                       </td>
                       <td className="px-6 py-4">
                         {c.smtpGroupName ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-indigo-50 text-indigo-700 rounded">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-primary-50 text-primary-700 rounded">
                             {c.smtpGroupName}
                           </span>
                         ) : <span className="text-xs text-gray-400">—</span>}

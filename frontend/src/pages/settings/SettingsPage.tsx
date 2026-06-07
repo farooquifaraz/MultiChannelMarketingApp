@@ -326,14 +326,14 @@ export default function SettingsPage() {
   const tabs = [
     ...(isAdmin ? [
       { id: 'email' as TabType, label: 'Email SMTP', icon: Mail, color: 'text-blue-600' },
-      { id: 'signature' as TabType, label: 'Org Signature', icon: PenTool, color: 'text-indigo-600' },
+      { id: 'signature' as TabType, label: 'Org Signature', icon: PenTool, color: 'text-primary-600' },
       { id: 'whatsapp' as TabType, label: 'WhatsApp', icon: MessageSquare, color: 'text-green-600' },
       { id: 'sms' as TabType, label: 'SMS', icon: Smartphone, color: 'text-purple-600' },
     ] : []),
     { id: 'mysignature' as TabType, label: 'My Signature', icon: PenTool, color: 'text-pink-600' },
     { id: 'notifications' as TabType, label: 'Notifications', icon: Bell, color: 'text-amber-600' },
     ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Admin', icon: Shield, color: 'text-red-600' }] : []),
-    ...(isAdmin ? [{ id: 'integrations' as TabType, label: 'Integrations', icon: Plug, color: 'text-indigo-600' }] : []),
+    ...(isAdmin ? [{ id: 'integrations' as TabType, label: 'Integrations', icon: Plug, color: 'text-primary-600' }] : []),
     // AI Assistant tab removed — AI providers & keys are now managed in the Integrations tab
     // (per-provider vault). AI reply behaviour runs on sensible defaults.
   ];
@@ -377,7 +377,7 @@ export default function SettingsPage() {
 
       {/* Banner for non-admins explaining centralized email config */}
       {!isAdmin && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 flex items-start gap-3">
+        <div className="bg-gradient-to-r from-blue-50 to-primary-50 rounded-xl border border-blue-200 p-4 flex items-start gap-3">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <Shield className="w-5 h-5 text-blue-600" />
           </div>
@@ -699,7 +699,7 @@ export default function SettingsPage() {
           {activeTab === 'signature' && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-4">
-                <PenTool className="w-5 h-5 text-indigo-600" />
+                <PenTool className="w-5 h-5 text-primary-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Email Signature</h3>
               </div>
               <p className="text-sm text-gray-500 -mt-4 mb-4">
@@ -707,9 +707,9 @@ export default function SettingsPage() {
               </p>
 
               {/* Placeholder reference */}
-              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-4">
-                <p className="text-xs font-semibold text-indigo-900 mb-2">📌 Available Placeholders in Templates:</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-indigo-800">
+              <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 mb-4">
+                <p className="text-xs font-semibold text-primary-900 mb-2">📌 Available Placeholders in Templates:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-primary-800">
                   <div><code className="bg-white px-1.5 py-0.5 rounded">{'{{sender_name}}'}</code> &rarr; From Name (Email tab)</div>
                   <div><code className="bg-white px-1.5 py-0.5 rounded">{'{{sender_email}}'}</code> &rarr; From Email (Email tab)</div>
                   <div><code className="bg-white px-1.5 py-0.5 rounded">{'{{sender_designation}}'}</code> &rarr; Designation below</div>
@@ -722,7 +722,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className={labelClass}>
-                    <Briefcase className="inline w-4 h-4 mr-1 text-indigo-500" />
+                    <Briefcase className="inline w-4 h-4 mr-1 text-primary-500" />
                     Designation / Job Title
                   </label>
                   <input
@@ -735,7 +735,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className={labelClass}>
-                    <Phone className="inline w-4 h-4 mr-1 text-indigo-500" />
+                    <Phone className="inline w-4 h-4 mr-1 text-primary-500" />
                     Phone Number
                   </label>
                   <input
@@ -748,7 +748,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>
-                    <Globe className="inline w-4 h-4 mr-1 text-indigo-500" />
+                    <Globe className="inline w-4 h-4 mr-1 text-primary-500" />
                     Company Website
                   </label>
                   <input
@@ -761,7 +761,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>
-                    <ImageIcon className="inline w-4 h-4 mr-1 text-indigo-500" />
+                    <ImageIcon className="inline w-4 h-4 mr-1 text-primary-500" />
                     Signature Image / Profile Picture
                   </label>
 
@@ -773,7 +773,7 @@ export default function SettingsPage() {
                         <img
                           src={settings.signatureImageUrl}
                           alt="Current"
-                          className="w-16 h-16 rounded-lg object-cover border-2 border-indigo-100"
+                          className="w-16 h-16 rounded-lg object-cover border-2 border-primary-100"
                           onError={(e) => { (e.target as HTMLImageElement).src = buildAvatarUrl(settings.smtpFromName || 'A', undefined, 128, '6366f1', 'fff'); }}
                         />
                         <button
@@ -812,7 +812,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingImage}
-                          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium"
+                          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
                         >
                           {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                           {uploadingImage ? 'Uploading...' : 'Upload Image'}
@@ -839,7 +839,7 @@ export default function SettingsPage() {
                       <img
                         src={settings.signatureImageUrl}
                         alt="Signature"
-                        className="w-14 h-14 rounded-full object-cover border-2 border-indigo-100 flex-shrink-0"
+                        className="w-14 h-14 rounded-full object-cover border-2 border-primary-100 flex-shrink-0"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                           (e.target as HTMLImageElement).parentElement?.querySelector('.avatar-fallback')?.classList.remove('hidden');
@@ -847,18 +847,18 @@ export default function SettingsPage() {
                       />
                     ) : null}
                     <div
-                      className={`avatar-fallback w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 text-white flex items-center justify-center text-xl font-bold flex-shrink-0 ${settings.signatureImageUrl ? 'hidden' : ''}`}
+                      className={`avatar-fallback w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-pink-500 text-white flex items-center justify-center text-xl font-bold flex-shrink-0 ${settings.signatureImageUrl ? 'hidden' : ''}`}
                     >
                       {(settings.smtpFromName || 'A').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-900">{settings.smtpFromName || 'Your Name'}</p>
-                      <p className="text-sm text-indigo-600 font-medium">
+                      <p className="text-sm text-primary-600 font-medium">
                         {settings.signatureDesignation || 'Your Designation'}
                       </p>
                       <div className="mt-2 space-y-1 text-sm text-gray-600">
                         <p className="flex items-center gap-1.5">
-                          <Mail className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                          <Mail className="w-4 h-4 text-primary-500 flex-shrink-0" />
                           <span>{settings.smtpFromEmail || 'your@email.com'}</span>
                         </p>
                         <p className="flex items-center gap-1.5">
@@ -867,7 +867,7 @@ export default function SettingsPage() {
                         </p>
                         <p className="flex items-center gap-1.5">
                           <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                          <a href={settings.companyWebsite || '#'} className="text-indigo-600 hover:underline">
+                          <a href={settings.companyWebsite || '#'} className="text-primary-600 hover:underline">
                             {settings.companyWebsite || 'https://yourwebsite.com'}
                           </a>
                         </p>
@@ -1251,7 +1251,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* === Sharing settings === */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-5">
+                  <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-xl border border-blue-100 p-5">
                     <h4 className="text-sm font-semibold text-blue-900 mb-1 flex items-center gap-2">
                       🤝 Resource Sharing
                     </h4>
@@ -1389,7 +1389,7 @@ export default function SettingsPage() {
 
       {/* For non-admin users: show a small read-only info card about current send rate */}
       {!isAdmin && systemSettings && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 flex items-center gap-3">
+        <div className="bg-gradient-to-r from-blue-50 to-primary-50 rounded-xl border border-blue-100 p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             <Clock className="w-5 h-5 text-blue-600" />
           </div>
@@ -1530,12 +1530,12 @@ function AiAssistantTab({ settings, setSettings, onSave, saving }: { settings: a
       <p className="text-sm text-gray-500 -mt-4">Generate suggested replies for incoming inbox messages. Admin can switch providers anytime — no redeploy.</p>
 
       {/* Single-source-of-truth banner: keys live in the Integrations vault (per-provider, no key loss) */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-sm text-indigo-900">
+      <div className="bg-primary-50 border border-primary-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sm text-primary-900">
           <b>Providers &amp; API keys are now managed in Integrations</b> — each provider keeps its own key
           (no more losing a key when you switch). This tab is just for AI <b>behaviour</b> (prompt, creativity, limits).
         </p>
-        <a href="/admin/integrations" className="shrink-0 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+        <a href="/admin/integrations" className="shrink-0 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
           Open Integrations →
         </a>
       </div>

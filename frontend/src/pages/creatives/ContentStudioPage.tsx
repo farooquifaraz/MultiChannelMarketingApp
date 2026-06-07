@@ -23,7 +23,7 @@ interface Version {
 const ORDER: ChannelId[] = ['whatsapp', 'instagram', 'facebook', 'email'];
 const GROUP_LETTERS = ['A', 'B', 'C', 'D'];
 const GBADGE: Record<string, string> = {
-  A: 'from-indigo-500 to-indigo-700', B: 'from-green-500 to-emerald-600',
+  A: 'from-primary-500 to-primary-700', B: 'from-green-500 to-emerald-600',
   C: 'from-pink-500 to-purple-600', D: 'from-amber-500 to-orange-600',
 };
 const SUB: Record<ChannelId, string> = { whatsapp: 'Broadcast + status', instagram: 'Caption + hashtags', facebook: 'Post + headline', email: 'Subject + HTML body' };
@@ -214,18 +214,18 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
   const BriefBlock = (
     <div className="grid md:grid-cols-3 gap-3">
       <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={4} maxLength={10000} placeholder={EXAMPLE}
-        className="md:col-span-2 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none resize-y" />
+        className="md:col-span-2 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none resize-y" />
       <div className="space-y-2.5">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case text-indigo-500">✨ AI-suggested</span></label>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name <span className="font-normal normal-case text-primary-500">✨ AI-suggested</span></label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-filled after Generate — editable"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none" />
           <p className="text-[11px] text-gray-400 mt-1">AI fills this from your brief; change it anytime.</p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brand / sender name <span className="font-normal normal-case text-indigo-500">✨ AI-suggested</span></label>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Brand / sender name <span className="font-normal normal-case text-primary-500">✨ AI-suggested</span></label>
           <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Auto-filled from your brief — editable"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none" />
           <p className="text-[11px] text-gray-400 mt-1">Shown as the sender/handle in every preview.</p>
         </div>
       </div>
@@ -248,7 +248,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
   const CombineBar = enabledList.length > 1 && (
     <div className="relative">
       <button onClick={() => setCombineOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-indigo-700 border border-dashed border-indigo-300 bg-gradient-to-r from-indigo-50 to-purple-50">
+        className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-primary-700 border border-dashed border-primary-300 bg-gradient-to-r from-primary-50 to-purple-50">
         <Link2 className="w-4 h-4" /> Combine: {presetId === 'custom' ? 'Custom' : (PRESETS.find((p) => p.id === presetId)?.label || 'All separate')}
         <ChevronDown className="w-4 h-4" />
       </button>
@@ -258,13 +258,13 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
           <div className="grid grid-cols-2 gap-2">
             {PRESETS.map((p) => (
               <button key={p.id} onClick={() => applyPreset(p)}
-                className={`text-left rounded-xl p-2.5 border ${presetId === p.id ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                className={`text-left rounded-xl p-2.5 border ${presetId === p.id ? 'border-primary-400 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                 <div className="text-[12.5px] font-semibold text-gray-800">{p.label}</div>
                 <div className="text-[10.5px] text-gray-500">{p.desc}</div>
               </button>
             ))}
           </div>
-          <button onClick={() => setAdvanced((v) => !v)} className="mt-2 text-[11px] font-semibold text-indigo-600">{advanced ? '− Hide' : '+ Advanced'} grouping</button>
+          <button onClick={() => setAdvanced((v) => !v)} className="mt-2 text-[11px] font-semibold text-primary-600">{advanced ? '− Hide' : '+ Advanced'} grouping</button>
           {advanced && (
             <div className="mt-2 flex flex-wrap gap-2">
               {enabledList.map((c) => (
@@ -283,7 +283,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
 
   const GenerateBtn = (
     <button onClick={generate} disabled={busy}
-      className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 disabled:opacity-50 inline-flex items-center gap-2 shadow">
+      className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-xl text-sm font-semibold hover:brightness-105 disabled:opacity-50 inline-flex items-center gap-2 shadow">
       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}{busy ? 'Writing…' : 'Generate'}
     </button>
   );
@@ -292,15 +292,15 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
     <>
       {/* image bar */}
       {imagePrompt && (
-        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-4 flex gap-4 flex-wrap items-center">
-          <div className="w-24 h-24 rounded-xl shrink-0 overflow-hidden border border-indigo-100 grid place-items-center text-center text-[10px] text-gray-400"
+        <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-purple-50 p-4 flex gap-4 flex-wrap items-center">
+          <div className="w-24 h-24 rounded-xl shrink-0 overflow-hidden border border-primary-100 grid place-items-center text-center text-[10px] text-gray-400"
             style={heroImageUrl ? { backgroundImage: `url(${heroImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: '#eef2f7' }}>
             {!heroImageUrl && '📷 No image'}
           </div>
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2">
-              <p className="text-xs font-semibold text-indigo-700">🖼️ Matching hero image</p>
-              <button onClick={regeneratePrompt} disabled={promptBusy} className="text-[11px] font-semibold text-indigo-600 inline-flex items-center gap-1 hover:text-indigo-800 disabled:opacity-50">
+              <p className="text-xs font-semibold text-primary-700">🖼️ Matching hero image</p>
+              <button onClick={regeneratePrompt} disabled={promptBusy} className="text-[11px] font-semibold text-primary-600 inline-flex items-center gap-1 hover:text-primary-800 disabled:opacity-50">
                 {promptBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} New prompt
               </button>
             </div>
@@ -309,10 +309,10 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
               <select value={size} onChange={(e) => setSize(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs">
                 {(sizes.length ? sizes : [{ token: '1024x1024', label: 'Square' } as any]).map((o) => <option key={o.token} value={o.token}>{o.label} ({o.token})</option>)}
               </select>
-              <button onClick={genImage} disabled={imgBusy} className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 inline-flex items-center gap-1.5">
+              <button onClick={genImage} disabled={imgBusy} className="px-3.5 py-1.5 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 inline-flex items-center gap-1.5">
                 {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}{heroImageUrl ? 'Regenerate image' : 'Generate image'}
               </button>
-              {onSendToBanner && <button onClick={() => onSendToBanner(imagePrompt)} className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><Wand2 className="w-3.5 h-3.5" /> Banner Studio</button>}
+              {onSendToBanner && <button onClick={() => onSendToBanner(imagePrompt)} className="px-3 py-1.5 bg-white border border-primary-200 text-primary-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><Wand2 className="w-3.5 h-3.5" /> Banner Studio</button>}
             </div>
           </div>
         </div>
@@ -342,7 +342,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
                   <div className="p-4 space-y-2">
                     {c === 'email' && <input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />}
                     <textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={7} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-y" />
-                    <div className="flex gap-2"><button onClick={saveEdit} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Save version</button><button onClick={() => setEditing(null)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs">Cancel</button></div>
+                    <div className="flex gap-2"><button onClick={saveEdit} className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Save version</button><button onClick={() => setEditing(null)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs">Cancel</button></div>
                   </div>
                 ) : view === 'preview' ? (
                   <div className="p-4 bg-slate-50 flex justify-center">
@@ -360,12 +360,12 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
                 <div className="flex gap-1.5 mr-auto items-center">
                   {arr.map((_, i) => (
                     <button key={i} onClick={() => setCurrent((p) => ({ ...p, [c]: i }))} title={`Version ${i + 1}`}
-                      className={`h-2 rounded-full transition-all ${i === current[c] ? 'w-5 bg-indigo-500' : 'w-2 bg-gray-300'}`} />
+                      className={`h-2 rounded-full transition-all ${i === current[c] ? 'w-5 bg-primary-500' : 'w-2 bg-gray-300'}`} />
                   ))}
                 </div>
-                <button onClick={() => navigator.clipboard.writeText(v.text).then(() => toast.success('Copied'))} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600" title="Copy"><Copy className="w-4 h-4" /></button>
-                <button onClick={() => startEdit(c)} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600" title="Edit"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => regenerate(c)} disabled={regen[c]} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600 disabled:opacity-40" title="Regenerate">{regen[c] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}</button>
+                <button onClick={() => navigator.clipboard.writeText(v.text).then(() => toast.success('Copied'))} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-primary-600" title="Copy"><Copy className="w-4 h-4" /></button>
+                <button onClick={() => startEdit(c)} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-primary-600" title="Edit"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => regenerate(c)} disabled={regen[c]} className="w-8 h-8 grid place-items-center rounded-lg border border-gray-200 text-gray-500 hover:text-primary-600 disabled:opacity-40" title="Regenerate">{regen[c] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}</button>
                 {locked[c]
                   ? <button onClick={() => setLocked((p) => ({ ...p, [c]: false }))} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold inline-flex items-center gap-1"><Unlock className="w-3.5 h-3.5" /> Unlock</button>
                   : <button onClick={() => setLocked((p) => ({ ...p, [c]: true }))} className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> Lock</button>}
@@ -380,7 +380,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
         <span className="text-sm font-semibold mr-auto inline-flex items-center gap-2"><Lock className="w-4 h-4 text-green-400" /> {lockedCount} of {enabledList.length} locked</span>
         {mode === 'guided' && <button onClick={resetAll} className="px-3 py-1.5 bg-white/10 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> Start over</button>}
         <button onClick={saveTemplates} disabled={saving} className="px-3.5 py-1.5 bg-white/15 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"><Save className="w-3.5 h-3.5" /> Save to Templates</button>
-        <button onClick={() => openCampaign('email')} disabled={saving || !enabled.email} className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-40"><Send className="w-3.5 h-3.5" /> Email campaign</button>
+        <button onClick={() => openCampaign('email')} disabled={saving || !enabled.email} className="px-3.5 py-1.5 bg-gradient-to-r from-primary-500 to-blue-500 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-40"><Send className="w-3.5 h-3.5" /> Email campaign</button>
         <button onClick={() => openCampaign('whatsapp')} disabled={saving || !enabled.whatsapp} className="px-3.5 py-1.5 bg-gradient-to-r from-green-600 to-emerald-500 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-40"><Send className="w-3.5 h-3.5" /> WhatsApp campaign</button>
       </div>
       <p className="text-[11px] text-gray-400">Instagram &amp; Facebook are saved as templates (copy + image). One-click auto-posting via Meta login comes in the Social phase.</p>
@@ -392,7 +392,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
     <div className="space-y-5" onClick={() => combineOpen && setCombineOpen(false)}>
       {!embedded && (
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>
+          <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>
           <div><h1 className="text-2xl font-bold text-gray-900">AI Copywriter</h1><p className="text-gray-500 text-sm">One brief → multi-channel copy → preview → lock → templates → campaign.</p></div>
         </div>
       )}
@@ -400,8 +400,8 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
       {/* mode toggle */}
       <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex p-1 bg-gray-100 rounded-xl text-sm font-medium">
-          <button onClick={() => setMode('simple')} className={`px-3 py-1.5 rounded-lg ${mode === 'simple' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500'}`}>One screen</button>
-          <button onClick={() => { setMode('guided'); if (!hasResult) setGstep(1); }} className={`px-3 py-1.5 rounded-lg ${mode === 'guided' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500'}`}>Guided steps</button>
+          <button onClick={() => setMode('simple')} className={`px-3 py-1.5 rounded-lg ${mode === 'simple' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'}`}>One screen</button>
+          <button onClick={() => { setMode('guided'); if (!hasResult) setGstep(1); }} className={`px-3 py-1.5 rounded-lg ${mode === 'guided' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'}`}>Guided steps</button>
         </div>
       </div>
 
@@ -424,8 +424,8 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
           <div className="flex gap-2.5" onClick={(e) => e.stopPropagation()}>
             {[{ n: 1, t: 'Brief & channels' }, { n: 2, t: 'Combine & generate' }, { n: 3, t: 'Review & save' }].map((s) => (
               <div key={s.n} onClick={() => (s.n < 3 || hasResult) && setGstep(s.n)}
-                className={`flex-1 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border cursor-pointer ${gstep === s.n ? 'border-transparent bg-gradient-to-br from-indigo-50 to-purple-50 shadow-sm' : 'border-gray-200 bg-white'}`}>
-                <span className={`w-7 h-7 rounded-full grid place-items-center text-xs font-extrabold text-white ${gstep === s.n ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-gray-300'}`}>{s.n}</span>
+                className={`flex-1 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border cursor-pointer ${gstep === s.n ? 'border-transparent bg-gradient-to-br from-primary-50 to-purple-50 shadow-sm' : 'border-gray-200 bg-white'}`}>
+                <span className={`w-7 h-7 rounded-full grid place-items-center text-xs font-extrabold text-white ${gstep === s.n ? 'bg-gradient-to-br from-primary-500 to-purple-600' : 'bg-gray-300'}`}>{s.n}</span>
                 <span className="text-[13px] font-semibold text-gray-800">{s.t}</span>
               </div>
             ))}
@@ -435,7 +435,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
               {BriefBlock}
               <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Channels</p>{ChannelChips}</div>
-              <div className="flex justify-end"><button onClick={() => setGstep(2)} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold">Continue →</button></div>
+              <div className="flex justify-end"><button onClick={() => setGstep(2)} className="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold">Continue →</button></div>
             </div>
           )}
           {gstep === 2 && (
@@ -443,7 +443,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Share the same post?</p>
               <div className="grid sm:grid-cols-2 gap-2.5">
                 {PRESETS.map((p) => (
-                  <button key={p.id} onClick={() => applyPreset(p)} className={`text-left rounded-xl p-3 border ${presetId === p.id ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <button key={p.id} onClick={() => applyPreset(p)} className={`text-left rounded-xl p-3 border ${presetId === p.id ? 'border-primary-400 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <div className="text-sm font-semibold text-gray-800">{p.label}</div><div className="text-[11px] text-gray-500">{p.desc}</div>
                   </button>
                 ))}
@@ -529,14 +529,14 @@ function CampaignModal({ channel, defaultName, ensureSaved, onClose, navigate }:
             </div>
             <div className="flex gap-2 justify-center">
               <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold">Stay in Studio</button>
-              <button onClick={() => navigate('/campaigns')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold inline-flex items-center gap-1.5"><ExternalLink className="w-4 h-4" /> View campaign</button>
+              <button onClick={() => navigate('/campaigns')} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold inline-flex items-center gap-1.5"><ExternalLink className="w-4 h-4" /> View campaign</button>
             </div>
           </div>
         ) : (
           <div className="p-5 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Campaign name</label>
-              <input value={cname} onChange={(e) => setCname(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+              <input value={cname} onChange={(e) => setCname(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Contact group</label>
@@ -544,25 +544,25 @@ function CampaignModal({ channel, defaultName, ensureSaved, onClose, navigate }:
                 <div className="text-sm text-gray-400 py-2 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading groups…</div>
               ) : groups.length === 0 ? (
                 <div className="text-sm text-gray-500 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  No contact groups yet. <button onClick={() => window.open('/contacts', '_blank')} className="text-indigo-600 font-semibold underline">Create one in Contacts ↗</button> (opens a new tab so you don't lose this), then
-                  <button onClick={loadGroups} className="ml-1 text-indigo-600 font-semibold underline">refresh</button>.
+                  No contact groups yet. <button onClick={() => window.open('/contacts', '_blank')} className="text-primary-600 font-semibold underline">Create one in Contacts ↗</button> (opens a new tab so you don't lose this), then
+                  <button onClick={loadGroups} className="ml-1 text-primary-600 font-semibold underline">refresh</button>.
                 </div>
               ) : (
-                <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none">
+                <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none">
                   {groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.contactCount} contacts)</option>)}
                 </select>
               )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Schedule <span className="font-normal normal-case">(optional — leave empty to send immediately)</span></label>
-              <input type="datetime-local" value={schedule} onChange={(e) => setSchedule(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+              <input type="datetime-local" value={schedule} onChange={(e) => setSchedule(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 outline-none" />
             </div>
 
             <div className="flex gap-2 pt-1">
               <button onClick={() => create(false)} disabled={!!busy || groups.length === 0} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {busy === 'draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save as draft
               </button>
-              <button onClick={() => create(true)} disabled={!!busy || groups.length === 0} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <button onClick={() => create(true)} disabled={!!busy || groups.length === 0} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {busy === 'send' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {schedule ? 'Schedule' : 'Create & send'}
               </button>
             </div>

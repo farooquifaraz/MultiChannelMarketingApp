@@ -130,7 +130,7 @@ export default function SendProgressModal({ campaignId, channel, onClose }: Prop
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* === Header === */}
-        <div className={`px-6 py-5 ${isComplete ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600'} text-white relative overflow-hidden`}>
+        <div className={`px-6 py-5 ${isComplete ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500' : 'bg-gradient-to-r from-blue-600 via-primary-600 to-purple-600'} text-white relative overflow-hidden`}>
           {/* Decorative blobs */}
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
           <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
@@ -258,7 +258,7 @@ export default function SendProgressModal({ campaignId, channel, onClose }: Prop
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white flex-shrink-0 ${
                       m.status?.toLowerCase() === 'sent' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
                       m.status?.toLowerCase() === 'failed' ? 'bg-gradient-to-br from-red-500 to-pink-500' :
-                      'bg-gradient-to-br from-blue-500 to-indigo-500'
+                      'bg-gradient-to-br from-blue-500 to-primary-500'
                     }`}>
                       {(m.contactName || '?').charAt(0).toUpperCase()}
                     </div>

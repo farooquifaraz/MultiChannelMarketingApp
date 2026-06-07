@@ -118,7 +118,7 @@ export default function SendProgressCard({ campaignId, channel, onDismiss }: Pro
     ? (failed === 0 ? 'from-emerald-500 via-green-500 to-teal-500'
        : failed === total ? 'from-red-500 via-rose-500 to-pink-500'
        : 'from-amber-500 via-orange-500 to-yellow-500')
-    : 'from-blue-600 via-indigo-600 to-purple-600';
+    : 'from-blue-600 via-primary-600 to-purple-600';
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

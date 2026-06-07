@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Templates Preview — Pro Mockup</title>
+<style>
+  :root{
+    --ink:#0f172a;--muted:#64748b;--line:#e6e8f0;
+    --dummy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fdba74'/%3E%3Cstop offset='0.6' stop-color='%23f59e0b'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23s)'/%3E%3Ccircle cx='322' cy='66' r='32' fill='%23fff7ed'/%3E%3Crect y='208' width='400' height='92' fill='%231e293b'/%3E%3Crect x='70' y='130' width='182' height='92' fill='%23f8fafc'/%3E%3Cpolygon points='64,130 161,86 258,130' fill='%23e2e8f0'/%3E%3Crect x='100' y='158' width='30' height='38' fill='%2360a5fa'/%3E%3Crect x='150' y='158' width='30' height='38' fill='%2360a5fa'/%3E%3Crect x='198' y='172' width='26' height='50' fill='%23334155'/%3E%3Cellipse cx='306' cy='252' rx='74' ry='22' fill='%2338bdf8'/%3E%3C/svg%3E");
+  }
+  *{box-sizing:border-box}html,body{margin:0}
+  body{font-family:'Segoe UI',Inter,system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef2ff,#faf5ff 45%,#fdf2f8);min-height:100vh;padding:26px 16px 70px}
+  .wrap{max-width:1180px;margin:0 auto}
+  .hero{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .hero .logo{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#6366f1,#a855f7);font-size:24px;box-shadow:0 12px 30px -8px rgba(99,102,241,.6)}
+  .hero h1{margin:0;font-size:25px;background:linear-gradient(90deg,#4f46e5,#a855f7,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .seg{margin-left:auto;display:flex;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 8px 20px -14px rgba(2,6,23,.3)}
+  .seg button{border:none;background:transparent;font:inherit;font-weight:700;font-size:13px;color:#64748b;padding:8px 14px;border-radius:9px;cursor:pointer}
+  .seg button.on{color:#fff;background:linear-gradient(135deg,#6366f1,#a855f7)}
+  /* ===== shared bits ===== */
+  .panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 60px -34px rgba(2,6,23,.4);overflow:hidden}
+  .ptitle{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#fbfbff,#fdf7ff)}
+  .ptitle b{font-size:15px} .ptitle .count{margin-left:auto;font-size:11px;font-weight:700;color:#6d28d9;background:#f3e8ff;padding:3px 10px;border-radius:999px}
+  .filters{display:flex;gap:7px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .fchip{font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;color:#475569;display:inline-flex;align-items:center;gap:6px}
+  .fchip img{width:14px;height:14px}.fchip.on{border-color:transparent;color:#fff;background:linear-gradient(135deg,#6366f1,#a855f7)}
+  .tlist{padding:10px;max-height:520px;overflow:auto}
+  .titem{display:flex;align-items:center;gap:12px;padding:12px;border:1.5px solid transparent;border-radius:14px;cursor:pointer;transition:.15s}
+  .titem:hover{background:#f8fafc}
+  .titem.sel{border-color:#c7d2fe;background:linear-gradient(90deg,#eef2ff,#faf5ff);box-shadow:0 10px 24px -18px rgba(99,102,241,.8)}
+  .titem .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;flex:none}
+  .titem .ic img{width:20px;height:20px;filter:brightness(0) invert(1)}
+  .ic.wa{background:linear-gradient(135deg,#22c55e,#16a34a)}.ic.ig{background:linear-gradient(135deg,#ec4899,#a855f7)}
+  .ic.fb{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.ic.em{background:linear-gradient(135deg,#6366f1,#4338ca)}
+  .titem .info{flex:1;min-width:0}.titem .info b{font-size:13.5px;display:block}.titem .info small{color:var(--muted);font-size:11.5px;text-transform:capitalize}
+  .badge2{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:#64748b}
+  .badge2.img{background:linear-gradient(90deg,#eef2ff,#fae8ff);border-color:#ddd6fe;color:#6d28d9}
+  /* preview side */
+  .pvhead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .pvhead .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff}
+  .pvhead .ic img{width:20px;height:20px;filter:brightness(0) invert(1)}
+  .pvhead h3{margin:0;font-size:16px}.pvhead small{font-size:11.5px;color:var(--muted)}
+  .pvbtns{margin-left:auto;display:flex;gap:8px}
+  .mbtn{font-size:12px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;color:#475569}
+  .pvbody{padding:26px;background:radial-gradient(circle at 30% 0%,#eef2ff,#f1f5f9);display:flex;justify-content:center;align-items:flex-start;min-height:440px}
+  .nomedia{font-size:12px;color:#94a3b8;margin-top:10px;text-align:center}
+  .tog{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;padding:10px 16px;border-bottom:1px solid var(--line);background:#fbfbff}
+  .sw{position:relative;width:42px;height:23px;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.18s}
+  .sw::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  body.imgready .sw{background:linear-gradient(90deg,#22c55e,#16a34a)}body.imgready .sw::after{left:22px}
+  /* hero image */
+  .heroimg{position:relative;background:#e9edf5}
+  .heroimg::after{content:'🖼️ No image saved with this template';position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:8px;color:#94a3b8;font-size:11px;font-weight:600;border:1px dashed #cbd5e1}
+  body.imgready .heroimg{background:#000 var(--dummy) center/cover no-repeat}body.imgready .heroimg::after{content:''}
+  /* platform cards */
+  .wa-phone{width:300px;background:#0b141a;border-radius:22px;padding:11px;box-shadow:0 26px 50px -22px rgba(0,0,0,.55)}
+  .wa-bar{display:flex;align-items:center;gap:8px;color:#e9edef;font-size:13px;padding:2px 4px 8px}.wa-bar .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .wa-bub{background:#005c4b;color:#e9edef;border-radius:10px;border-top-right-radius:3px;padding:6px;max-width:250px;margin-left:auto;font-size:12.5px;line-height:1.45}
+  .wa-bub .tick{display:block;text-align:right;font-size:10px;color:#8696a0;margin-top:3px}
+  .ig-card,.fb-card,.em-card{box-shadow:0 26px 50px -26px rgba(2,6,23,.5)}
+  .ig-card{width:330px;background:#fff;border:1px solid #dbdbdb;border-radius:14px;overflow:hidden}
+  .ig-top{display:flex;align-items:center;gap:8px;padding:11px}.ig-top .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ec4899,#a855f7)}.ig-top b{font-size:13px}.ig-top .more{margin-left:auto;color:#888}
+  .ig-card .heroimg{height:310px}.ig-acts{display:flex;gap:14px;padding:9px 12px;font-size:18px}.ig-cap{padding:0 12px 12px;font-size:12.5px;line-height:1.5}
+  .fb-card{width:340px;background:#fff;border:1px solid #dadde1;border-radius:12px;overflow:hidden}
+  .fb-top{display:flex;align-items:center;gap:9px;padding:12px}.fb-top .av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.fb-top b{font-size:13px;display:block}.fb-top small{font-size:11px;color:#65676b}
+  .fb-text{padding:0 12px 10px;font-size:13px;line-height:1.45}.fb-card .heroimg{height:230px}.fb-react{display:flex;gap:18px;padding:10px 14px;color:#65676b;font-size:13px;border-top:1px solid #eee}
+  .em-card{width:380px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .em-top{padding:12px 16px;border-bottom:1px solid #eee}.em-top .subj{font-weight:700;font-size:14px}.em-top .from{font-size:11.5px;color:#65676b;margin-top:3px}
+  .em-card .heroimg{height:150px}.em-body{padding:14px 16px;font-size:12.5px;line-height:1.55;color:#334155}
+  /* ===== Variant A: split ===== */
+  .split{display:grid;grid-template-columns:360px 1fr;gap:18px}
+  @media(max-width:880px){.split{grid-template-columns:1fr}}
+  /* ===== Variant B: gallery ===== */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+  .gcard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 16px 36px -26px rgba(2,6,23,.4);transition:.16s}
+  .gcard:hover{transform:translateY(-3px);box-shadow:0 24px 44px -24px rgba(99,102,241,.6)}
+  .gcard .top{height:74px;display:flex;align-items:center;justify-content:center;color:#fff}
+  .gcard .top.wa{background:linear-gradient(135deg,#22c55e,#16a34a)}.gcard .top.ig{background:linear-gradient(135deg,#ec4899,#a855f7)}
+  .gcard .top.fb{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.gcard .top.em{background:linear-gradient(135deg,#6366f1,#4338ca)}
+  .gcard .top img{width:30px;height:30px;filter:brightness(0) invert(1)}
+  .gcard .meta{padding:12px}.gcard .meta b{font-size:13px;display:block}.gcard .meta small{color:var(--muted);font-size:11.5px;text-transform:capitalize}
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
+  .overlay.show{display:flex}
+  .legend{font-size:12px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="logo">🗂️</div>
+    <div><h1>Templates — corrected Preview</h1><p>Channel-aware heading · platform-style render · image only if saved with the template</p></div>
+    <div class="seg"><button class="on" onclick="variant('a')">Design A · Split</button><button onclick="variant('b')">Design B · Gallery</button></div>
+  </div>
+
+  <div class="tog">🖼️ Image saved with this template <span class="sw" onclick="document.body.classList.toggle('imgready');render()"></span> <span style="color:#94a3b8">(toggle to see both states)</span></div>
+
+  <!-- ============ VARIANT A: SPLIT ============ -->
+  <section id="va">
+    <div class="split">
+      <div class="panel">
+        <div class="ptitle"><b>Saved templates</b><span class="count">4</span></div>
+        <div class="filters">
+          <span class="fchip on">All</span>
+          <span class="fchip"><img src="https://cdn.simpleicons.org/whatsapp/25D366">WhatsApp</span>
+          <span class="fchip"><img src="https://cdn.simpleicons.org/instagram/E4405F">IG</span>
+          <span class="fchip"><img src="https://cdn.simpleicons.org/facebook/1877F2">FB</span>
+          <span class="fchip"><img src="https://cdn.simpleicons.org/gmail/EA4335">Email</span>
+        </div>
+        <div class="tlist" id="tlist"></div>
+      </div>
+      <div class="panel">
+        <div class="pvhead">
+          <span class="ic" id="aIc"><img id="aIcImg"></span>
+          <div><h3 id="aTitle"></h3><small>Sample data — John Doe</small></div>
+          <div class="pvbtns"><button class="mbtn" id="aCode" onclick="toggleCode()">&lt;&gt; View Code</button></div>
+        </div>
+        <div class="pvbody" id="aBody"></div>
+      </div>
+    </div>
+    <p class="legend">Master–detail: list left, live preview right. Selecting a template updates the heading icon + name and renders its real platform layout. <b>No duplicate email</b>, and the <b>🖼 image</b> chip appears only when an image is attached.</p>
+  </section>
+
+  <!-- ============ VARIANT B: GALLERY ============ -->
+  <section id="vb" style="display:none">
+    <div class="panel" style="padding:18px">
+      <div class="ptitle" style="border:none;background:none;padding:0 0 14px"><b>Saved templates</b><span class="count">4</span></div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+    <p class="legend">Gallery grid → click a card to open a polished centered preview modal (channel-aware heading + platform render + image-or-not).</p>
+  </section>
+
+  <!-- modal for variant B -->
+  <div class="overlay" id="overlay" onclick="if(event.target.id==='overlay')closeModal()">
+    <div class="panel" style="width:100%;max-width:520px">
+      <div class="pvhead">
+        <span class="ic" id="bIc"><img id="bIcImg"></span>
+        <div><h3 id="bTitle"></h3><small>Sample data — John Doe</small></div>
+        <div class="pvbtns"><button class="mbtn" id="bCode" onclick="toggleCode()">&lt;&gt; View Code</button><button class="mbtn" onclick="closeModal()">✕</button></div>
+      </div>
+      <div class="pvbody" id="bBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var T = [
+    {c:'wa', slug:'whatsapp', title:'WhatsApp Preview', name:'Oasis Villa launch – WhatsApp', img:true},
+    {c:'ig', slug:'instagram', title:'Instagram Preview', name:'Oasis Villa launch – Instagram', img:true},
+    {c:'fb', slug:'facebook', title:'Facebook Preview', name:'Oasis Villa launch – Facebook', img:false},
+    {c:'em', slug:'gmail', title:'Email Preview', name:'Oasis Villa launch – Email', img:true},
+  ];
+  var COPY = {
+    wa:"*Luxury 5BR Villa — The Oasis by Emaar* 🌅 Private pool, rooftop terrace & Italian marble. 💰 AED 16.5M 📞 Ahmed +971 50 123 4567",
+    ig:"Step into refined luxury at The Oasis by Emaar 🌟 5BR · private pool · rooftop terrace. #LuxuryVilla #DubaiRealEstate #Emaar",
+    fb:"🏡 Luxury 5BR Villa — The Oasis by Emaar. Private pool, rooftop terrace & smart home. AED 16.5M · Handover Q4 2026.",
+    em:"<h1>Luxury 1 Bed in Beverly Park</h1><p>Imagine waking up…</p>",
+  };
+  var sel=0, code=false, where='a';
+
+  function imgOn(t){ return document.body.classList.contains('imgready') && t.img; }
+  function platform(t){
+    var o=imgOn(t);
+    if(t.c==='wa') return '<div class="wa-phone"><div class="wa-bar"><span class="av"></span>Luxe Properties</div><div class="wa-bub">'+(o?'<div class="heroimg" style="height:150px;border-radius:7px;margin-bottom:6px;overflow:hidden"></div>':'')+COPY.wa+'<span class="tick">11:24 ✓✓</span></div></div>';
+    if(t.c==='ig') return '<div class="ig-card"><div class="ig-top"><span class="av"></span><b>luxe.properties</b><span class="more">•••</span></div>'+(o?'<div class="heroimg" style="height:310px"></div>':'')+'<div class="ig-acts">❤️ 💬 ✈️ <span style="margin-left:auto">🔖</span></div><div class="ig-cap"><b>luxe.properties</b> '+COPY.ig+'</div></div>';
+    if(t.c==='fb') return '<div class="fb-card"><div class="fb-top"><span class="av"></span><div><b>Luxe Properties</b><small>Sponsored · 🌐</small></div></div><div class="fb-text">'+COPY.fb+'</div>'+(o?'<div class="heroimg" style="height:230px"></div>':'')+'<div class="fb-react">👍❤️ 128 · 14 comments · 9 shares</div></div>';
+    return '<div class="em-card"><div class="em-top"><div class="subj">Your private viewing — 5BR Oasis villa</div><div class="from">Luxe Properties &lt;ahmed@luxe.ae&gt; · to you</div></div>'+(o?'<div class="heroimg" style="height:150px"></div>':'')+'<div class="em-body"><b>Luxury 1 Bed in Beverly Park, Dubai</b><br><br>Imagine waking up in a luxurious apartment in the heart of Dubai… <b>Book now and experience the epitome of modern living.</b></div></div>';
+  }
+  function bodyHtml(t){
+    if(code) return '<pre style="width:100%;background:#0f172a;color:#86efac;border-radius:12px;padding:16px;font-size:12px;white-space:pre-wrap">'+COPY[t.c].replace(/</g,'&lt;')+'</pre>';
+    var note = (!t.img) ? '<div class="nomedia">This template was saved without an image — content only.</div>' : '';
+    return platform(t)+note;
+  }
+  function setHead(pfx,t){
+    document.getElementById(pfx+'Ic').className='ic '+t.c;
+    document.getElementById(pfx+'IcImg').src='https://cdn.simpleicons.org/'+t.slug;
+    document.getElementById(pfx+'IcImg').style.cssText='width:20px;height:20px;filter:brightness(0) invert(1)';
+    document.getElementById(pfx+'Title').textContent=t.title;
+    document.getElementById(pfx+'Code').textContent= code?'🖼️ View Rendered':'<> View Code';
+  }
+  function render(){
+    // list
+    document.getElementById('tlist').innerHTML = T.map(function(t,i){
+      return '<div class="titem'+(i===sel?' sel':'')+'" onclick="pick('+i+')"><span class="ic '+t.c+'"><img src="https://cdn.simpleicons.org/'+t.slug+'"></span><div class="info"><b>'+t.name+'</b><small>'+({wa:'whatsapp',ig:'instagram',fb:'facebook',em:'email'})[t.c]+'</small></div>'+(t.img?'<span class="badge2 img">🖼 image</span>':'<span class="badge2">text only</span>')+'</div>';
+    }).join('');
+    // gallery
+    document.getElementById('gallery').innerHTML = T.map(function(t,i){
+      return '<div class="gcard" onclick="openModal('+i+')"><div class="top '+t.c+'"><img src="https://cdn.simpleicons.org/'+t.slug+'"></div><div class="meta"><b>'+t.name+'</b><small>'+({wa:'whatsapp',ig:'instagram',fb:'facebook',em:'email'})[t.c]+'</small> '+(t.img?'<span class="badge2 img">🖼</span>':'')+'</div></div>';
+    }).join('');
+    var t=T[sel];
+    setHead('a',t); document.getElementById('aBody').innerHTML=bodyHtml(t);
+    setHead('b',t); document.getElementById('bBody').innerHTML=bodyHtml(t);
+  }
+  function pick(i){ sel=i; code=false; render(); }
+  function openModal(i){ sel=i; code=false; render(); document.getElementById('overlay').classList.add('show'); }
+  function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+  function toggleCode(){ code=!code; render(); }
+  function variant(v){ where=v;
+    document.getElementById('va').style.display = v==='a'?'block':'none';
+    document.getElementById('vb').style.display = v==='b'?'block':'none';
+    document.querySelectorAll('.seg button').forEach(function(b,i){b.classList.toggle('on', (v==='a'&&i===0)||(v==='b'&&i===1))});
+    if(v==='a') closeModal();
+  }
+  render();
+</script>
+</body>
+</html>

@@ -561,6 +561,8 @@ app.MapHealthChecks("/health");
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_url character varying(1000)",
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_type character varying(20)",
         "ALTER TABLE message_templates ADD COLUMN IF NOT EXISTS media_file_name character varying(255)",
+        // P3.8 — Creative Studio can attach a generated image (data-URI/URL) to a template; widen the column.
+        "ALTER TABLE message_templates ALTER COLUMN media_url TYPE text",
         // L2 — cached WhatsApp approved templates synced from Meta Business Manager.
         @"CREATE TABLE IF NOT EXISTS whatsapp_templates (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

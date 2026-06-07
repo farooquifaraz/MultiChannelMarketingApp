@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Edit2, Eye, Mail, MessageCircle, Smartphone, FileText, X, Share2, Lock, Sparkles, Globe2, Users as UsersIcon, User as UserIcon, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, Mail, MessageCircle, Smartphone, FileText, X, Share2, Lock, Sparkles, Globe2, Users as UsersIcon, User as UserIcon, Check, Image as ImageIcon } from 'lucide-react';
 import { templateApi } from '../../api/templateApi';
+import { ChannelPreview, ChannelLogo, CHANNEL_META } from '../../components/creatives/ChannelPreview';
+import type { TemplateDto } from '../../types/contact.types';
 import axiosInstance from '../../api/axiosInstance';
 import { formatDate, getChannelColor } from '../../utils/formatters';
 import toast from 'react-hot-toast';
@@ -15,7 +17,8 @@ export default function TemplatesPage() {
   const [channelFilter, setChannelFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);   // server-rendered HTML (email/code view)
+  const [previewTpl, setPreviewTpl] = useState<TemplateDto | null>(null); // the template being previewed
   const [previewMode, setPreviewMode] = useState<'rendered' | 'code'>('rendered');
 
   // Form
@@ -87,9 +90,11 @@ export default function TemplatesPage() {
     });
   };
 
-  const handlePreview = async (id: string) => {
+  const handlePreview = async (t: TemplateDto) => {
+    setPreviewTpl(t);
+    setPreviewMode('rendered');
     try {
-      const res = await templateApi.preview(id, {
+      const res = await templateApi.preview(t.id, {
         name: 'John Doe',
         first_name: 'John',
         email: 'john@example.com',
@@ -104,7 +109,6 @@ export default function TemplatesPage() {
         current_year: new Date().getFullYear().toString(),
         current_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       });
-      setPreviewMode('rendered');
       setPreview(res.data);
     } catch { /* handled */ }
   };
@@ -189,48 +193,52 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {/* Preview Modal */}
-      {preview && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Email Preview</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Sample data — John Doe</p>
+      {/* Preview Modal — channel-aware (platform-style render + image if attached) */}
+      {previewTpl && (() => {
+        const ch = (previewTpl.channel || 'email').toLowerCase();
+        const meta = CHANNEL_META[ch] || CHANNEL_META.email;
+        const isEmail = ch === 'email';
+        const closeModal = () => { setPreviewTpl(null); setPreview(null); };
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && closeModal()}>
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className={`w-9 h-9 rounded-xl grid place-items-center bg-gradient-to-br ${meta.head}`}><ChannelLogo channel={ch} size={20} invert /></span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{meta.label} Preview</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Sample data — John Doe</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPreviewMode((m) => (m === 'rendered' ? 'code' : 'rendered'))} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg" title="Toggle rendered / code view">
+                    {previewMode === 'rendered' ? '<> View Code' : '🖼️ View Rendered'}
+                  </button>
+                  <button onClick={closeModal} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPreviewMode((m) => (m === 'rendered' ? 'code' : 'rendered'))}
-                  className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                  title="Toggle rendered / code view"
-                >
-                  {previewMode === 'rendered' ? '<> View Code' : '🖼️ View Rendered'}
-                </button>
-                <button onClick={() => setPreview(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-hidden p-4 bg-gray-100">
-              {previewMode === 'rendered' ? (
-                <iframe
-                  srcDoc={preview}
-                  title="Email Preview"
-                  className="w-full h-full min-h-[500px] bg-white rounded-xl border border-gray-200 shadow-inner"
-                  sandbox=""
-                />
-              ) : (
-                <pre className="w-full h-full min-h-[500px] overflow-auto bg-gray-900 text-green-300 text-xs p-4 rounded-xl whitespace-pre-wrap font-mono leading-relaxed">
-                  {preview}
-                </pre>
-              )}
+              {/* Body */}
+              <div className="flex-1 overflow-auto p-6 bg-gradient-to-br from-indigo-50/40 to-slate-100">
+                {previewMode === 'code' ? (
+                  <pre className="w-full min-h-[300px] overflow-auto bg-gray-900 text-green-300 text-xs p-4 rounded-xl whitespace-pre-wrap font-mono leading-relaxed">{previewTpl.body}</pre>
+                ) : isEmail ? (
+                  // Email keeps the full server-rendered HTML (merge tags + inline image) in an iframe.
+                  <iframe srcDoc={preview || previewTpl.body} title="Email Preview" className="w-full h-[60vh] min-h-[420px] bg-white rounded-xl border border-gray-200 shadow-inner" sandbox="" />
+                ) : (
+                  <div className="flex justify-center py-2">
+                    <ChannelPreview channel={ch} img={previewTpl.mediaUrl} omitImageWhenEmpty fields={{ text: previewTpl.body, subject: previewTpl.subject }} />
+                  </div>
+                )}
+                {!isEmail && !previewTpl.mediaUrl && previewMode === 'rendered' && (
+                  <p className="text-center text-xs text-gray-400 mt-3">This template was saved without an image — content only.</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Template Grid */}
       {isLoading ? (
@@ -283,7 +291,10 @@ export default function TemplatesPage() {
                           );
                         })()}
                       </p>
-                      <p className="text-xs text-gray-500">{t.channel}</p>
+                      <p className="text-xs text-gray-500 capitalize flex items-center gap-1.5">
+                        {t.channel}
+                        {t.mediaUrl && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-semibold rounded-full"><ImageIcon className="w-2.5 h-2.5" /> image</span>}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -303,7 +314,7 @@ export default function TemplatesPage() {
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <span className="text-xs text-gray-400">{formatDate(t.updatedAt)}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => handlePreview(t.id)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => handlePreview(t)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></button>
                     {/* Share — admins only, only on their own templates */}
                     {isAdmin && isOwned && (
                       <button

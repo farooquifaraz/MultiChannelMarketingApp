@@ -143,12 +143,6 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
         </button>
       </div>
 
-      <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-sm text-indigo-900">
-        <b>What it does:</b> type a prompt (or click a preset) → AI generates a <b>banner / flyer image</b>.
-        Apply a <b>Brand Kit</b> (logo, colours, font) so it matches your brand. Switch image engines anytime
-        in <b>Integrations</b> (FLUX, Nano Banana, etc.). Tip: the <b>AI Copywriter</b> gives you a ready image prompt.
-      </div>
-
       {/* Brand kits manager */}
       {showKits && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">

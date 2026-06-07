@@ -37,6 +37,9 @@ export interface TemplateDto {
   channel: string;
   subject?: string;
   body: string;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+  mediaFileName?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -58,6 +58,7 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
   const [editText, setEditText] = useState('');
   const [editSubject, setEditSubject] = useState('');
   const [savedIds, setSavedIds] = useState<Partial<Record<ChannelId, string>>>({});
+  const [groupId, setGroupId] = useState('');
 
   const [imagePrompt, setImagePrompt] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
@@ -104,6 +105,8 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
         ncur[c] = 0; nlock[c] = false; nview[c] = 'preview';
       });
       setVersions(nv); setCurrent(ncur); setLocked(nlock); setVw(nview); setSavedIds({});
+      // Fresh "set" id for this batch — every template saved from it groups together.
+      setGroupId((globalThis.crypto?.randomUUID?.() as string) || `${Date.now()}-${enabledList.join('')}`);
       setImagePrompt(data.imagePrompt || ''); setProvider(data.provider || '');
       if (mode === 'guided') setGstep(3);
       toast.success(`Generated ${distinctGroups.length} piece(s) with ${data.provider || 'AI'}`);
@@ -165,6 +168,8 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
       body: emailBody,
       mediaUrl: heroImageUrl || null,
       mediaType: heroImageUrl ? 'image' : null,
+      templateGroupId: groupId || null,
+      templateGroupName: (name || brief).trim().slice(0, 60) || 'Creative Studio set',
     };
   };
 

@@ -527,6 +527,19 @@ TestCase 'F' 'F6' 'POST /templates create facebook template (P3.8)' {
     return $true
 }
 
+# P3.8.3 — Creative Studio "template sets": templateGroupId/Name round-trip
+TestCase 'F' 'F7' 'POST /templates with templateGroupId round-trips (template sets)' {
+    $gid = [guid]::NewGuid().ToString()
+    $r = Call-Api -Method POST -Path '/templates' -Token $global:userToken -Body @{
+        name = "BB Set $Stamp"; channel = 'instagram'; body = 'Caption'; templateGroupId = $gid; templateGroupName = 'BB Set'
+    }
+    if (-not $r.Ok) { return "status=$($r.Status) body=$($r.Raw)" }
+    if ($r.Data.data.templateGroupId -ne $gid) { return "groupId not persisted: $($r.Data.data.templateGroupId)" }
+    if ($r.Data.data.templateGroupName -ne 'BB Set') { return "groupName not persisted" }
+    Call-Api -Method DELETE -Path "/templates/$($r.Data.data.id)" -Token $global:userToken -ExpectStatus @(200,204) | Out-Null
+    return $true
+}
+
 # ===== SECTION G -- Campaigns =====
 Section "G. Campaigns"
 

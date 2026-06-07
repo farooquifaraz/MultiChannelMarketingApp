@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Edit2, Eye, Mail, MessageCircle, Smartphone, FileText, X, Share2, Lock, Sparkles, Globe2, Users as UsersIcon, User as UserIcon, Check, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, Mail, MessageCircle, Smartphone, FileText, X, Share2, Lock, Sparkles, Globe2, Users as UsersIcon, User as UserIcon, Check, Image as ImageIcon, Layers, Send, Loader2, Save } from 'lucide-react';
 import { templateApi } from '../../api/templateApi';
 import { ChannelPreview, ChannelLogo, CHANNEL_META } from '../../components/creatives/ChannelPreview';
 import type { TemplateDto } from '../../types/contact.types';
@@ -61,6 +62,9 @@ export default function TemplatesPage() {
 
   // Share modal state
   const [shareModal, setShareModal] = useState<any | null>(null);
+  // Grouped-edit ("set") modal state
+  const [editSet, setEditSet] = useState<{ id: string; name: string; items: TemplateDto[] } | null>(null);
+  const navigate = useNavigate();
 
   const resetForm = () => {
     setShowCreate(false);
@@ -113,17 +117,87 @@ export default function TemplatesPage() {
     } catch { /* handled */ }
   };
 
-  const list = templates?.data || [];
+  const list: TemplateDto[] = (templates?.data as any) || [];
   const ChannelIcons: Record<string, any> = { email: Mail, whatsapp: MessageCircle, sms: Smartphone, instagram: MessageCircle, facebook: MessageCircle };
+
+  // Group templates created together ("sets") vs standalone.
+  const chOrder = ['whatsapp', 'instagram', 'facebook', 'email', 'sms'];
+  const groupMap = new Map<string, TemplateDto[]>();
+  const standalone: TemplateDto[] = [];
+  list.forEach((t) => {
+    if (t.templateGroupId) { const k = t.templateGroupId; (groupMap.get(k) || groupMap.set(k, []).get(k)!).push(t); }
+    else standalone.push(t);
+  });
+  const sets = Array.from(groupMap.entries()).map(([id, items]) => ({
+    id, name: items[0].templateGroupName || 'Template set',
+    items: items.slice().sort((a, b) => chOrder.indexOf(a.channel.toLowerCase()) - chOrder.indexOf(b.channel.toLowerCase())),
+  })).sort((a, b) => (b.items[0]?.updatedAt || '').localeCompare(a.items[0]?.updatedAt || ''));
+
+  const newCampaignFromSet = (items: TemplateDto[]) => {
+    const pick = items.find((i) => i.channel.toLowerCase() === 'email') || items.find((i) => i.channel.toLowerCase() === 'whatsapp') || items[0];
+    navigate('/campaigns', { state: { templateId: pick.id, channel: pick.channel.toLowerCase(), name: pick.templateGroupName } });
+  };
+  const deleteSet = async (items: TemplateDto[]) => {
+    if (!window.confirm(`Delete all ${items.length} templates in this set?`)) return;
+    try { await Promise.all(items.map((i) => templateApi.delete(i.id))); queryClient.invalidateQueries({ queryKey: ['templates'] }); toast.success('Set deleted'); }
+    catch { toast.error('Could not delete the set'); }
+  };
+
+  const stripHtml = (s: string) => s.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Standalone template card (reused for the non-grouped grid).
+  const renderCard = (t: any) => {
+    const Icon = ChannelIcons[t.channel?.toLowerCase()] || ChannelIcons[t.channel] || Mail;
+    const isOwned = !t.userId || t.userId === user?.id;
+    const isSharedFromAdmin = t.isShared && !isOwned;
+    return (
+      <div key={t.id} className={`bg-white rounded-2xl p-5 shadow-sm border transition-shadow hover:shadow-md ${isSharedFromAdmin ? 'border-amber-200 ring-1 ring-amber-100' : 'border-gray-100'}`}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getChannelColor(t.channel)}`}><Icon className="w-4 h-4" /></div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">{t.name}
+                {isSharedFromAdmin && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-semibold rounded-full uppercase tracking-wider"><Sparkles className="w-2.5 h-2.5" /> Shared by admin</span>}
+                {isOwned && t.isShared && (() => {
+                  const scope = (t.shareScope || 'global').toLowerCase();
+                  const cfg = scope === 'global' ? { Icon: Globe2, label: 'Global', cls: 'bg-emerald-100 text-emerald-700' }
+                    : scope === 'groups' ? { Icon: UsersIcon, label: `${(t.sharedWithGroupIds || []).length} group(s)`, cls: 'bg-blue-100 text-blue-700' }
+                    : { Icon: UserIcon, label: `${(t.sharedWithUserIds || []).length} user(s)`, cls: 'bg-purple-100 text-purple-700' };
+                  return <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 ${cfg.cls} text-[9px] font-semibold rounded-full uppercase tracking-wider`}><cfg.Icon className="w-2.5 h-2.5" /> {cfg.label}</span>;
+                })()}
+              </p>
+              <p className="text-xs text-gray-500 capitalize flex items-center gap-1.5">{t.channel}
+                {t.mediaUrl && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-semibold rounded-full"><ImageIcon className="w-2.5 h-2.5" /> image</span>}
+              </p>
+            </div>
+          </div>
+        </div>
+        {t.subject && <p className="text-sm text-gray-600 mb-2 font-medium line-clamp-1">{t.subject}</p>}
+        <p className="text-sm text-gray-500 line-clamp-3 mb-4">{stripHtml(t.body).slice(0, 180)}</p>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <span className="text-xs text-gray-400">{formatDate(t.updatedAt)}</span>
+          <div className="flex gap-1">
+            <button onClick={() => handlePreview(t)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></button>
+            {isAdmin && isOwned && <button onClick={() => setShareModal(t)} className={`p-1.5 rounded-lg ${t.isShared ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title="Manage sharing">{t.isShared ? <Share2 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}</button>}
+            {isOwned && <>
+              <button onClick={() => startEdit(t)} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Edit"><Edit2 className="w-4 h-4" /></button>
+              <button onClick={() => deleteMutation.mutate(t.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete"><Trash2 className="w-4 h-4" /></button>
+            </>}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4 rounded-3xl px-6 py-5 text-white shadow-xl" style={{ background: 'linear-gradient(120deg,#4f46e5,#7c3aed 55%,#db2777)' }}>
+        <div className="w-12 h-12 rounded-2xl bg-white/20 grid place-items-center text-2xl">🗂️</div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
-          <p className="text-gray-500 mt-1">Create and manage message templates</p>
+          <h1 className="text-2xl font-bold">Templates</h1>
+          <p className="text-white/80 text-sm mt-0.5">Saved copy for every channel — grouped by the campaign they were created in</p>
         </div>
-        <button onClick={() => { resetForm(); setShowCreate(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-medium hover:from-primary-700 hover:to-primary-800 shadow-lg shadow-primary-200">
+        <button onClick={() => { resetForm(); setShowCreate(true); }} className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-700 rounded-xl font-semibold hover:bg-indigo-50 shadow-lg">
           <Plus className="w-5 h-5" />
           New Template
         </button>
@@ -251,97 +325,79 @@ export default function TemplatesPage() {
           <p className="text-lg font-medium text-gray-400">No templates yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {list.map((t: any) => {
-            const Icon = ChannelIcons[t.channel?.toLowerCase()] || ChannelIcons[t.channel] || Mail;
-            // A template is "shared FROM admin" (read-only for current user) if isShared AND userId !== current user
-            const isOwned = !t.userId || t.userId === user?.id;
-            const isSharedFromAdmin = t.isShared && !isOwned;
-            return (
-              <div
-                key={t.id}
-                className={`bg-white rounded-2xl p-5 shadow-sm border transition-shadow hover:shadow-md ${
-                  isSharedFromAdmin ? 'border-amber-200 ring-1 ring-amber-100' : 'border-gray-100'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getChannelColor(t.channel)}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
-                        {t.name}
-                        {isSharedFromAdmin && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-semibold rounded-full uppercase tracking-wider">
-                            <Sparkles className="w-2.5 h-2.5" /> Shared by admin
-                          </span>
-                        )}
-                        {isOwned && t.isShared && (() => {
-                          const scope = (t.shareScope || 'global').toLowerCase();
-                          const cfg = scope === 'global'
-                            ? { Icon: Globe2, label: 'Global', cls: 'bg-emerald-100 text-emerald-700' }
-                            : scope === 'groups'
-                            ? { Icon: UsersIcon, label: `${(t.sharedWithGroupIds || []).length} group(s)`, cls: 'bg-blue-100 text-blue-700' }
-                            : { Icon: UserIcon, label: `${(t.sharedWithUserIds || []).length} user(s)`, cls: 'bg-purple-100 text-purple-700' };
-                          return (
-                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 ${cfg.cls} text-[9px] font-semibold rounded-full uppercase tracking-wider`}>
-                              <cfg.Icon className="w-2.5 h-2.5" /> {cfg.label}
-                            </span>
-                          );
-                        })()}
-                      </p>
-                      <p className="text-xs text-gray-500 capitalize flex items-center gap-1.5">
-                        {t.channel}
-                        {t.mediaUrl && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-semibold rounded-full"><ImageIcon className="w-2.5 h-2.5" /> image</span>}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {t.subject && <p className="text-sm text-gray-600 mb-2 font-medium line-clamp-1">{t.subject}</p>}
-                <p className="text-sm text-gray-500 line-clamp-3 mb-4">
-                  {/* Strip HTML tags + entities for a clean snippet */}
-                  {t.body
-                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                    .replace(/<[^>]+>/g, ' ')
-                    .replace(/&nbsp;/g, ' ')
-                    .replace(/&[a-z]+;/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim()
-                    .slice(0, 180)}
-                </p>
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <span className="text-xs text-gray-400">{formatDate(t.updatedAt)}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => handlePreview(t)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></button>
-                    {/* Share — admins only, only on their own templates */}
-                    {isAdmin && isOwned && (
-                      <button
-                        onClick={() => setShareModal(t)}
-                        className={`p-1.5 rounded-lg ${
-                          t.isShared
-                            ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
-                            : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
-                        }`}
-                        title="Manage sharing"
-                      >
-                        {t.isShared ? <Share2 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      </button>
-                    )}
-                    {/* Edit & Delete only for owned templates */}
-                    {isOwned && (
-                      <>
-                        <button onClick={() => startEdit(t)} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => deleteMutation.mutate(t.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                      </>
-                    )}
-                  </div>
-                </div>
+        <div className="space-y-8">
+          {/* ===== Template sets (created together) ===== */}
+          {sets.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <Layers className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-sm font-bold text-gray-800">Template sets</h2>
+                <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">created together</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
               </div>
-            );
-          })}
+              <div className="space-y-4">
+                {sets.map((set) => (
+                  <div key={set.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                    <div className="flex items-center gap-3 px-5 py-3.5 text-white" style={{ background: 'linear-gradient(120deg,#1e293b,#4338ca)' }}>
+                      <div className="w-9 h-9 rounded-xl bg-white/15 grid place-items-center text-lg">✨</div>
+                      <div className="min-w-0">
+                        <b className="text-sm block truncate">{set.name}</b>
+                        <small className="text-white/70 text-[11.5px]">{set.items.length} channel{set.items.length > 1 ? 's' : ''} · {formatDate(set.items[0].updatedAt)}</small>
+                      </div>
+                      <div className="ml-auto flex gap-2">
+                        <button onClick={() => setEditSet(set)} className="px-3 py-1.5 bg-white text-indigo-700 rounded-lg text-xs font-bold inline-flex items-center gap-1.5"><Edit2 className="w-3.5 h-3.5" /> Edit set</button>
+                        <button onClick={() => newCampaignFromSet(set.items)} className="px-3 py-1.5 bg-white/15 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"><Send className="w-3.5 h-3.5" /> Campaign</button>
+                        <button onClick={() => deleteSet(set.items)} className="px-2.5 py-1.5 bg-white/15 text-white rounded-lg text-xs"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                    <div className="grid gap-3.5 p-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                      {set.items.map((t) => {
+                        const ch = t.channel.toLowerCase();
+                        const meta = CHANNEL_META[ch] || CHANNEL_META.email;
+                        return (
+                          <div key={t.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                            <div className={`flex items-center gap-2 px-3 py-2 text-white bg-gradient-to-r ${meta.head}`}>
+                              <ChannelLogo channel={ch} size={15} invert /><b className="text-xs">{meta.label}</b>
+                              {t.mediaUrl && <span className="ml-auto text-[10px] bg-white/25 px-1.5 py-0.5 rounded-full">🖼</span>}
+                            </div>
+                            <p className="px-3 py-2.5 text-xs text-gray-500 leading-snug h-[68px] overflow-hidden">{stripHtml(t.body).slice(0, 130)}</p>
+                            <div className="flex gap-1.5 px-3 py-2 border-t border-gray-100">
+                              <button onClick={() => handlePreview(t)} className="flex-1 text-[11.5px] font-semibold text-gray-500 border border-gray-200 rounded-lg py-1.5 hover:text-indigo-600">👁 Preview</button>
+                              <button onClick={() => startEdit(t)} className="flex-1 text-[11.5px] font-semibold text-gray-500 border border-gray-200 rounded-lg py-1.5 hover:text-amber-600">✎ Edit</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ===== Standalone templates ===== */}
+          {standalone.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <h2 className="text-sm font-bold text-gray-800">Standalone templates</h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {standalone.map(renderCard)}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Grouped-edit ("set") modal */}
+      {editSet && (
+        <GroupEditModal
+          set={editSet}
+          onClose={() => setEditSet(null)}
+          onSaved={() => { queryClient.invalidateQueries({ queryKey: ['templates'] }); setEditSet(null); }}
+        />
       )}
 
       {/* Share Settings Modal */}
@@ -526,6 +582,106 @@ function ShareModal({ template, onClose, onSave, saving }: {
             className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 font-medium"
           >
             {saving ? 'Saving...' : 'Save Sharing'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Edit all channels of a Creative-Studio "set" together (or individually), then Save all. */
+function GroupEditModal({ set, onClose, onSaved }: {
+  set: { id: string; name: string; items: TemplateDto[] };
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const items = set.items;
+  const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>(() => {
+    const m: Record<string, { subject: string; body: string }> = {};
+    items.forEach((i) => { m[i.id] = { subject: i.subject || '', body: i.body || '' }; });
+    return m;
+  });
+  const hasIG = items.some((i) => i.channel.toLowerCase() === 'instagram');
+  const hasFB = items.some((i) => i.channel.toLowerCase() === 'facebook');
+  const [sync, setSync] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const setBody = (id: string, channel: string, body: string) => {
+    setEdits((prev) => {
+      const next = { ...prev, [id]: { ...prev[id], body } };
+      const c = channel.toLowerCase();
+      if (sync && (c === 'instagram' || c === 'facebook')) {
+        items.forEach((i) => { const ic = i.channel.toLowerCase(); if ((ic === 'instagram' || ic === 'facebook') && i.id !== id) next[i.id] = { ...next[i.id], body }; });
+      }
+      return next;
+    });
+  };
+  const setSubject = (id: string, subject: string) => setEdits((p) => ({ ...p, [id]: { ...p[id], subject } }));
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      await Promise.all(items.map((i) => {
+        const e = edits[i.id];
+        return templateApi.update(i.id, {
+          name: i.name, channel: i.channel,
+          subject: i.channel.toLowerCase() === 'email' ? (e.subject || i.name) : (i.subject || undefined),
+          body: e.body, isActive: true,
+          // preserve the attached image (UpdateTemplateDto would otherwise null it)
+          mediaUrl: i.mediaUrl, mediaType: i.mediaType, mediaFileName: i.mediaFileName,
+        } as any);
+      }));
+      toast.success(`Saved ${items.length} template(s)`);
+      onSaved();
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Save failed'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 text-white" style={{ background: 'linear-gradient(120deg,#4f46e5,#7c3aed,#db2777)' }}>
+          <div className="w-9 h-9 rounded-xl bg-white/18 grid place-items-center text-lg">✨</div>
+          <div><b className="text-base">Edit set — {set.name}</b><small className="block text-white/80 text-xs">Edit all channels together, then Save all</small></div>
+          <button onClick={onClose} className="ml-auto w-8 h-8 rounded-lg bg-white/20 grid place-items-center"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="p-4 overflow-auto space-y-3.5">
+          {hasIG && hasFB && (
+            <label className="flex items-center gap-2.5 text-sm text-gray-600 px-1 cursor-pointer">
+              <span onClick={() => setSync((v) => !v)} className={`relative w-11 h-6 rounded-full transition-all ${sync ? 'bg-gradient-to-r from-indigo-500 to-purple-600' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${sync ? 'left-[22px]' : 'left-0.5'}`} />
+              </span>
+              Keep Instagram &amp; Facebook in sync (editing one updates both)
+            </label>
+          )}
+          {items.map((i) => {
+            const ch = i.channel.toLowerCase();
+            const meta = CHANNEL_META[ch] || CHANNEL_META.email;
+            const shared = sync && (ch === 'instagram' || ch === 'facebook') && hasIG && hasFB;
+            return (
+              <div key={i.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className={`flex items-center gap-2 px-3 py-2 text-white bg-gradient-to-r ${meta.head}`}>
+                  <ChannelLogo channel={ch} size={15} invert /><b className="text-[13px]">{meta.label}</b>
+                  {i.mediaUrl && <span className="text-[10px] bg-white/22 px-2 py-0.5 rounded-full">🖼 image</span>}
+                  {shared && <span className="ml-auto text-[10px] bg-white/22 px-2 py-0.5 rounded-full">🔗 shared</span>}
+                </div>
+                {ch === 'email' && (
+                  <input value={edits[i.id].subject} onChange={(e) => setSubject(i.id, e.target.value)} placeholder="Subject"
+                    className="w-full px-3 py-2 border-b border-gray-100 text-sm outline-none" />
+                )}
+                <textarea value={edits[i.id].body} onChange={(e) => setBody(i.id, ch, e.target.value)} rows={4}
+                  className="w-full px-3 py-2.5 text-[13px] outline-none resize-y" />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100">
+          <span className="text-[11.5px] text-gray-400 mr-auto">Saving updates each template (the attached image is kept).</span>
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
+          <button onClick={saveAll} disabled={saving} className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg disabled:opacity-50 font-semibold text-sm inline-flex items-center gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save all ({items.length})
           </button>
         </div>
       </div>

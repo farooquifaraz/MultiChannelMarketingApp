@@ -40,6 +40,8 @@ export interface TemplateDto {
   mediaUrl?: string | null;
   mediaType?: string | null;
   mediaFileName?: string | null;
+  templateGroupId?: string | null;
+  templateGroupName?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -53,6 +55,8 @@ export interface CreateTemplateDto {
   mediaUrl?: string | null;
   mediaType?: string | null;
   mediaFileName?: string | null;
+  templateGroupId?: string | null;
+  templateGroupName?: string | null;
 }
 
 export interface AuthResponseDto {

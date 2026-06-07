@@ -17,6 +17,12 @@ public class MessageTemplate
     public string? MediaType { get; set; }
     public string? MediaFileName { get; set; }
 
+    // === P3.8 Creative Studio sets ===
+    // Templates created together in one Creative Studio session share a TemplateGroupId
+    // (+ a friendly TemplateGroupName) so the Templates page can show & edit them as a set.
+    public Guid? TemplateGroupId { get; set; }
+    public string? TemplateGroupName { get; set; }
+
     public bool IsActive { get; set; } = true;
     // Master switch — when false, only the owner can see this template (private).
     public bool IsShared { get; set; } = false;

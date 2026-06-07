@@ -11,6 +11,9 @@ public class TemplateDto
     public string? MediaUrl { get; set; }
     public string? MediaType { get; set; }
     public string? MediaFileName { get; set; }
+    // P3.8 — Creative Studio "set" grouping.
+    public Guid? TemplateGroupId { get; set; }
+    public string? TemplateGroupName { get; set; }
     public bool IsActive { get; set; }
     public bool IsShared { get; set; }
     /// <summary>"global" | "groups" | "users" — only meaningful when IsShared = true.</summary>
@@ -41,6 +44,9 @@ public class CreateTemplateDto
     public string? MediaUrl { get; set; }
     public string? MediaType { get; set; }
     public string? MediaFileName { get; set; }
+    // P3.8 — tag a batch of templates created together (Creative Studio).
+    public Guid? TemplateGroupId { get; set; }
+    public string? TemplateGroupName { get; set; }
 }
 
 public class UpdateTemplateDto

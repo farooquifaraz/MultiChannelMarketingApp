@@ -111,10 +111,46 @@ public class MailKitImapInboxFetcher : IInboxFetcher
         return smtpHost;
     }
 
+    /// <summary>
+    /// Read a delivery-style header (Delivered-To / X-Original-To / Envelope-To) and pull a bare,
+    /// lowercased email address out of it. These headers may be "&lt;ali@x.com&gt;" or "ali@x.com".
+    /// Returns null when the header is absent or has no parseable address.
+    /// </summary>
+    private static string? FirstHeaderAddress(MimeMessage msg, string headerName)
+    {
+        var raw = msg.Headers[headerName];
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        // Prefer MailKit's tolerant parser; fall back to a trimmed raw value.
+        if (MailboxAddress.TryParse(raw, out var parsed) && !string.IsNullOrWhiteSpace(parsed.Address))
+            return parsed.Address.Trim().ToLowerInvariant();
+
+        return raw.Trim().TrimStart('<').TrimEnd('>').ToLowerInvariant();
+    }
+
     private static RawInboxMessage MapToRaw(UniqueId uid, string folder, MimeMessage msg)
     {
         var from = msg.From?.Mailboxes.FirstOrDefault();
         var to = msg.To?.Mailboxes.FirstOrDefault();
+
+        var toEmails = (msg.To?.Mailboxes ?? Enumerable.Empty<MailboxAddress>())
+            .Select(m => m.Address?.Trim().ToLowerInvariant())
+            .Where(a => !string.IsNullOrEmpty(a))
+            .Select(a => a!)
+            .Distinct()
+            .ToList();
+        var ccEmails = (msg.Cc?.Mailboxes ?? Enumerable.Empty<MailboxAddress>())
+            .Select(m => m.Address?.Trim().ToLowerInvariant())
+            .Where(a => !string.IsNullOrEmpty(a))
+            .Select(a => a!)
+            .Distinct()
+            .ToList();
+
+        // The real recipient in a shared mailbox is usually on a delivery header, not To/Cc.
+        var deliveredTo = FirstHeaderAddress(msg, "Delivered-To")
+            ?? FirstHeaderAddress(msg, "X-Original-To")
+            ?? FirstHeaderAddress(msg, "Envelope-To");
+
         return new RawInboxMessage
         {
             ImapUid = uid.Id,
@@ -122,6 +158,9 @@ public class MailKitImapInboxFetcher : IInboxFetcher
             FromEmail = from?.Address ?? "",
             FromName = from?.Name,
             ToEmail = to?.Address ?? "",
+            ToEmails = toEmails,
+            CcEmails = ccEmails,
+            DeliveredTo = deliveredTo,
             Subject = msg.Subject ?? "(no subject)",
             HtmlBody = msg.HtmlBody,
             TextBody = msg.TextBody,

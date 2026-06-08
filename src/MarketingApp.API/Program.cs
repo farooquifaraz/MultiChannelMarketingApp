@@ -489,6 +489,42 @@ app.MapHealthChecks("/health");
         "CREATE INDEX IF NOT EXISTS ix_inbox_ai_chats_thread ON inbox_ai_chats (thread_id, created_at)",
         "CREATE INDEX IF NOT EXISTS ix_inbox_ai_chats_owner ON inbox_ai_chats (owner_user_id)",
         "ALTER TABLE inbox_ai_chats ADD COLUMN IF NOT EXISTS suggestions text",
+        // === Per-user alias routing: map receiving address -> owning user (shared-mailbox fix) ===
+        @"CREATE TABLE IF NOT EXISTS inbox_aliases (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            address character varying(255) NOT NULL,
+            user_id uuid NOT NULL,
+            smtp_group_id uuid NULL,
+            is_active boolean NOT NULL DEFAULT true,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            CONSTRAINT fk_inbox_alias_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_inbox_alias_smtp_group FOREIGN KEY (smtp_group_id) REFERENCES smtp_groups(id) ON DELETE SET NULL)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_aliases_address ON inbox_aliases (lower(address))",
+        "CREATE INDEX IF NOT EXISTS ix_inbox_aliases_user ON inbox_aliases (user_id)",
+        // === De-duplicate inbox_messages by RFC Message-Id ===
+        // Two SmtpGroups polling the same shared mailbox stored every email twice (same message_id +
+        // imap_uid, different smtp_group_id slipped past the (group,folder,uid) unique index). Collapse
+        // existing duplicates — keep the earliest row per message_id, repoint any replies to the survivor
+        // so the conversation timeline is preserved — then add a global unique index as a hard backstop.
+        @"DO $$
+        DECLARE r record;
+        BEGIN
+            FOR r IN
+                SELECT message_id, (array_agg(id ORDER BY received_at, id))[1] AS keep_id
+                FROM inbox_messages
+                WHERE message_id IS NOT NULL
+                GROUP BY message_id
+                HAVING count(*) > 1
+            LOOP
+                UPDATE outbound_replies o SET inbox_message_id = r.keep_id
+                    WHERE o.inbox_message_id IN (
+                        SELECT id FROM inbox_messages
+                        WHERE message_id = r.message_id AND id <> r.keep_id);
+                DELETE FROM inbox_messages
+                    WHERE message_id = r.message_id AND id <> r.keep_id;
+            END LOOP;
+        END $$;",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_message_id_unique ON inbox_messages (message_id) WHERE message_id IS NOT NULL",
         // === Day 10: fallback AI provider (auto-failover on quota) ===
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS ai_fallback_provider character varying(30) NOT NULL DEFAULT 'disabled'",
         "ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS ai_fallback_api_key character varying(500)",

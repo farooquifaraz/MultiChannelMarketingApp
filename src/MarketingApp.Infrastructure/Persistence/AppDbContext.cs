@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     // Day 7 G3
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
     public DbSet<OutboundReply> OutboundReplies => Set<OutboundReply>();
+    // Per-user alias routing (shared-mailbox -> owner by To/Cc/Delivered-To address)
+    public DbSet<InboxAlias> InboxAliases => Set<InboxAlias>();
     // Day 9
     public DbSet<InboxAiChat> InboxAiChats => Set<InboxAiChat>();
     // L2 — cached WhatsApp approved templates

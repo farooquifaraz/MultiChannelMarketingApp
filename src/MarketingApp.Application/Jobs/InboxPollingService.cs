@@ -21,6 +21,7 @@ public class InboxPollingService : IInboxPollingService
     private readonly IGenericRepository<Contact> _contactRepo;
     private readonly IGenericRepository<Campaign> _campaignRepo;
     private readonly IGenericRepository<OutboundReply> _outboundRepo;
+    private readonly IGenericRepository<InboxAlias> _aliasRepo;
     private readonly INotificationService _notifications;
     private readonly IInboxRealtimeNotifier _realtime;
     private readonly IBackgroundJobClient _backgroundJobs;
@@ -34,6 +35,7 @@ public class InboxPollingService : IInboxPollingService
         IGenericRepository<Contact> contactRepo,
         IGenericRepository<Campaign> campaignRepo,
         IGenericRepository<OutboundReply> outboundRepo,
+        IGenericRepository<InboxAlias> aliasRepo,
         INotificationService notifications,
         IInboxRealtimeNotifier realtime,
         IBackgroundJobClient backgroundJobs,
@@ -46,6 +48,7 @@ public class InboxPollingService : IInboxPollingService
         _contactRepo = contactRepo;
         _campaignRepo = campaignRepo;
         _outboundRepo = outboundRepo;
+        _aliasRepo = aliasRepo;
         _notifications = notifications;
         _realtime = realtime;
         _backgroundJobs = backgroundJobs;
@@ -124,6 +127,23 @@ public class InboxPollingService : IInboxPollingService
 
     private async Task PersistOneAsync(SmtpGroup group, RawInboxMessage raw, CancellationToken ct)
     {
+        // Idempotency by RFC Message-Id. The same physical email can be pulled by MULTIPLE SmtpGroups
+        // polling the same mailbox (e.g. two Zoho logins into one shared INBOX) — they share imap_uid +
+        // message_id but differ in smtp_group_id, so the (smtp_group_id, folder, uid) unique index does
+        // NOT catch them and the message gets stored twice. Message-Id is globally unique per physical
+        // email, so a prior row with the same Message-Id means "already ingested" — skip the duplicate.
+        if (!string.IsNullOrWhiteSpace(raw.MessageId))
+        {
+            var alreadyStored = await _inboxRepo.AnyAsync(m => m.MessageId == raw.MessageId, ct);
+            if (alreadyStored)
+            {
+                _logger.LogDebug(
+                    "[InboxPoll] Skipping duplicate message {MessageId} (UID {Uid}, group {GroupName}) — already ingested by another group/UID.",
+                    raw.MessageId, raw.ImapUid, group.Name);
+                return;
+            }
+        }
+
         Guid? matchedCampaignMessageId = null;
         Guid? matchedContactId = null;
         Guid? ownerFromChain = null;       // owner resolved via the threading chain (strongest signal)
@@ -176,7 +196,24 @@ public class InboxPollingService : IInboxPollingService
             }
         }
 
-        // --- 4. Contact lookup by FromEmail (for display + cold-reply owner fallback) ---
+        // --- 4. Alias lookup by recipient address (shared-mailbox per-user routing) ---
+        //    Delivered-To/X-Original-To/Envelope-To is the strongest signal, then To, then Cc.
+        Guid? ownerFromAlias = null;
+        var recipientCandidates = BuildRecipientCandidates(raw);
+        if (recipientCandidates.Count > 0)
+        {
+            var aliasMatches = await _aliasRepo.FindAsync(
+                a => a.IsActive
+                     && recipientCandidates.Contains(a.Address.ToLower())
+                     && (a.SmtpGroupId == null || a.SmtpGroupId == group.Id), ct);
+            // Prefer a group-scoped alias over a global one when both match.
+            var alias = aliasMatches
+                .OrderByDescending(a => a.SmtpGroupId == group.Id)
+                .FirstOrDefault();
+            if (alias is not null) ownerFromAlias = alias.UserId;
+        }
+
+        // --- 5. Contact lookup by FromEmail (for display + cold-reply owner fallback) ---
         if (!string.IsNullOrWhiteSpace(raw.FromEmail))
         {
             var contacts = (await _contactRepo.FindAsync(
@@ -184,21 +221,35 @@ public class InboxPollingService : IInboxPollingService
             if (contacts.Count >= 1) matchedContactId = contacts[0].Id;
         }
 
-        // --- 5. Owner resolution: chain wins, then contact owner, then catch-all ---
+        // --- 6. Owner resolution: chain wins, then alias, then contact owner, then catch-all ---
+        string route;
         if (ownerFromChain.HasValue)
         {
             ownerUserId = ownerFromChain.Value;
+            route = "chain";
+        }
+        else if (ownerFromAlias.HasValue)
+        {
+            ownerUserId = ownerFromAlias.Value;
+            route = "alias";
         }
         else if (matchedContactId.HasValue)
         {
             var c = await _contactRepo.GetByIdAsync(matchedContactId.Value, ct);
             ownerUserId = c?.UserId ?? group.DefaultInboxOwnerUserId ?? group.CreatedByUserId;
+            route = c?.UserId != null ? "contact" : "catch-all(contact-missing-owner)";
+            isOrphan = c?.UserId == null;
         }
         else
         {
             ownerUserId = group.DefaultInboxOwnerUserId ?? group.CreatedByUserId;
             isOrphan = true;
+            route = "catch-all";
         }
+
+        _logger.LogInformation(
+            "[InboxPoll] UID {Uid} from {From} (to={To}, delivered-to={Delivered}) routed via {Route} -> owner {Owner}, orphan={Orphan}.",
+            raw.ImapUid, raw.FromEmail, raw.ToEmail, raw.DeliveredTo ?? "(none)", route, ownerUserId, isOrphan);
 
         var normalizedSubject = NormalizeSubject(raw.Subject);
 
@@ -217,13 +268,18 @@ public class InboxPollingService : IInboxPollingService
                 .FirstOrDefault();
             threadId = existingForCampaign?.ThreadId ?? Guid.NewGuid();
         }
-        else if (!string.IsNullOrWhiteSpace(normalizedSubject))
+        else if (!string.IsNullOrWhiteSpace(normalizedSubject) && !string.IsNullOrWhiteSpace(raw.FromEmail))
         {
-            // Subject-based fallback: same normalized subject + same sender, recent.
+            // Subject-based fallback (only when header threading didn't match). MUST also require the
+            // SAME participant (from_email) — otherwise two different people replying with the same
+            // subject (e.g. a campaign subject) get merged into one thread, which is exactly the
+            // "unrelated emails in one thread" bug. Genuine header-linked replies are handled above.
+            var fromLower = raw.FromEmail.ToLowerInvariant();
             var cutoff = raw.ReceivedAt.AddDays(-30);
             var subjectMatch = (await _inboxRepo.FindAsync(
                 m => m.OwnerUserId == ownerUserId
                      && m.NormalizedSubject == normalizedSubject
+                     && m.FromEmail.ToLower() == fromLower
                      && m.ReceivedAt >= cutoff
                      && m.ThreadId != Guid.Empty, ct))
                 .OrderByDescending(m => m.ReceivedAt)
@@ -289,6 +345,18 @@ public class InboxPollingService : IInboxPollingService
         {
             _logger.LogWarning(ex, "[InboxPoll] Failed to enqueue AI processing for inbox message {Id}", entity.Id);
         }
+    }
+
+    /// <summary>All lowercased recipient addresses an alias could match — delivery headers + To + Cc.</summary>
+    private static HashSet<string> BuildRecipientCandidates(RawInboxMessage raw)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void Add(string? a) { if (!string.IsNullOrWhiteSpace(a)) set.Add(a.Trim().ToLowerInvariant()); }
+        Add(raw.DeliveredTo);
+        Add(raw.ToEmail);
+        foreach (var a in raw.ToEmails) Add(a);
+        foreach (var a in raw.CcEmails) Add(a);
+        return set;
     }
 
     /// <summary>Extract all candidate Message-Ids (bracketed form) from In-Reply-To + References headers.</summary>

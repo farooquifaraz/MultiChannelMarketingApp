@@ -1,0 +1,35 @@
+name: Diagnose VPS
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Gather VPS state
+        run: |
+          set +e
+          echo "===== docker ps -a ====="
+          docker ps -a
+          echo "===== nginx container logs (last 60) ====="
+          docker logs --tail 60 marketingapp-nginx 2>&1
+          echo "===== nginx config test ====="
+          docker exec marketingapp-nginx nginx -t 2>&1
+          echo "===== host listening ports 80/443/8080 ====="
+          (ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E ':80|:443|:8080'
+          echo "===== curl from VPS itself ====="
+          curl -s -o /dev/null -w "http://localhost  -> %{http_code}\n" --max-time 8 http://localhost/ 2>&1
+          curl -sk -o /dev/null -w "https://localhost -> %{http_code}\n" --max-time 8 https://localhost/ 2>&1
+          curl -s  -o /dev/null -w "http://app.samdigital.ae -> %{http_code}\n" --max-time 8 http://app.samdigital.ae/ 2>&1
+          echo "===== api health (inside container) ====="
+          docker exec marketingapp-api curl -s -o /dev/null -w "api /health -> %{http_code}\n" http://localhost:8080/health 2>&1
+          echo "===== TLS certs ====="
+          sudo ls -la /etc/letsencrypt/live/ 2>&1 || ls -la /etc/letsencrypt/live/ 2>&1
+          echo "===== firewall (ufw / fail2ban) ====="
+          (sudo ufw status verbose 2>&1 || ufw status 2>&1) | head -25
+          (sudo fail2ban-client status 2>&1 | head -10) || true
+          echo "===== nginx conf.d ====="
+          ls -la /opt/marketingapp/nginx/conf.d/ 2>&1
+          echo "----- conf.d contents -----"
+          cat /opt/marketingapp/nginx/conf.d/*.conf 2>&1 | head -80
+          echo "===== DONE ====="

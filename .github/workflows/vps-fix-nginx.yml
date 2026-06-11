@@ -1,6 +1,6 @@
-# One-shot recovery — force-recreate the nginx container so docker re-publishes host ports 80/443.
-# The crash-loop is already fixed (valid config); nginx just needs a fresh container to bind ports.
-# Manual dispatch only. Runs on the VPS self-hosted runner.
+# Identify the process squatting on host port 80 (blocking marketingapp-nginx from binding 80/443).
+# READ-ONLY: prints what holds :80 and, if it's a host nginx service, what it serves — so we can
+# decide precisely whether it's safe to stop. No mutation. Manual dispatch, self-hosted runner.
 name: VPS Fix nginx
 
 on:
@@ -8,28 +8,25 @@ on:
 
 jobs:
   fix:
-    name: Force-recreate nginx
+    name: Identify :80 squatter
     runs-on: [self-hosted, marketingapp]
     steps:
-      - name: Recreate nginx + verify 443
+      - name: Who owns port 80
         shell: bash
         run: |
           set +e
-          cd /opt/marketingapp
-          echo "===== before ====="
-          docker ps -a --filter name=marketingapp-nginx --format '{{.Status}} | ports={{.Ports}}'
-          echo "===== force-recreate nginx ====="
-          docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps nginx 2>&1
-          sleep 4
-          echo "===== after ====="
-          docker ps --filter name=marketingapp-nginx --format '{{.Status}} | ports={{.Ports}}'
-          echo "===== docker port ====="
-          docker port marketingapp-nginx 2>&1
-          echo "===== host listeners :80 / :443 ====="
-          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 ' 2>&1
-          echo "===== nginx logs (tail 15) ====="
-          docker logs marketingapp-nginx --tail 15 2>&1
-          echo "===== curl https://localhost (from VPS) ====="
-          curl -k -I https://localhost --max-time 8 2>&1 | head -5
+          echo "===== listeners on :80 / :443 ====="
+          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 '
+          echo "===== pid on :80 -> process ====="
+          pid=$(ss -ltnpH 'sport = :80' 2>/dev/null | grep -oP 'pid=\K[0-9]+' | head -1)
+          echo "pid=$pid"
+          [ -n "$pid" ] && ps -p "$pid" -o pid,ppid,user,cmd 2>&1
+          echo "===== is it a docker container? ====="
+          docker ps --format '{{.Names}} {{.Image}} {{.Ports}}' | grep -E '0.0.0.0:80|:80->' 2>&1 || echo "(no docker container publishes host :80)"
+          echo "===== host nginx systemd service ====="
+          sudo -n systemctl is-active nginx 2>&1
+          sudo -n systemctl status nginx --no-pager 2>&1 | head -6
+          echo "===== host nginx — what server_names does it serve? ====="
+          sudo -n nginx -T 2>/dev/null | grep -E 'server_name|listen|proxy_pass|root ' | head -40
           echo "===== DONE ====="
           exit 0

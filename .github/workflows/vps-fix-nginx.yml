@@ -1,0 +1,35 @@
+# One-shot recovery — force-recreate the nginx container so docker re-publishes host ports 80/443.
+# The crash-loop is already fixed (valid config); nginx just needs a fresh container to bind ports.
+# Manual dispatch only. Runs on the VPS self-hosted runner.
+name: VPS Fix nginx
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: Force-recreate nginx
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Recreate nginx + verify 443
+        shell: bash
+        run: |
+          set +e
+          cd /opt/marketingapp
+          echo "===== before ====="
+          docker ps -a --filter name=marketingapp-nginx --format '{{.Status}} | ports={{.Ports}}'
+          echo "===== force-recreate nginx ====="
+          docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps nginx 2>&1
+          sleep 4
+          echo "===== after ====="
+          docker ps --filter name=marketingapp-nginx --format '{{.Status}} | ports={{.Ports}}'
+          echo "===== docker port ====="
+          docker port marketingapp-nginx 2>&1
+          echo "===== host listeners :80 / :443 ====="
+          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 ' 2>&1
+          echo "===== nginx logs (tail 15) ====="
+          docker logs marketingapp-nginx --tail 15 2>&1
+          echo "===== curl https://localhost (from VPS) ====="
+          curl -k -I https://localhost --max-time 8 2>&1 | head -5
+          echo "===== DONE ====="
+          exit 0

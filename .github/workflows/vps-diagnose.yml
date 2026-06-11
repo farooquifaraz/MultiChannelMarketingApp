@@ -1,5 +1,5 @@
 # Temporary, read-only TLS/443 diagnostic — runs ON the VPS via the self-hosted runner.
-# Manual dispatch only. Never mutates anything; prints state so we can pinpoint why HTTPS (443) is down.
+# Manual dispatch only. Never mutates anything; prints state so we can pinpoint why nginx crash-loops.
 name: VPS Diagnose TLS
 
 on:
@@ -10,33 +10,27 @@ jobs:
     name: Diagnose 443 / TLS
     runs-on: [self-hosted, marketingapp]
     steps:
-      - name: Collect TLS / nginx / firewall state
+      - name: Why does nginx crash-loop
         shell: bash
         run: |
           set +e
           cd /opt/marketingapp 2>/dev/null
-          echo "===== docker compose ps ====="
-          docker compose -f docker-compose.prod.yml ps
-          echo "===== nginx container state ====="
-          docker inspect -f 'status={{.State.Status}} restarts={{.RestartCount}} startedAt={{.State.StartedAt}}' marketingapp-nginx 2>&1
-          echo "===== nginx logs (tail 150) ====="
-          docker logs marketingapp-nginx --tail 150 2>&1
-          echo "===== nginx -t (config test) ====="
-          docker exec marketingapp-nginx nginx -t 2>&1
-          echo "===== host listeners :80 / :443 ====="
-          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 '
-          echo "===== curl https://localhost (from the VPS) ====="
-          curl -k -I https://localhost --max-time 8 2>&1 | head -8
-          echo "===== curl http://localhost (from the VPS) ====="
-          curl -I http://localhost --max-time 8 2>&1 | head -8
-          echo "===== cert directory ====="
-          ls -la /etc/letsencrypt/live/ 2>&1
+          echo "===== nginx container last error / exit ====="
+          docker inspect marketingapp-nginx --format 'exit={{.State.ExitCode}} err={{.State.Error}} oom={{.State.OOMKilled}} status={{.State.Status}} restarts={{.RestartCount}}' 2>&1
+          echo "===== nginx logs (full, last 80) ====="
+          docker logs marketingapp-nginx 2>&1 | tail -80
+          echo "===== CONFIG TEST in a throwaway container (same mounts) ====="
+          docker run --rm \
+            -v /opt/marketingapp/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+            -v /opt/marketingapp/nginx/conf.d:/etc/nginx/conf.d:ro \
+            -v /etc/letsencrypt:/etc/letsencrypt:ro \
+            -v /var/www/certbot:/var/www/certbot:ro \
+            nginx:1.27-alpine nginx -t 2>&1
+          echo "===== cert files (need BOTH fullchain + privkey) ====="
           ls -la /etc/letsencrypt/live/app.samdigital.ae/ 2>&1
-          echo "===== cert subject + expiry ====="
-          openssl x509 -subject -enddate -noout -in /etc/letsencrypt/live/app.samdigital.ae/fullchain.pem 2>&1
-          echo "===== firewall (ufw) ====="
-          sudo -n ufw status 2>&1 || echo "(no passwordless sudo or ufw not installed)"
-          echo "===== certbot presence ====="
-          which certbot 2>&1; certbot --version 2>&1
+          echo "===== who holds host :80 and :443 ====="
+          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 ' 2>&1
+          echo "===== all containers ====="
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>&1
           echo "===== DONE ====="
           exit 0

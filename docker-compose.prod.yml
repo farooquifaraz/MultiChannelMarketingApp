@@ -103,7 +103,10 @@ services:
     restart: unless-stopped
     depends_on: [api, frontend]
     ports:
-      - "80:80"
+      # Host port 80 is owned by the VPS's system nginx (it fronts a second app, nurapp), so this
+      # container only publishes 443. HTTPS — what users actually hit — is served here; plain HTTP
+      # on :80 stays with the host nginx. (Cert auto-renew via the :80 webroot must be handled on the
+      # host while this split stands; the current cert is valid until Aug 2026.)
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

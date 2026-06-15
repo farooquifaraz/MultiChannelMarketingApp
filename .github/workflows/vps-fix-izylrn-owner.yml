@@ -1,0 +1,47 @@
+# One-shot prod fix: route students@izylrn.com mail to the students user.
+#  1) create inbox alias  2) set IzyLrn group default owner  3) reassign existing IzyLrn messages.
+# Idempotent. Manual dispatch, self-hosted runner.
+name: VPS Fix IzyLrn Owner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: Reassign IzyLrn inbox to students user
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Apply ownership fix
+        shell: bash
+        run: |
+          set +e
+          SQL=$(cat <<'EOSQL'
+          DO $$
+          DECLARE sid uuid; gid uuid; moved int;
+          BEGIN
+            SELECT id INTO sid FROM users WHERE email='students@izylrn.com';
+            SELECT id INTO gid FROM smtp_groups WHERE name='IzyLrn';
+            IF sid IS NULL OR gid IS NULL THEN
+              RAISE NOTICE 'student user or IzyLrn group not found (sid=% gid=%)', sid, gid;
+              RETURN;
+            END IF;
+            INSERT INTO inbox_aliases (address, user_id, is_active)
+              VALUES ('students@izylrn.com', sid, true)
+              ON CONFLICT (lower(address)) DO UPDATE SET user_id = EXCLUDED.user_id, is_active = true;
+            UPDATE smtp_groups SET default_inbox_owner_user_id = sid WHERE id = gid;
+            UPDATE inbox_messages SET owner_user_id = sid, is_orphan_reply = false, updated_at = NOW()
+              WHERE smtp_group_id = gid AND owner_user_id <> sid;
+            GET DIAGNOSTICS moved = ROW_COUNT;
+            RAISE NOTICE 'student=% group=% reassigned=%', sid, gid, moved;
+          END $$;
+          EOSQL
+          )
+          docker exec -i marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"" <<EOF 2>&1
+          $SQL
+          EOF
+          echo "===== verify: owner distribution after fix ====="
+          docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"SELECT u.email AS owner, count(*) FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id GROUP BY u.email ORDER BY 2 DESC;\"" 2>&1
+          echo "===== verify: alias + group default ====="
+          docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"SELECT address, user_id, is_active FROM inbox_aliases;\"" 2>&1
+          echo "===== DONE ====="
+          exit 0

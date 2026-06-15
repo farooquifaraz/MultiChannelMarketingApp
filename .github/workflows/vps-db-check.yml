@@ -29,5 +29,11 @@ jobs:
           run "SELECT u.email, u.role, u.smtp_group_id, sg.name AS group FROM users u LEFT JOIN smtp_groups sg ON sg.id=u.smtp_group_id WHERE u.email ILIKE '%izylrn%';"
           echo "===== all groups with polling on ====="
           run "SELECT name, from_email, enable_inbox_polling, imap_host, last_inbox_polled_at FROM smtp_groups WHERE enable_inbox_polling=true;"
+          echo "===== OWNER distribution of inbox_messages ====="
+          run "SELECT u.email AS owner, count(*) AS msgs, count(*) FILTER (WHERE im.is_archived) AS archived FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id GROUP BY u.email ORDER BY 2 DESC;"
+          echo "===== recent 8 izylrn messages: owner + flags ====="
+          run "SELECT left(im.from_email,28) AS frm, left(im.to_email,28) AS too, u.email AS owner, im.is_archived AS arch, im.is_orphan_reply AS orphan, im.received_at::date FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id WHERE im.from_email ILIKE '%izylrn%' OR im.to_email ILIKE '%izylrn%' ORDER BY im.received_at DESC LIMIT 8;"
+          echo "===== all users (email + id + role) ====="
+          run "SELECT email, role, left(id::text,8) AS id8 FROM users ORDER BY created_at;"
           echo "===== DONE ====="
           exit 0

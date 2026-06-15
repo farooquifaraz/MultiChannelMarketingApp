@@ -52,7 +52,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("reset-password")]
     [ProducesResponseType(typeof(ApiResponse), 200)]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto, CancellationToken ct)
     {
         await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword, ct);
         return Ok(ApiResponse<object>.Ok(null!, "Your password has been reset. You can now sign in."));

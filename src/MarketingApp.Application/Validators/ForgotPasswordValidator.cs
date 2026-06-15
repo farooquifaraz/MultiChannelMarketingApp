@@ -11,7 +11,7 @@ public class ForgotPasswordValidator : AbstractValidator<ForgotPasswordDto>
     }
 }
 
-public class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
+public class ResetPasswordValidator : AbstractValidator<ResetPasswordRequestDto>
 {
     public ResetPasswordValidator()
     {

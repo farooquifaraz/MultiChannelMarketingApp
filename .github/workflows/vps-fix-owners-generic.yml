@@ -1,0 +1,50 @@
+# Prod: route each mailbox's mail to its own user (userwise isolation).
+# For every SmtpGroup whose from_email matches an existing user: create alias, set default owner,
+# and reassign ONLY orphan messages of that group to that user. Campaign-reply (non-orphan) emails
+# keep their correct per-campaign owner. Idempotent. Manual dispatch, self-hosted runner.
+name: VPS Fix Owners (userwise)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: Route each mailbox to its user
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Apply userwise routing
+        shell: bash
+        run: |
+          set +e
+          SQL=$(cat <<'EOSQL'
+          DO $$
+          DECLARE r record; u uuid; moved int;
+          BEGIN
+            FOR r IN SELECT id, name, from_email FROM smtp_groups WHERE from_email IS NOT NULL AND from_email <> '' LOOP
+              SELECT id INTO u FROM users WHERE lower(email) = lower(r.from_email);
+              IF u IS NULL THEN
+                RAISE NOTICE 'skip group % (% ) — no user matches from_email', r.name, r.from_email;
+                CONTINUE;
+              END IF;
+              INSERT INTO inbox_aliases (address, user_id, is_active)
+                VALUES (lower(r.from_email), u, true)
+                ON CONFLICT (lower(address)) DO UPDATE SET user_id = EXCLUDED.user_id, is_active = true;
+              UPDATE smtp_groups SET default_inbox_owner_user_id = u WHERE id = r.id;
+              UPDATE inbox_messages SET owner_user_id = u, is_orphan_reply = false, updated_at = NOW()
+                WHERE smtp_group_id = r.id AND is_orphan_reply = true AND owner_user_id <> u;
+              GET DIAGNOSTICS moved = ROW_COUNT;
+              RAISE NOTICE 'group % -> user % : reassigned % orphan(s)', r.name, r.from_email, moved;
+            END LOOP;
+          END $$;
+          EOSQL
+          )
+          docker exec -i marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"" <<EOF 2>&1
+          $SQL
+          EOF
+          echo "===== owner distribution after ====="
+          docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"SELECT u.email AS owner, count(*) FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id GROUP BY u.email ORDER BY 2 DESC;\"" 2>&1
+          echo "===== aliases + group defaults ====="
+          docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"SELECT a.address, u.email FROM inbox_aliases a JOIN users u ON u.id=a.user_id;\"" 2>&1
+          docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"SELECT g.name, g.from_email, du.email AS default_owner FROM smtp_groups g LEFT JOIN users du ON du.id=g.default_inbox_owner_user_id WHERE g.from_email<>'';\"" 2>&1
+          echo "===== DONE ====="
+          exit 0

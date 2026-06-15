@@ -122,17 +122,15 @@ public class AuthService : IAuthService
             return;
         }
 
-        // URL-safe random token (64 hex chars), valid for 30 minutes.
-        var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        user.PasswordResetToken = token;
-        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        // 6-digit numeric code (crypto-random), valid for 10 minutes. We store only its BCrypt hash.
+        var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        user.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(code, workFactor: 12);
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(10);
+        user.PasswordResetAttempts = 0;
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepo.UpdateAsync(user, ct);
 
-        var appUrl = (_config["App:PublicAppUrl"] ?? "http://localhost:5173").TrimEnd('/');
-        var resetLink = $"{appUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
-
-        var html = BuildResetEmailHtml(user.FullName, resetLink);
+        var html = BuildResetCodeEmailHtml(user.FullName, code);
 
         // The simple SendAsync(...) overload is a no-op mock — real delivery needs provider settings.
         // Resolve the user's assigned SmtpGroup (or the platform default) and send through it.
@@ -156,38 +154,61 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
+    private const int MaxResetAttempts = 5;
+
+    public async Task ResetPasswordAsync(string email, string code, string newPassword, CancellationToken ct = default)
     {
         var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
         var user = (await _userRepo.FindAsync(u => u.Email == normalizedEmail, ct)).FirstOrDefault();
 
+        // No active code / expired → generic invalid message (don't reveal which part failed).
         if (user is null
             || string.IsNullOrEmpty(user.PasswordResetToken)
-            || user.PasswordResetToken != token
             || user.PasswordResetTokenExpiresAt is null
             || user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
         {
             throw new MarketingApp.Domain.Exceptions.AppValidationException(
-                "This reset link is invalid or has expired. Please request a new one.");
+                "This code is invalid or has expired. Please request a new one.");
         }
 
+        // Too many wrong tries → burn the code (brute-force guard).
+        if (user.PasswordResetAttempts >= MaxResetAttempts)
+        {
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiresAt = null;
+            await _userRepo.UpdateAsync(user, ct);
+            throw new MarketingApp.Domain.Exceptions.AppValidationException(
+                "Too many incorrect attempts. Please request a new code.");
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify((code ?? string.Empty).Trim(), user.PasswordResetToken))
+        {
+            user.PasswordResetAttempts += 1;
+            await _userRepo.UpdateAsync(user, ct);
+            var left = MaxResetAttempts - user.PasswordResetAttempts;
+            throw new MarketingApp.Domain.Exceptions.AppValidationException(
+                left > 0 ? $"Incorrect code. {left} attempt(s) left." : "Too many incorrect attempts. Please request a new code.");
+        }
+
+        // Correct code → set new password, invalidate the code.
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 12);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresAt = null;
+        user.PasswordResetAttempts = 0;
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepo.UpdateAsync(user, ct);
         _logger.LogInformation("[ResetPassword] Password reset for {Email}.", user.Email);
     }
 
-    private static string BuildResetEmailHtml(string name, string resetLink) => $@"
+    private static string BuildResetCodeEmailHtml(string name, string code) => $@"
 <div style=""font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;color:#2b2f33;"">
-  <h2 style=""color:#4f46e5;"">Reset your password</h2>
+  <h2 style=""color:#4f46e5;"">Your password reset code</h2>
   <p>Hi {System.Net.WebUtility.HtmlEncode(name)},</p>
-  <p>We received a request to reset your password. Click the button below to choose a new one. This link expires in 30 minutes.</p>
+  <p>Use the code below to reset your password. It expires in <strong>10 minutes</strong>.</p>
   <p style=""text-align:center;margin:28px 0;"">
-    <a href=""{resetLink}"" style=""display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;"">Reset Password</a>
+    <span style=""display:inline-block;background:#eef2ff;color:#312e81;font-size:32px;font-weight:700;letter-spacing:8px;padding:14px 28px;border-radius:10px;"">{code}</span>
   </p>
-  <p style=""font-size:13px;color:#5b6166;"">If the button doesn't work, copy this link into your browser:<br><a href=""{resetLink}"">{resetLink}</a></p>
+  <p style=""font-size:13px;color:#5b6166;"">Enter this code on the reset page along with your new password.</p>
   <p style=""font-size:13px;color:#5b6166;"">If you didn't request this, you can safely ignore this email — your password won't change.</p>
 </div>";
 

@@ -7,25 +7,26 @@ import toast from 'react-hot-toast';
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams();
-  const token = params.get('token') || '';
   const email = params.get('email') || '';
   const navigate = useNavigate();
   const brand = useBrand();
 
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const invalidLink = !token || !email;
+  const invalidLink = !email;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!/^\d{6}$/.test(code.trim())) { toast.error('Enter the 6-digit code from your email.'); return; }
     if (password !== confirm) { toast.error('Passwords do not match.'); return; }
     if (password.length < 8) { toast.error('Password must be at least 8 characters.'); return; }
     setLoading(true);
     try {
-      await authApi.resetPassword({ email, token, newPassword: password });
+      await authApi.resetPassword({ email, token: code.trim(), newPassword: password });
       toast.success('Password reset. Please sign in.');
       navigate('/login');
     } catch {
@@ -51,8 +52,21 @@ export default function ResetPasswordPage() {
         ) : (
           <>
             <h2 className="text-2xl font-bold text-gray-900">Set a new password</h2>
-            <p className="mt-2 text-gray-500 text-sm">For <strong>{email}</strong></p>
+            <p className="mt-2 text-gray-500 text-sm">Enter the 6-digit code sent to <strong>{email}</strong> and choose a new password.</p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reset code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-gray-50 hover:bg-white focus:bg-white tracking-[0.5em] text-center text-lg font-semibold"
+                  placeholder="••••••"
+                  required
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">New password</label>
                 <div className="relative">

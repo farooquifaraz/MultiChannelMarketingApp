@@ -8,10 +8,12 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string Role { get; set; } = "user";
 
-    // === Self-service password reset (forgot password) ===
-    // A short-lived random token emailed to the user; cleared once the password is reset.
+    // === Self-service password reset (forgot password, code/OTP based) ===
+    // BCrypt hash of a short-lived 6-digit code emailed to the user; cleared once the password is reset.
     public string? PasswordResetToken { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
+    // Failed verify attempts for the current code — invalidates the code after too many tries (brute-force guard).
+    public int PasswordResetAttempts { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

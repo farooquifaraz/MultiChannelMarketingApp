@@ -10,6 +10,7 @@ import { formatDate, getChannelColor } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { smtpGroupsApi } from '../../api/smtpGroupsApi';
+import EmailRichEditor from '../../components/templates/EmailRichEditor';
 
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
@@ -255,7 +256,12 @@ export default function TemplatesPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Body <span className="text-gray-400 font-normal">(use {'{{name}}'}, {'{{email}}'}, {'{{offer}}'} for personalization)</span>
               </label>
-              <textarea value={formBody} onChange={(e) => setFormBody(e.target.value)} rows={6} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none resize-none font-mono text-sm" required />
+              {formChannel === 'email' ? (
+                // Visual editor — end users edit links/buttons/images without touching HTML.
+                <EmailRichEditor key={editId || 'new'} value={formBody} onChange={setFormBody} />
+              ) : (
+                <textarea value={formBody} onChange={(e) => setFormBody(e.target.value)} rows={6} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none resize-none font-mono text-sm" required />
+              )}
             </div>
             <div className="flex justify-end gap-3">
               <button type="button" onClick={resetForm} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>

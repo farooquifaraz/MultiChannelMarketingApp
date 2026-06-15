@@ -126,6 +126,15 @@ export default function BannerStudioPage({ embedded = false, seedPrompt, seedNon
 
   return (
     <div className="space-y-6">
+      {/* Block all interaction while the image is generating — prevents stray clicks mid-request. */}
+      {generating && (
+        <div className="fixed inset-0 z-[60] bg-white/60 backdrop-blur-sm flex items-center justify-center cursor-wait">
+          <div className="flex items-center gap-3 px-5 py-3 bg-white rounded-xl shadow-lg border border-gray-100">
+            <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+            <span className="text-sm font-medium text-gray-700">Generating image… please wait</span>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {!embedded ? (
           <div className="flex items-center gap-3">

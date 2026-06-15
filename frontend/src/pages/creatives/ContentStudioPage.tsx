@@ -390,6 +390,15 @@ export default function ContentStudioPage({ embedded = false, onSendToBanner }: 
   /* ---------- layout ---------- */
   return (
     <div className="space-y-5" onClick={() => combineOpen && setCombineOpen(false)}>
+      {/* Block all interaction while AI is generating — prevents stray clicks mid-request. */}
+      {busy && (
+        <div className="fixed inset-0 z-[60] bg-white/60 backdrop-blur-sm flex items-center justify-center cursor-wait">
+          <div className="flex items-center gap-3 px-5 py-3 bg-white rounded-xl shadow-lg border border-gray-100">
+            <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+            <span className="text-sm font-medium text-gray-700">Generating… please wait</span>
+          </div>
+        </div>
+      )}
       {!embedded && (
         <div className="flex items-center gap-3 flex-wrap">
           <div className="p-2.5 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl"><PenLine className="w-6 h-6 text-white" /></div>

@@ -11,6 +11,13 @@ public sealed record RawInboxMessage
     public string FromEmail { get; init; } = string.Empty;
     public string? FromName { get; init; }
     public string ToEmail { get; init; } = string.Empty;
+    /// <summary>All To recipients (lowercased by the fetcher). Used for per-user alias routing.</summary>
+    public IReadOnlyList<string> ToEmails { get; init; } = Array.Empty<string>();
+    /// <summary>All Cc recipients (lowercased). Some aliases land here when the user is Cc'd.</summary>
+    public IReadOnlyList<string> CcEmails { get; init; } = Array.Empty<string>();
+    /// <summary>Final delivery address from Delivered-To / X-Original-To / Envelope-To headers — the
+    /// strongest alias signal in a shared mailbox (survives mailing-list/forwarding rewrites). Lowercased.</summary>
+    public string? DeliveredTo { get; init; }
     public string Subject { get; init; } = string.Empty;
     public string? HtmlBody { get; init; }
     public string? TextBody { get; init; }

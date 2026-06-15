@@ -10,7 +10,11 @@ public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Campaign name is required")
             .MaximumLength(150).WithMessage("Name must be 150 characters or less")
-            .Matches(@"^[a-zA-Z0-9\s\-_/,.:()#]+$").WithMessage("Name contains invalid characters");
+            // A campaign name is just a label and is often the email subject (emoji, %, !, ? etc. are
+            // common). Only block control characters and angle brackets (the latter to avoid any HTML
+            // injection concerns); everything else — including Unicode/emoji — is allowed.
+            .Must(n => n != null && !n.Any(char.IsControl) && !n.Contains('<') && !n.Contains('>'))
+            .WithMessage("Name cannot contain control characters or angle brackets");
 
         RuleFor(x => x.TemplateId).NotEmpty().WithMessage("Template is required");
 

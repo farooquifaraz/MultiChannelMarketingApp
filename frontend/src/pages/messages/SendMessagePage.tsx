@@ -68,6 +68,19 @@ export default function SendMessagePage() {
   const [draftBody, setDraftBody] = useState('');
   const [draftSubject, setDraftSubject] = useState('');
   const editableRef = useRef<HTMLDivElement | null>(null);
+
+  // Constrain every image so a large pasted source never blows up the email layout. Rich/visual
+  // editing (links, buttons, images) lives in the Template editor — Compose stays simple.
+  const normalizeEditorImages = (el: HTMLElement | null) => {
+    if (!el) return;
+    el.querySelectorAll('img').forEach((img) => {
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      img.removeAttribute('width');
+      img.removeAttribute('height');
+    });
+  };
+
   // Signature settings — loaded once from user's Settings page
   const [signatureSettings, setSignatureSettings] = useState<SignatureSettings>({});
   // Preview recipient — first contact of selected group (real personalization preview)
@@ -403,8 +416,22 @@ export default function SendMessagePage() {
       }
 
       // Step 3: Create campaign
+      // Name the campaign after its content so it's recognisable in the list:
+      //  - email  -> the subject line
+      //  - sms/wa -> first line of the body (HTML stripped, trimmed to 60 chars)
+      //  - empty  -> fall back to the old timestamped name
+      const bodyPreview = messageBody
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 60);
+      const campaignName = (
+        channel === 'email' && subject.trim()
+          ? subject.trim()
+          : bodyPreview || `Quick ${channel.toUpperCase()} - ${new Date().toLocaleString()}`
+      ).slice(0, 150); // server caps the name at 150 chars
       const campaignRes: any = await axiosInstance.post('/campaigns', {
-        name: `Quick ${channel.toUpperCase()} - ${new Date().toLocaleString()}`,
+        name: campaignName,
         templateId,
         channel,
         groupId,
@@ -828,7 +855,7 @@ export default function SendMessagePage() {
                       ref={editableRef}
                       contentEditable
                       suppressContentEditableWarning
-                      onInput={() => setHasUnsavedChanges(true)}
+                      onInput={(e) => { normalizeEditorImages(e.currentTarget as HTMLDivElement); setHasUnsavedChanges(true); }}
                       className="p-4 max-h-[480px] overflow-y-auto focus:outline-none prose prose-sm max-w-none"
                       /* innerHTML is set imperatively in useEffect — see startEditing */
                     />
@@ -903,8 +930,13 @@ export default function SendMessagePage() {
                               document.execCommand('insertHTML', false, html);
                             }
                             // else: default plain-text paste behaviour kicks in
+                            // Cap any pasted images so they never blow up the layout.
+                            setTimeout(() => {
+                              normalizeEditorImages(richComposeRef.current);
+                              setMessageBody(richComposeRef.current?.innerHTML ?? '');
+                            }, 0);
                           }}
-                          onInput={(e) => setMessageBody((e.currentTarget as HTMLDivElement).innerHTML)}
+                          onInput={(e) => { normalizeEditorImages(e.currentTarget as HTMLDivElement); setMessageBody((e.currentTarget as HTMLDivElement).innerHTML); }}
                           className="min-h-[260px] max-h-[480px] overflow-y-auto px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none prose prose-sm max-w-none"
                           data-placeholder="Paste your formatted email here, or type a new one. Formatting is preserved."
                         />

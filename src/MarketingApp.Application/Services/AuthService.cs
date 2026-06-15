@@ -17,6 +17,7 @@ public class AuthService : IAuthService
     private readonly IGenericRepository<RefreshToken> _refreshTokenRepo;
     private readonly IConfiguration _config;
     private readonly IEmailService _emailService;
+    private readonly ISmtpGroupService _smtpGroups;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -24,12 +25,14 @@ public class AuthService : IAuthService
         IGenericRepository<RefreshToken> refreshTokenRepo,
         IConfiguration config,
         IEmailService emailService,
+        ISmtpGroupService smtpGroups,
         ILogger<AuthService> logger)
     {
         _userRepo = userRepo;
         _refreshTokenRepo = refreshTokenRepo;
         _config = config;
         _emailService = emailService;
+        _smtpGroups = smtpGroups;
         _logger = logger;
     }
 
@@ -130,14 +133,26 @@ public class AuthService : IAuthService
         var resetLink = $"{appUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
         var html = BuildResetEmailHtml(user.FullName, resetLink);
+
+        // The simple SendAsync(...) overload is a no-op mock — real delivery needs provider settings.
+        // Resolve the user's assigned SmtpGroup (or the platform default) and send through it.
+        var group = await _smtpGroups.ResolveForUserAsync(user.Id, ct);
+        if (group is null)
+        {
+            _logger.LogError("[ForgotPassword] No SmtpGroup configured (user or platform default) — cannot send reset email to {Email}. Set a default SMTP group in Admin → SMTP Groups.", user.Email);
+            return;
+        }
+
+        var settings = SmtpGroupService.ToUserSmtpSettings(group);
         try
         {
-            await _emailService.SendAsync(user.Email, "Reset your password", html, ct);
-            _logger.LogInformation("[ForgotPassword] Reset email sent to {Email}.", user.Email);
+            var ok = await _emailService.SendWithUserSettingsAsync(user.Email, "Reset your password", html, settings, ct);
+            if (ok) _logger.LogInformation("[ForgotPassword] Reset email sent to {Email} via group {Group}.", user.Email, group.Name);
+            else _logger.LogError("[ForgotPassword] Reset email send returned false for {Email} via group {Group}.", user.Email, group.Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[ForgotPassword] Failed to send reset email to {Email}.", user.Email);
+            _logger.LogError(ex, "[ForgotPassword] Failed to send reset email to {Email} via group {Group}.", user.Email, group.Name);
         }
     }
 

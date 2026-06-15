@@ -193,9 +193,9 @@ export default function InboxPage() {
       </div>
 
       {/* 2-column conversation layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Left: conversation list */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: 620 }}>
+        <div className="md:col-span-5 min-h-[420px] md:min-h-[620px] bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
           {listLoading ? (
             <div className="flex-1 flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -279,7 +279,7 @@ export default function InboxPage() {
         </div>
 
         {/* Right: thread timeline + composer */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100" style={{ minHeight: 620 }}>
+        <div className="md:col-span-7 min-h-[420px] md:min-h-[620px] bg-white rounded-2xl border border-gray-100">
           {thread ? (
             <ThreadView thread={thread} onReplied={() => { refetchThread(); refetchList(); }} onAiRegenerated={() => refetchThread()} />
           ) : (

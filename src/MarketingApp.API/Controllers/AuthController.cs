@@ -41,6 +41,23 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponseDto>.Ok(result));
     }
 
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiResponse), 200)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto, CancellationToken ct)
+    {
+        await _authService.ForgotPasswordAsync(dto.Email, ct);
+        // Always the same response — never reveal whether the email exists.
+        return Ok(ApiResponse<object>.Ok(null!, "If an account exists for that email, a reset link has been sent."));
+    }
+
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiResponse), 200)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
+    {
+        await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword, ct);
+        return Ok(ApiResponse<object>.Ok(null!, "Your password has been reset. You can now sign in."));
+    }
+
     [Authorize]
     [HttpPost("logout")]
     [ProducesResponseType(typeof(ApiResponse), 200)]

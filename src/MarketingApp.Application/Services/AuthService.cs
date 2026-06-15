@@ -16,17 +16,20 @@ public class AuthService : IAuthService
     private readonly IGenericRepository<User> _userRepo;
     private readonly IGenericRepository<RefreshToken> _refreshTokenRepo;
     private readonly IConfiguration _config;
+    private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IGenericRepository<User> userRepo,
         IGenericRepository<RefreshToken> refreshTokenRepo,
         IConfiguration config,
+        IEmailService emailService,
         ILogger<AuthService> logger)
     {
         _userRepo = userRepo;
         _refreshTokenRepo = refreshTokenRepo;
         _config = config;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -103,6 +106,75 @@ public class AuthService : IAuthService
             await _refreshTokenRepo.UpdateAsync(token, ct);
         }
     }
+
+    public async Task ForgotPasswordAsync(string email, CancellationToken ct = default)
+    {
+        var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+        var user = (await _userRepo.FindAsync(u => u.Email == normalizedEmail, ct)).FirstOrDefault();
+
+        // Never reveal whether the email exists — just return.
+        if (user is null || !user.IsActive)
+        {
+            _logger.LogInformation("[ForgotPassword] No active user for {Email} — silently ignoring.", normalizedEmail);
+            return;
+        }
+
+        // URL-safe random token (64 hex chars), valid for 30 minutes.
+        var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepo.UpdateAsync(user, ct);
+
+        var appUrl = (_config["App:PublicAppUrl"] ?? "http://localhost:5173").TrimEnd('/');
+        var resetLink = $"{appUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+        var html = BuildResetEmailHtml(user.FullName, resetLink);
+        try
+        {
+            await _emailService.SendAsync(user.Email, "Reset your password", html, ct);
+            _logger.LogInformation("[ForgotPassword] Reset email sent to {Email}.", user.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[ForgotPassword] Failed to send reset email to {Email}.", user.Email);
+        }
+    }
+
+    public async Task ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
+    {
+        var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+        var user = (await _userRepo.FindAsync(u => u.Email == normalizedEmail, ct)).FirstOrDefault();
+
+        if (user is null
+            || string.IsNullOrEmpty(user.PasswordResetToken)
+            || user.PasswordResetToken != token
+            || user.PasswordResetTokenExpiresAt is null
+            || user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+        {
+            throw new MarketingApp.Domain.Exceptions.AppValidationException(
+                "This reset link is invalid or has expired. Please request a new one.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 12);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepo.UpdateAsync(user, ct);
+        _logger.LogInformation("[ResetPassword] Password reset for {Email}.", user.Email);
+    }
+
+    private static string BuildResetEmailHtml(string name, string resetLink) => $@"
+<div style=""font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;color:#2b2f33;"">
+  <h2 style=""color:#4f46e5;"">Reset your password</h2>
+  <p>Hi {System.Net.WebUtility.HtmlEncode(name)},</p>
+  <p>We received a request to reset your password. Click the button below to choose a new one. This link expires in 30 minutes.</p>
+  <p style=""text-align:center;margin:28px 0;"">
+    <a href=""{resetLink}"" style=""display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;"">Reset Password</a>
+  </p>
+  <p style=""font-size:13px;color:#5b6166;"">If the button doesn't work, copy this link into your browser:<br><a href=""{resetLink}"">{resetLink}</a></p>
+  <p style=""font-size:13px;color:#5b6166;"">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+</div>";
 
     private async Task<AuthResponseDto> GenerateAuthResponse(User user, CancellationToken ct)
     {

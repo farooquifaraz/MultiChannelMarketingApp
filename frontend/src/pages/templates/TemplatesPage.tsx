@@ -502,7 +502,7 @@ function ShareModal({ template, onClose, onSave, saving }: {
           {/* Scope picker */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Who can see it?</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               <ScopeCard id="global" Icon={Globe2} title="Global"     subtitle="All users in the platform" />
               <ScopeCard id="groups" Icon={UsersIcon} title="By group" subtitle="Users in selected SMTP groups" />
               <ScopeCard id="users"  Icon={UserIcon} title="By user"  subtitle="Only specifically picked users" />

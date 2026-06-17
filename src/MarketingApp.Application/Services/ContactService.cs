@@ -156,17 +156,19 @@ public class ContactService : IContactService
         var headerLine = await reader.ReadLineAsync(ct);
         if (headerLine == null) return result;
 
-        var headers = headerLine.Split(',').Select(h => h.Trim().ToLowerInvariant()).ToArray();
+        var headers = ParseCsvLine(headerLine).Select(h => h.Trim().ToLowerInvariant()).ToArray();
 
         while (await reader.ReadLineAsync(ct) is { } line)
         {
+            if (string.IsNullOrWhiteSpace(line)) continue;   // skip blank lines (incl. trailing newline)
             result.TotalRows++;
             try
             {
-                var values = line.Split(',');
-                var email = GetValue(headers, values, "email");
-                var phone = GetValue(headers, values, "phone");
-                var whatsapp = GetValue(headers, values, "whatsapp") ?? GetValue(headers, values, "whatsapp_number");
+                // RFC-4180-aware parse so quoted fields with commas ("Ajeet School, Tijara") don't shift columns.
+                var values = ParseCsvLine(line);
+                var email = Trunc(GetValue(headers, values, "email"), 256);
+                var phone = Trunc(GetValue(headers, values, "phone"), 32);
+                var whatsapp = Trunc(GetValue(headers, values, "whatsapp") ?? GetValue(headers, values, "whatsapp_number"), 32);
 
                 // Skip duplicates within this import batch
                 if (!string.IsNullOrWhiteSpace(email) && contacts.Any(c => c.Email?.ToLower() == email.ToLower()))
@@ -188,7 +190,7 @@ public class ContactService : IContactService
                 {
                     UserId = userId,
                     GroupId = groupId,
-                    FullName = GetValue(headers, values, "full_name") ?? GetValue(headers, values, "name") ?? "Unknown",
+                    FullName = Trunc(GetValue(headers, values, "full_name") ?? GetValue(headers, values, "name") ?? "Unknown", 200)!,
                     Email = email,
                     Phone = phone,
                     WhatsAppNumber = whatsapp
@@ -204,7 +206,21 @@ public class ContactService : IContactService
         }
 
         if (contacts.Any())
-            await _contactRepo.AddRangeAsync(contacts, ct);
+        {
+            try
+            {
+                await _contactRepo.AddRangeAsync(contacts, ct);
+            }
+            catch (Exception ex)
+            {
+                // Never let a bulk-insert failure surface as an uncaught 500 — report it on the result
+                // so the user sees a clear message and the rows they fixed manually aren't silently lost.
+                _logger.LogError(ex, "Bulk contact insert failed for user {UserId} ({Count} rows)", userId, contacts.Count);
+                result.SuccessCount = 0;
+                result.FailedCount = result.TotalRows;
+                result.Errors.Add($"Failed to save imported contacts: {ex.Message}");
+            }
+        }
 
         await _audit.LogAsync(userId, "ContactsImported", "Contact", null, new { result.TotalRows, result.SuccessCount, result.FailedCount }, ct: ct);
         return result;
@@ -214,8 +230,42 @@ public class ContactService : IContactService
     {
         var index = Array.IndexOf(headers, header);
         if (index < 0 || index >= values.Length) return null;
-        var val = values[index].Trim().Trim('"');
+        var val = values[index].Trim();
         return string.IsNullOrWhiteSpace(val) ? null : val;
+    }
+
+    /// <summary>Defensive length cap so a stray over-long cell can't fail the whole bulk insert.</summary>
+    private static string? Trunc(string? v, int max) =>
+        v is null ? null : (v.Length <= max ? v : v[..max]);
+
+    /// <summary>
+    /// Split one CSV line honoring double-quoted fields (RFC 4180): commas inside quotes are kept,
+    /// "" is an escaped quote. A naive String.Split(',') corrupts rows like:
+    ///   "Ajeet Public School, Tijara",email@x.com,...  (the comma in the name shifts every column).
+    /// </summary>
+    internal static string[] ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var sb = new System.Text.StringBuilder();
+        var inQuotes = false;
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (inQuotes)
+            {
+                if (c == '"')
+                {
+                    if (i + 1 < line.Length && line[i + 1] == '"') { sb.Append('"'); i++; } // escaped ""
+                    else inQuotes = false;
+                }
+                else sb.Append(c);
+            }
+            else if (c == '"') inQuotes = true;
+            else if (c == ',') { fields.Add(sb.ToString()); sb.Clear(); }
+            else sb.Append(c);
+        }
+        fields.Add(sb.ToString());
+        return fields.ToArray();
     }
 
     public async Task<IEnumerable<ContactGroupDto>> GetGroupsAsync(Guid userId, CancellationToken ct)

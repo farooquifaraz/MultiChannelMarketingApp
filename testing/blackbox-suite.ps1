@@ -462,6 +462,36 @@ TestCase 'E' 'E13' 'GET /contacts/export.csv returns CSV' {
     } catch { return "ex: $($_.Exception.Message)" }
 }
 
+TestCase 'E' 'E15' 'POST /contacts/import: quoted-comma row parses (no 500, no column shift)' {
+    # Regression: a school name containing a comma must stay one field, not shift email into phone.
+    try {
+        $csv = "full_name,email,phone,whatsapp`n" +
+               "`"Ajeet Public Secondary School, Tijara`",ajitschool_$($Stamp)@example.com,+918502906690,+918502906690`n" +
+               "Plain School,plain_$($Stamp)@example.com,+919999999999,+919999999999`n"
+        $boundary = "----mp$($Stamp)"
+        $LF = "`r`n"
+        $body = "--$boundary$LF" +
+                "Content-Disposition: form-data; name=`"file`"; filename=`"alwar-test.csv`"$LF" +
+                "Content-Type: text/csv$LF$LF" +
+                "$csv$LF" +
+                "--$boundary--$LF"
+        $url = "$ApiUrl/contacts/import"
+        $resp = Invoke-WebRequest -Uri $url -Method POST `
+            -Headers @{ Authorization = "Bearer $($global:userToken)" } `
+            -ContentType "multipart/form-data; boundary=$boundary" `
+            -Body $body -UseBasicParsing -TimeoutSec 30
+        if ($resp.StatusCode -ne 200) { return "status=$($resp.StatusCode)" }
+        $j = $resp.Content | ConvertFrom-Json
+        $d = $j.data
+        # Both rows should import; the comma-name row must not error out.
+        if ($d.successCount -lt 2) { return "successCount=$($d.successCount) errors=$($d.errors -join '; ')" }
+        return $true
+    } catch {
+        $e = $_.Exception.Message; if ($_.ErrorDetails) { $e += " | " + $_.ErrorDetails.Message }
+        return "ex: $e"
+    }
+}
+
 TestCase 'E' 'E14' 'DELETE /contacts/:id removes' {
     if (-not $global:createdContactId) { return "skipped" }
     $r = Call-Api -Method DELETE -Path "/contacts/$($global:createdContactId)" -Token $global:userToken -ExpectStatus @(200, 204)

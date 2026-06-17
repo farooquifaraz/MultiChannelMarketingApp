@@ -1,0 +1,32 @@
+# Identify the process squatting on host port 80 (blocking marketingapp-nginx from binding 80/443).
+# READ-ONLY: prints what holds :80 and, if it's a host nginx service, what it serves — so we can
+# decide precisely whether it's safe to stop. No mutation. Manual dispatch, self-hosted runner.
+name: VPS Fix nginx
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: Identify :80 squatter
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Who owns port 80
+        shell: bash
+        run: |
+          set +e
+          echo "===== listeners on :80 / :443 ====="
+          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 '
+          echo "===== pid on :80 -> process ====="
+          pid=$(ss -ltnpH 'sport = :80' 2>/dev/null | grep -oP 'pid=\K[0-9]+' | head -1)
+          echo "pid=$pid"
+          [ -n "$pid" ] && ps -p "$pid" -o pid,ppid,user,cmd 2>&1
+          echo "===== is it a docker container? ====="
+          docker ps --format '{{.Names}} {{.Image}} {{.Ports}}' | grep -E '0.0.0.0:80|:80->' 2>&1 || echo "(no docker container publishes host :80)"
+          echo "===== host nginx systemd service ====="
+          sudo -n systemctl is-active nginx 2>&1
+          sudo -n systemctl status nginx --no-pager 2>&1 | head -6
+          echo "===== host nginx — what server_names does it serve? ====="
+          sudo -n nginx -T 2>/dev/null | grep -E 'server_name|listen|proxy_pass|root ' | head -40
+          echo "===== DONE ====="
+          exit 0

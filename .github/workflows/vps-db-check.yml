@@ -1,0 +1,39 @@
+# Read-only production DB check — compares IzyLrn inbox/IMAP config vs local.
+# Runs SELECT-only queries against the prod postgres container via the self-hosted runner.
+name: VPS DB Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dbcheck:
+    name: Inspect prod inbox config
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Query prod DB (read-only)
+        shell: bash
+        run: |
+          set +e
+          PSQL='docker exec marketingapp-postgres sh -c'
+          run() { docker exec marketingapp-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"$1\"" 2>&1; }
+          echo "===== migrations present? ====="
+          run "SELECT to_regclass('public.inbox_aliases') AS inbox_aliases_table;"
+          run "SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name LIKE 'password_reset%';"
+          echo "===== IzyLrn group config ====="
+          run "SELECT name, email_provider AS provider, from_email, enable_inbox_polling AS poll, imap_host, imap_username, (imap_password IS NOT NULL AND imap_password<>'') AS has_imap_pw, imap_port, last_imap_uid AS uid, last_inbox_polled_at, is_active FROM smtp_groups WHERE name ILIKE '%izy%' OR from_email ILIKE '%izylrn%';"
+          echo "===== inbox_messages count (izylrn) ====="
+          run "SELECT count(*) AS izylrn_msgs FROM inbox_messages WHERE from_email ILIKE '%izylrn%' OR to_email ILIKE '%izylrn%';"
+          echo "===== total inbox + per-owner ====="
+          run "SELECT count(*) AS total_inbox FROM inbox_messages;"
+          echo "===== students user + group assignment ====="
+          run "SELECT u.email, u.role, u.smtp_group_id, sg.name AS group FROM users u LEFT JOIN smtp_groups sg ON sg.id=u.smtp_group_id WHERE u.email ILIKE '%izylrn%';"
+          echo "===== all groups with polling on ====="
+          run "SELECT name, from_email, enable_inbox_polling, imap_host, last_inbox_polled_at FROM smtp_groups WHERE enable_inbox_polling=true;"
+          echo "===== OWNER distribution of inbox_messages ====="
+          run "SELECT u.email AS owner, count(*) AS msgs, count(*) FILTER (WHERE im.is_archived) AS archived FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id GROUP BY u.email ORDER BY 2 DESC;"
+          echo "===== recent 8 izylrn messages: owner + flags ====="
+          run "SELECT left(im.from_email,28) AS frm, left(im.to_email,28) AS too, u.email AS owner, im.is_archived AS arch, im.is_orphan_reply AS orphan, im.received_at::date FROM inbox_messages im LEFT JOIN users u ON u.id=im.owner_user_id WHERE im.from_email ILIKE '%izylrn%' OR im.to_email ILIKE '%izylrn%' ORDER BY im.received_at DESC LIMIT 8;"
+          echo "===== all users (email + id + role) ====="
+          run "SELECT email, role, left(id::text,8) AS id8 FROM users ORDER BY created_at;"
+          echo "===== DONE ====="
+          exit 0

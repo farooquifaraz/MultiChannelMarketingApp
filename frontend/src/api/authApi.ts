@@ -14,4 +14,10 @@ export const authApi = {
 
   logout: (refreshToken: string) =>
     axiosInstance.post('/auth/logout', { refreshToken }),
+
+  forgotPassword: (email: string) =>
+    axiosInstance.post('/auth/forgot-password', { email }),
+
+  resetPassword: (data: { email: string; token: string; newPassword: string }) =>
+    axiosInstance.post('/auth/reset-password', data),
 };

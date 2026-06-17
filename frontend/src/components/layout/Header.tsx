@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Sun, Moon, Search } from 'lucide-react';
+import { LogOut, Sun, Moon, Search, Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/authApi';
 import toast from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
 import { getTheme, toggleTheme } from '../../lib/theme';
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, refreshToken, logout } = useAuthStore();
   const navigate = useNavigate();
   const [theme, setTheme] = useState(getTheme());
@@ -25,7 +25,15 @@ export default function Header() {
   const initials = (user?.fullName || user?.email || 'U').split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center gap-4 px-6">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center gap-4 px-4 md:px-6">
+      <button
+        onClick={onMenuClick}
+        className="lg:hidden w-10 h-10 grid place-items-center rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-all"
+        title="Menu"
+        aria-label="Toggle menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
       <div>
         <h2 className="text-xs text-gray-500">Welcome back,</h2>
         <p className="text-[15px] font-bold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>

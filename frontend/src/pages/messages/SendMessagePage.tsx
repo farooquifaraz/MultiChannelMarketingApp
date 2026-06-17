@@ -527,7 +527,7 @@ export default function SendMessagePage() {
       {/* M2 — pre-send transparency: provider + from-address + credential health */}
       <ActiveSenderBanner channel={channel} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Left: Compose */}
         <div className="lg:col-span-2 space-y-5">
           {/* Step 1: Channel */}
@@ -536,7 +536,7 @@ export default function SendMessagePage() {
               <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs">1</div>
               <h3 className="font-semibold text-gray-900">Select Channel</h3>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {channelOptions.map(opt => (
                 <button
                   key={opt.id}
@@ -818,8 +818,8 @@ export default function SendMessagePage() {
                       title="Email Body Preview"
                       srcDoc={renderWithSampleData(messageBody)}
                       sandbox=""
-                      className="w-full bg-white"
-                      style={{ height: '600px', border: 'none' }}
+                      className="w-full bg-white h-[400px] md:h-[600px]"
+                      style={{ border: 'none' }}
                     />
                     {(!signatureSettings.smtpFromName || !signatureSettings.signatureDesignation) && (
                       <div className="px-3 py-2 bg-amber-50 border-t border-amber-100 text-xs text-amber-700 flex items-center gap-1.5">

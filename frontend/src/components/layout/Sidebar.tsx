@@ -39,13 +39,17 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open = false }: { open?: boolean }) {
   const user = useAuthStore((s) => s.user);
   const brand = useBrand();
   const isAdmin = user?.role?.toLowerCase() === 'admin';
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 lg:static lg:translate-x-0 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
       {/* Brand */}
       <div className="h-16 flex items-center px-5 border-b border-gray-100">
         <div className="flex items-center gap-2.5">

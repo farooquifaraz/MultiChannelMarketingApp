@@ -427,7 +427,7 @@ export default function SettingsPage() {
               {/* Email Provider Selector */}
               <div className="mb-6">
                 <label className={labelClass}>Email Provider</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {[
                     { id: 'smtp', label: 'SMTP', desc: 'Gmail, Hostinger, etc.' },
                     { id: 'sendgrid', label: 'SendGrid', desc: '100/day free' },
@@ -556,7 +556,7 @@ export default function SettingsPage() {
                     />
                     {fieldErrors.sendGridApiKey && <p className="text-xs text-red-600 mt-1">{fieldErrors.sendGridApiKey}</p>}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>From Email *</label>
                       <input
@@ -592,7 +592,7 @@ export default function SettingsPage() {
                     />
                     {fieldErrors.brevoApiKey && <p className="text-xs text-red-600 mt-1">{fieldErrors.brevoApiKey}</p>}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>From Email *</label>
                       <input
@@ -616,7 +616,7 @@ export default function SettingsPage() {
               {/* Mailgun fields */}
               {settings.emailProvider === 'mailgun' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>Mailgun API Key *</label>
                       <input
@@ -642,7 +642,7 @@ export default function SettingsPage() {
                       {fieldErrors.mailgunDomain && <p className="text-xs text-red-600 mt-1">{fieldErrors.mailgunDomain}</p>}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelClass}>From Email *</label>
                       <input

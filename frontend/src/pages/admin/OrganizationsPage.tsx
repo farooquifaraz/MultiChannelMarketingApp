@@ -143,7 +143,7 @@ export default function OrganizationsPage() {
 
       {/* List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
               <th className="px-5 py-3 font-medium">Name</th>
@@ -198,7 +198,7 @@ export default function OrganizationsPage() {
               <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-400">No organizations yet.</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Assign user */}

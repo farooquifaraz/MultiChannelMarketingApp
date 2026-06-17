@@ -501,6 +501,10 @@ app.MapHealthChecks("/health");
             CONSTRAINT fk_inbox_alias_smtp_group FOREIGN KEY (smtp_group_id) REFERENCES smtp_groups(id) ON DELETE SET NULL)",
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_inbox_aliases_address ON inbox_aliases (lower(address))",
         "CREATE INDEX IF NOT EXISTS ix_inbox_aliases_user ON inbox_aliases (user_id)",
+        // === Self-service password reset (forgot password) ===
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token character varying(200)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires_at timestamp with time zone",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_attempts integer NOT NULL DEFAULT 0",
         // === De-duplicate inbox_messages by RFC Message-Id ===
         // Two SmtpGroups polling the same shared mailbox stored every email twice (same message_id +
         // imap_uid, different smtp_group_id slipped past the (group,folder,uid) unique index). Collapse

@@ -1,0 +1,36 @@
+# Temporary, read-only TLS/443 diagnostic — runs ON the VPS via the self-hosted runner.
+# Manual dispatch only. Never mutates anything; prints state so we can pinpoint why nginx crash-loops.
+name: VPS Diagnose TLS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    name: Diagnose 443 / TLS
+    runs-on: [self-hosted, marketingapp]
+    steps:
+      - name: Why does nginx crash-loop
+        shell: bash
+        run: |
+          set +e
+          cd /opt/marketingapp 2>/dev/null
+          echo "===== nginx container last error / exit ====="
+          docker inspect marketingapp-nginx --format 'exit={{.State.ExitCode}} err={{.State.Error}} oom={{.State.OOMKilled}} status={{.State.Status}} restarts={{.RestartCount}}' 2>&1
+          echo "===== nginx logs (full, last 80) ====="
+          docker logs marketingapp-nginx 2>&1 | tail -80
+          echo "===== CONFIG TEST in a throwaway container (same mounts) ====="
+          docker run --rm \
+            -v /opt/marketingapp/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+            -v /opt/marketingapp/nginx/conf.d:/etc/nginx/conf.d:ro \
+            -v /etc/letsencrypt:/etc/letsencrypt:ro \
+            -v /var/www/certbot:/var/www/certbot:ro \
+            nginx:1.27-alpine nginx -t 2>&1
+          echo "===== cert files (need BOTH fullchain + privkey) ====="
+          ls -la /etc/letsencrypt/live/app.samdigital.ae/ 2>&1
+          echo "===== who holds host :80 and :443 ====="
+          (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ':80 |:443 ' 2>&1
+          echo "===== all containers ====="
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>&1
+          echo "===== DONE ====="
+          exit 0

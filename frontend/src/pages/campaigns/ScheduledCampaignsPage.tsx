@@ -172,7 +172,7 @@ export default function ScheduledCampaignsPage() {
             </button>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
               <tr>
                 <th className="px-4 py-3 text-left">Campaign</th>
@@ -248,7 +248,7 @@ export default function ScheduledCampaignsPage() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {totalPages > 1 && (

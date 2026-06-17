@@ -588,7 +588,7 @@ export default function ContactsPage() {
             <p className="text-lg font-medium">No contacts found</p>
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 w-10">
@@ -679,7 +679,7 @@ export default function ContactsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {data && data.totalPages > 1 && (

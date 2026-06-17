@@ -344,7 +344,7 @@ export default function CampaignsPage() {
             <p className="text-sm mt-1">Create your first campaign to get started</p>
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Campaign</th>
@@ -418,7 +418,7 @@ export default function CampaignsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {/* Pagination */}

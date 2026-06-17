@@ -55,10 +55,19 @@ public class CreateCampaignValidatorTests
     }
 
     [Fact]
-    public void Name_WithInvalidCharacters_ShouldFail()
+    public void Name_WithAngleBrackets_ShouldFail()
     {
         var dto = ValidDto();
-        dto.Name = "Campaign @#$%";
+        dto.Name = "Campaign <script>";
+        var result = _validator.TestValidate(dto);
+        result.ShouldHaveValidationErrorFor(x => x.Name);
+    }
+
+    [Fact]
+    public void Name_WithControlCharacters_ShouldFail()
+    {
+        var dto = ValidDto();
+        dto.Name = "Campaign\tName";
         var result = _validator.TestValidate(dto);
         result.ShouldHaveValidationErrorFor(x => x.Name);
     }
@@ -66,8 +75,9 @@ public class CreateCampaignValidatorTests
     [Fact]
     public void Name_WithValidSpecialChars_ShouldPass()
     {
+        // Campaign names double as email subjects — emoji, %, !, ?, @, # are common and allowed.
         var dto = ValidDto();
-        dto.Name = "Campaign-Name_2024 Test";
+        dto.Name = "Summer Sale 50% off! 🎉 @everyone";
         var result = _validator.TestValidate(dto);
         result.ShouldNotHaveValidationErrorFor(x => x.Name);
     }
